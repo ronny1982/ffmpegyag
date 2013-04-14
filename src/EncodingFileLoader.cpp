@@ -605,6 +605,8 @@ int64_t EncodingFileLoader::GetTimestampFromTime(long VideoStreamIndex, int64_t 
 
 VideoFrame* EncodingFileLoader::GetVideoFrameData(long VideoStreamIndex, long FrameIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat)
 {
+    // TODO: search for minor memory leak
+
     // to improve performance there is no additional securitycheck for pFormatCtx, VideoStreamIndex & FrameIndex
 
     int StreamID = VideoStreams[VideoStreamIndex]->ID;
