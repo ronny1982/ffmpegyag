@@ -1,3 +1,4 @@
+
 [file_prefs]
 final_new_line=true
 ensure_convert_new_lines=true
@@ -24,11 +25,14 @@ long_line_column=72
 
 [files]
 current_page=4
-FILE_NAME_0=8590;C;0;16;1;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.h;0;4
-FILE_NAME_1=79866;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
-FILE_NAME_2=0;C++;0;16;0;1;0;.%2Fsrc%2FEncodingTask.cpp;0;4
-FILE_NAME_3=0;C;0;16;0;1;0;.%2Fsrc%2FEncodingFileLoader.h;0;4
-FILE_NAME_4=23843;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.cpp;0;4
+FILE_NAME_0=0;C;0;16;0;1;0;./src/AVConvGUIMain.h;0;4
+FILE_NAME_1=61678;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/AVConvGUIMain.cpp;0;4
+FILE_NAME_2=0;C++;0;16;0;1;0;./src/EncodingTask.cpp;0;4
+FILE_NAME_3=20951;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingFileLoader.cpp;0;4
+FILE_NAME_4=326;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/VideoFrameGOP.cpp;0;4
+FILE_NAME_5=2057;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/VideoFrame.cpp;0;4
+FILE_NAME_6=0;C++;0;16;0;1;0;./src/EncodingMediaStreams.cpp;0;4
+FILE_NAME_7=1787;C;0;16;0;1;0;./src/EncodingMediaStreams.h;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag

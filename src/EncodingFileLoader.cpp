@@ -24,10 +24,7 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
 
         if(avformat_open_input(&pFormatCtx, File.GetFullPath().ToUTF8().data(), NULL, NULL) == 0)
         {
-            pFormatCtx->flags |= 0x0040; //AVFMT_FLAG_NOBUFFER;
-            // FIXME: avformat_find_stream_info()
-//            if(find_stream_info(pFormatCtx, NULL) > -1)
-            // try to get stream information by decoding some packets
+            //pFormatCtx->flags |= 0x0040; //AVFMT_FLAG_NOBUFFER;
             if(avformat_find_stream_info(pFormatCtx, NULL) > -1)
             {
                 FileDuration = (int64_t)1000 * (int64_t)pFormatCtx->duration / (int64_t)AV_TIME_BASE;
@@ -140,7 +137,6 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                     for(size_t v=0; v<VideoStreams.GetCount(); v++)
                     {
                         VideoStreams[v]->IndexEntries.Sort(CompareIndexEntry);
-//printf("Stream[%lu], frames: %lu, first-pts: %lu, last-pts: %lu\n\n", v, VideoStreams[v]->IndexEntries.GetCount(), VideoStreams[v]->IndexEntries[0]->Timestamp, VideoStreams[v]->IndexEntries[VideoStreams[v]->IndexEntries.GetCount()-1]->Timestamp);
                     }
                 //}
 
@@ -429,6 +425,7 @@ EncodingFileLoader::~EncodingFileLoader()
             avcodec_close(pFormatCtx->streams[i]->codec);
         }
         avformat_close_input(&pFormatCtx);
+        av_free(pFormatCtx);
         pFormatCtx = NULL;
     }
 }
@@ -503,14 +500,7 @@ void EncodingFileLoader::FlushBuffer()
     {
         for(unsigned int i=0; i<pFormatCtx->nb_streams; i++)
         {
-            if(pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-            {
-                avcodec_flush_buffers(pFormatCtx->streams[i]->codec);
-            }
-            if(pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-            {
-                avcodec_flush_buffers(pFormatCtx->streams[i]->codec);
-            }
+            avcodec_flush_buffers(pFormatCtx->streams[i]->codec);
         }
     }
 }
@@ -643,15 +633,13 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long VideoStreamIndex, long Fr
 
     if(GOPBuffer.GetID() != KeyframeIndex)
     {
-        GOPBuffer.Flush();
+        FlushBuffer();
         if(!SetStreamPosition(VideoStreamIndex, KeyframeIndex))
         {
             //return new VideoFrame(Timestamp, GetTimestampTime(VideoStreamIndex, Timestamp), TargetWidth, TargetHeight, AV_PICTURE_TYPE_I, 0, 0, 128);
             return NULL;
         }
-        avcodec_flush_buffers(pCodecCtx);
         GOPBuffer.SetID(KeyframeIndex);
-        //printf("\nNEW GOP\n");
     }
 
     if(GOPBuffer.GetLastTimestamp() < Timestamp)
