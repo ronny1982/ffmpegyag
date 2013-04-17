@@ -53,15 +53,6 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_VIDEO)
                         {
                             avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
-                            /*
-                            // clear the index entries of this stream
-                            av_free(stream->index_entries);
-                            stream->index_entries = NULL;
-                            stream->nb_index_entries = 0; // <- changing this results in loss of all packets in this stream
-                            stream->index_entries_allocated_size = sizeof(AVIndexEntry) * GetStreamEstimatedFrameCount(i);
-                            stream->index_entries = (AVIndexEntry*)av_realloc(stream->index_entries, stream->index_entries_allocated_size);
-                            //stream->index_entries = (AVIndexEntry*)av_fast_realloc(stream->index_entries, &stream->index_entries_allocated_size, sizeof(AVIndexEntry) * GetStreamEstimatedFrameCount(i));
-                            */
                             VideoStreams.Add(new VideoStream(i, false));
                             VideoStreams[VideoStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 security frames
                         }
@@ -119,14 +110,6 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                                     break;
                                 }
                             }
-                            /*
-                            // returns the index where the entry was inserted
-                            insert_index = av_add_index_entry(stream, packet.pos, packet.pts, packet.size, 0, packet.flags);
-                            if(!(packet.flags & AV_PKT_FLAG_KEY) && insert_index > 0)
-                            {
-                                stream->index_entries[insert_index].min_distance = stream->index_entries[insert_index-1].min_distance + 1;
-                            }
-                            */
 
                             vpkt_count++;
                         }
@@ -227,29 +210,6 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         vStream->Height = stream->codec->height;
                         vStream->Profile = Libav::PixelDescriptionMap[stream->codec->pix_fmt] + wxString::Format(wxT(" @L%i"), stream->codec->level);
 
-                        // apply source parameters as encoding parameters
-                        //vStream->Codec = wxEmptyString;
-                        vStream->EncodingSettings.Bitrate = wxString::Format(wxT("%ik"), vStream->Bitrate/1024);
-                        //vStream->EncodingSettings.FrameRate = wxEmptyString;
-                        //vStream->EncodingSettings.FrameSize = wxEmptyString;
-                        //vStream->EncodingSettings.AspectRatio = wxEmptyString;
-                        //vStream->EncodingSettings.Deinterlace = false;
-                        //vStream->EncodingSettings.MacroblockDecision = wxT("rd");
-                        //vStream->EncodingSettings.MacroblockComparsion = wxT("rd");
-                        //vStream->EncodingSettings.MotionEstimationComparsion = wxT("rd");
-                        //vStream->EncodingSettings.PreMotionEstimationComparsion = wxT("rd");
-                        //vStream->EncodingSettings.SubMotionEstimationComparsion = wxT("rd");
-                        //vStream->EncodingSettings.Trellis = true;
-                        //vStream->EncodingSettings.MinQuantization = wxT("1");
-                        //vStream->EncodingSettings.MaxQuantization = wxT("32");
-                        //vStream->EncodingSettings.QPEL = false;
-                        //vStream->EncodingSettings.GMC = false;
-                        //vStream->EncodingSettings.Crop[0] = 0;
-                        //vStream->EncodingSettings.Crop[1] = 0;
-                        //vStream->EncodingSettings.Crop[2] = 0;
-                        //vStream->EncodingSettings.Crop[3] = 0;
-                        //vStream->EncodingSettings.Crop[4] = 0;
-
                         vStream = NULL;
                     }
                 //}
@@ -317,15 +277,8 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         {
                             aStream->CodecName = wxEmptyString;
                         }
-
                         aStream->SampleRate = stream->codec->sample_rate;
                         aStream->ChannelCount = stream->codec->channels;
-
-                        // apply source parameters as encoding parameters
-                        //aStream->EncodingSettings.Codec = wxEmptyString;
-                        aStream->EncodingSettings.Bitrate = wxString::Format(wxT("%ik"), aStream->Bitrate/1024);
-                        //aStream->EncodingSettings.Frequency = wxEmptyString;
-                        //aStream->EncodingSettings.Channels = wxEmptyString;
 
                         aStream = NULL;
                     }
@@ -705,28 +658,13 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long VideoStreamIndex, long Fr
                                 {
                                     sws_scale(pSwsCtx, pFrameSource->data, pFrameSource->linesize, 0, pCodecCtx->height, pFrameTarget->data, pFrameTarget->linesize);
 
-                                    // NOTE: it seems the rgb buffer from pFrameTarget->data[0] cannot be used as pointer (freed internally), so we have to copy it
                                     VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestamp(VideoStreamIndex, FrameTimestamp), TargetWidth, TargetHeight, TargetPixelFormat, pFrameSource->pict_type, (unsigned char*)av_malloc(avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight)));
                                     memcpy(tex->Data, pFrameTarget->data[0], tex->DataSize);
                                     GOPBuffer.AddVideoFrame(tex);
                                     tex = NULL;
                                 }
                             }
-                            else
-                            {
-                                //printf("skipped (%i), packet-pts: %lu, requested-pts: %lu, frame-pts: %lu\n", pFrameSource->pict_type, packet.pts, Timestamp, pFrameSource->pkt_pts);
-                            }
-
-                            //printf("finished (%i), packet-pts: %lu, requested-pts: %lu, frame-pts: %lu\n", pFrameSource->pict_type, packet.pts, Timestamp, pFrameSource->pkt_pts);
                         }
-                        else
-                        {
-                            //printf("unfinished, packet-pts: %lu, packet-dts: %lu\n", packet.pts, packet.dts);
-                        }
-                    }
-                    else
-                    {
-                        //printf("frame error\n");
                     }
                 }
                 av_free_packet(&packet);
