@@ -32,11 +32,15 @@ class EncodingFileLoader
     private: long SeekKeyFrameIndex(long VideoStreamIndex, long FrameIndex);
     // set the file pointer to the closest keyframe before the given index
     private: bool SetStreamPosition(long VideoStreamIndex, long KeyFrameIndex);
-    // returns the time (milliseconds) for a specific frame in a video stream
+    // returns the time (milliseconds) for a given frame number in a video stream
     public: int64_t GetTimeFromFrame(long VideoStreamIndex, long FrameIndex);
-    // returns the time in milliseconds for a given timestamp of a stream
+    // returns the frame number for a given timestamp in a video stream
+    public: long GetFrameFromTimestamp(long VideoStreamIndex, int64_t Timestamp);
+    // returns the frame number for a given time (milliseconds) in a video stream
+    public: long GetFrameFromTime(long VideoStreamIndex, int64_t Time);
+    // returns the time (milliseconds) for a given timestamp in a video stream
     private: int64_t GetTimeFromTimestamp(long VideoStreamIndex, int64_t Timestamp);
-    // returns the timestamp for a given time in milliseconds of a stream
+    // returns the timestamp for a given time in milliseconds in a video stream
     private: int64_t GetTimestampFromTime(long VideoStreamIndex, int64_t Time);
     // returns the raw image data of the selected stream and frame number
     // do not delete VideoFrame*, this pointer is freed by GOPBuffer

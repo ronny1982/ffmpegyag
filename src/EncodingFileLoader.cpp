@@ -528,9 +528,43 @@ int64_t EncodingFileLoader::GetTimeFromFrame(long VideoStreamIndex, long FrameIn
     return (int64_t)0;
 }
 
+long EncodingFileLoader::GetFrameFromTimestamp(long VideoStreamIndex, int64_t Timestamp)
+{
+    if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
+    {
+        // TODO: divide & conquer search for timestamp in IndexEntries
+        for(size_t i=0; i<VideoStreams[VideoStreamIndex]->IndexEntries.GetCount(); i++)
+        {
+            if(VideoStreams[VideoStreamIndex]->IndexEntries[i]->Timestamp > Timestamp)
+            {
+                if(i > 0)
+                {
+                    if(Timestamp-VideoStreams[VideoStreamIndex]->IndexEntries[i-1]->Timestamp < VideoStreams[VideoStreamIndex]->IndexEntries[i]->Timestamp-Timestamp)
+                    {
+                        return (long)(i-1);
+                    }
+                    else
+                    {
+                        return (long)i;
+                    }
+                }
+                return (long)0;
+            }
+        }
+        return (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount()-1;
+    }
+    return (long)0;
+}
+
+long EncodingFileLoader::GetFrameFromTime(long VideoStreamIndex, int64_t Time)
+{
+    int64_t timestamp = GetTimestampFromTime(VideoStreamIndex, Time);
+    return GetFrameFromTimestamp(VideoStreamIndex, timestamp);
+}
+
 int64_t EncodingFileLoader::GetTimeFromTimestamp(long VideoStreamIndex, int64_t Timestamp)
 {
-    if(pFormatCtx)
+    if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
         return (int64_t)1000 * (Timestamp - VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp) * (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.num / (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.den;
     }
@@ -539,7 +573,7 @@ int64_t EncodingFileLoader::GetTimeFromTimestamp(long VideoStreamIndex, int64_t 
 
 int64_t EncodingFileLoader::GetTimestampFromTime(long VideoStreamIndex, int64_t Time)
 {
-    if(pFormatCtx)
+    if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
         return Time * (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.den / (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.num / 1000 + VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp;
     }

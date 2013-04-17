@@ -1,14 +1,18 @@
 #include "EncodingTask.h"
 
-FileSegment::FileSegment(int64_t StartTime, int64_t EndTime)
+FileSegment::FileSegment(wxFileName FileOut, int64_t StartTime, int64_t EndTime)
 {
-    //TimestampTo = 0;
-    //TimestampFrom = 0;
+    OutputFile = FileOut;
     TimeTo = EndTime;
     TimeFrom = StartTime;
-    //TimecodeTo = wxEmptyString;
-    //TimecodeFrom = wxEmptyString;
-    //TimecodeDuration = wxEmptyString;
+    FilterVideoFadeInStart = 0;
+    FilterVideoFadeInDuration = 0;
+    FilterVideoFadeOutStart = 0;
+    FilterVideoFadeOutDuration = 0;
+    FilterAudioFadeInStart = 0;
+    FilterAudioFadeInDuration = 0;
+    FilterAudioFadeOutStart = 0;
+    FilterAudioFadeOutDuration = 0;
 }
 
 FileSegment::~FileSegment()
@@ -36,52 +40,30 @@ wxArrayString EncodingTask::GetCommands()
 
     if(OutputFile.Mkdir(0755, wxPATH_MKDIR_FULL))
     {
-        wxString SegmentFile;
-        wxString SegmentStart;
-        wxString SegmentDuration;
-
         size_t SegmentCount = OutputSegments.GetCount();
 
         for(size_t i=0; i<wxMax(1, SegmentCount); i++)
         {
-            SegmentFile = OutputFile.GetPathWithSep() + OutputFile.GetName();
+            OutputSegments[i]->OutputFile = OutputFile;
             if(SegmentCount > 1)
             {
                 // append segment number
-                SegmentFile.Append(wxString::Format(wxT(".part%02d"), (int)(i+1)));
+                OutputSegments[i]->OutputFile.SetName(OutputSegments[i]->OutputFile.GetName() + wxString::Format(wxT(".part%02d"), (int)(i+1)));
             }
             if(OutputFormat.StartsWith(wxT("image2")))
             {
                 // append image number placeholder
-                SegmentFile.Append(wxT(".%06d"));
-            }
-            SegmentFile.Append(wxT(".") + OutputFile.GetExt());
-
-            //SegmentFiles.Add(SegmentFile);
-
-            SegmentStart = wxEmptyString;
-            SegmentDuration = wxEmptyString;
-
-            if(SegmentCount > 0)
-            {
-                if(OutputSegments[i]->TimeFrom != OutputSegments[i]->TimeTo)
-                {
-                    SegmentStart = Libav::MilliToString(OutputSegments[i]->TimeFrom);
-                }
-                if(OutputSegments[i]->TimeFrom < OutputSegments[i]->TimeTo)
-                {
-                    SegmentDuration = Libav::MilliToString(OutputSegments[i]->TimeTo - OutputSegments[i]->TimeFrom);
-                }
+                OutputSegments[i]->OutputFile.SetName(OutputSegments[i]->OutputFile.GetName() + wxT(".%06d"));
             }
 
             if(TwoPass)
             {
-                Commands.Add(GetCommandAVConv(SegmentFile, SegmentStart, SegmentDuration, FirstPass));
-                Commands.Add(GetCommandAVConv(SegmentFile, SegmentStart, SegmentDuration, SecondPass));
+                Commands.Add(GetCommandAVConv(OutputSegments[i], FirstPass));
+                Commands.Add(GetCommandAVConv(OutputSegments[i], SecondPass));
             }
             else
             {
-                Commands.Add(GetCommandAVConv(SegmentFile, SegmentStart, SegmentDuration/*, NoPass*/));
+                Commands.Add(GetCommandAVConv(OutputSegments[i]/*, NoPass*/));
             }
         }
     }
@@ -104,7 +86,7 @@ wxArrayString EncodingTask::GetCommands()
     return Commands;
 }
 
-wxString EncodingTask::GetCommandAVConv(wxString OutputFileName, wxString StartTime, wxString Duration, Pass PassNumber)
+wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
 {
     wxString Seperator = wxFileName::GetPathSeparator();
     wxString Command = wxT("\"") + Libav::ConverterApplication.GetFullPath() + wxT("\"");
@@ -285,7 +267,32 @@ wxString EncodingTask::GetCommandAVConv(wxString OutputFileName, wxString StartT
                             }
                             // audio filters
                             //{
-                                //
+                                wxString AudioFilters = wxEmptyString;
+                                bool append = false;
+
+                                if(Segment->FilterAudioFadeInStart > 0 || Segment->FilterAudioFadeInDuration > 0)
+                                {
+                                    if(append)
+                                    {
+                                        AudioFilters.append(wxT(","));
+                                    }
+                                    AudioFilters.append(wxT("afade=t=in:st=") + Libav::MilliToSeconds(Segment->TimeFrom + Segment->FilterAudioFadeInStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeInDuration));
+                                    append = true;
+                                }
+                                if(Segment->FilterAudioFadeOutStart > 0 || Segment->FilterAudioFadeOutDuration > 0)
+                                {
+                                    if(append)
+                                    {
+                                        AudioFilters.append(wxT(","));
+                                    }
+                                    AudioFilters.append(wxT("afade=t=out:st=") + Libav::MilliToSeconds(Segment->TimeFrom + Segment->FilterAudioFadeOutStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeOutDuration));
+                                    append = true;
+                                }
+
+                                if(!AudioFilters.IsEmpty())
+                                {
+                                    Command.Append(wxString::Format(wxT(" -filter:a:%i \"") + AudioFilters + wxT("\""), aud_count));
+                                }
                             //}
                         }
                         aud_count++;
@@ -392,40 +399,62 @@ wxString EncodingTask::GetCommandAVConv(wxString OutputFileName, wxString StartT
                             }
                             // video filters
                             //{
-                                wxString filters = wxEmptyString;
+                                wxString VideoFilters = wxEmptyString;
                                 bool append = false;
 
                                 if(InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[0] > 0)
                                 {
                                     if(append)
                                     {
-                                        filters.append(wxT(","));
+                                        VideoFilters.append(wxT(","));
                                     }
-                                    filters.append(wxString::Format(wxT("crop=%i:%i:%i:%i"), InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[1], InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[2], InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[3], InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[4]));
+                                    VideoFilters.append(wxString::Format(wxT("crop=%i:%i:%i:%i"), InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[1], InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[2], InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[3], InputFiles[f]->VideoStreams[v]->EncodingSettings.Crop[4]));
                                     append = true;
                                 }
                                 if(InputFiles[f]->VideoStreams[v]->EncodingSettings.FrameSize.Contains(wxT("x")))
                                 {
                                     if(append)
                                     {
-                                        filters.append(wxT(","));
+                                        VideoFilters.append(wxT(","));
                                     }
-                                    filters.append(wxT("scale=") + InputFiles[f]->VideoStreams[v]->EncodingSettings.FrameSize.Before('x') + wxT(":") + InputFiles[f]->VideoStreams[v]->EncodingSettings.FrameSize.After('x'));
+                                    VideoFilters.append(wxT("scale=") + InputFiles[f]->VideoStreams[v]->EncodingSettings.FrameSize.Before('x') + wxT(":") + InputFiles[f]->VideoStreams[v]->EncodingSettings.FrameSize.After('x'));
                                     append = true;
                                 }
                                 if(InputFiles[f]->VideoStreams[v]->EncodingSettings.Deinterlace)
                                 {
                                     if(append)
                                     {
-                                        filters.append(wxT(","));
+                                        VideoFilters.append(wxT(","));
                                     }
-                                    filters.append(wxT("yadif=1"));
+                                    VideoFilters.append(wxT("yadif=1"));
+                                    append = true;
+                                }
+                                if(Segment->FilterVideoFadeInStart > 0 || Segment->FilterVideoFadeInDuration > 0)
+                                {
+                                    if(append)
+                                    {
+                                        VideoFilters.append(wxT(","));
+                                    }
+                                    long FrameStart = InputFiles[f]->GetFrameFromTime(v, Segment->TimeFrom + Segment->FilterVideoFadeInStart);
+                                    long FrameEnd = InputFiles[f]->GetFrameFromTime(v, Segment->TimeFrom + Segment->FilterVideoFadeInStart + Segment->FilterVideoFadeInDuration);
+                                    VideoFilters.append(wxString::Format(wxT("fade=t=in:s=%lu:n=%lu"), FrameStart, FrameEnd - FrameStart));
+                                    append = true;
+                                }
+                                if(Segment->FilterVideoFadeOutStart > 0 || Segment->FilterVideoFadeOutDuration > 0)
+                                {
+                                    if(append)
+                                    {
+                                        VideoFilters.append(wxT(","));
+                                    }
+                                    long FrameStart = InputFiles[f]->GetFrameFromTime(v, Segment->TimeFrom + Segment->FilterVideoFadeOutStart);
+                                    long FrameEnd = InputFiles[f]->GetFrameFromTime(v, Segment->TimeFrom + Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration);
+                                    VideoFilters.append(wxString::Format(wxT("fade=t=out:s=%lu:n=%lu"), FrameStart, FrameEnd - FrameStart));
                                     append = true;
                                 }
 
-                                if(!filters.IsEmpty())
+                                if(!VideoFilters.IsEmpty())
                                 {
-                                    Command.Append(wxString::Format(wxT(" -filter:v:%i \"") + filters + wxT("\""), vid_count));
+                                    Command.Append(wxString::Format(wxT(" -filter:v:%i \"") + VideoFilters + wxT("\""), vid_count));
                                 }
                             //}
                             switch(PassNumber)
@@ -454,14 +483,13 @@ wxString EncodingTask::GetCommandAVConv(wxString OutputFileName, wxString StartT
 
     // trim
     //{
-        if(!StartTime.IsEmpty())
+        if(Segment->TimeFrom != Segment->TimeTo)
         {
-            Command.Append(wxT(" -ss ") + StartTime);
+            Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->TimeFrom));
         }
-
-        if(!Duration.IsEmpty())
+        if(Segment->TimeFrom < Segment->TimeTo)
         {
-            Command.Append(wxT(" -t ") + Duration);
+            Command.Append(wxT(" -t ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom));
         }
     //}
 
@@ -478,7 +506,7 @@ wxString EncodingTask::GetCommandAVConv(wxString OutputFileName, wxString StartT
         }
         else
         {
-            Command.Append(wxT(" -y \"") + OutputFileName + wxT("\""));
+            Command.Append(wxT(" -y \"") + Segment->OutputFile.GetFullPath() + wxT("\""));
         }
     //}
 

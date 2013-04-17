@@ -384,7 +384,7 @@ void Libav::Init()
     PixelDescriptionMap[PIX_FMT_GBRP16LE] = wxT("16bit GBR444LE");
 }
 
-wxString Libav::MilliToString(int64_t MilliSeconds)
+wxString Libav::MilliToSMPTE(int64_t MilliSeconds)
 {
     int hh = MilliSeconds/(60*60*1000);
     MilliSeconds = MilliSeconds%(60*60*1000);
@@ -394,6 +394,18 @@ wxString Libav::MilliToString(int64_t MilliSeconds)
     int ms = MilliSeconds%1000;
 
     return wxString::Format(wxT("%02i:%02i:%02i.%03i"), hh, mm, ss, ms);
+}
+
+wxString Libav::MilliToSeconds(int64_t MilliSeconds)
+{
+    int ss = MilliSeconds/1000;
+    int ms = MilliSeconds%1000;
+
+    if(ms > 0)
+    {
+        return wxString::Format(wxT("%i.%i"), ss, ms);
+    }
+    return wxString::Format(wxT("%i"), ss);
 }
 
 wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
@@ -557,22 +569,22 @@ wxArrayString Libav::FormatSubtitleCodecs(wxString ContainerFormat)
 
     if(ContainerFormat.IsSameAs(wxT("mov")))
     {
-        
+
     }
 
     if(ContainerFormat.IsSameAs(wxT("ogg")))
     {
-        
+
     }
 
     if(ContainerFormat.IsSameAs(wxT("webm")))
     {
-        
+
     }
 
     if(ContainerFormat.IsSameAs(wxT("mpeg")))
     {
-        
+
     }
 
     if(ContainerFormat.IsSameAs(wxT("ass")))
@@ -582,7 +594,7 @@ wxArrayString Libav::FormatSubtitleCodecs(wxString ContainerFormat)
 
     if(ContainerFormat.IsSameAs(wxT("srt")))
     {
-        
+
     }
 
     return codecs;

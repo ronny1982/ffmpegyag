@@ -4,6 +4,14 @@
 #include "EncodingFileLoader.h"
 #include "EncodingFileSaver.h"
 
+enum Filer
+{
+    VideoFadeIn,
+    VideoFadeOut,
+    AudioFadeIn,
+    AudioFadeOut
+};
+
 enum Pass
 {
     NoPass, // No-Pass processing (default)
@@ -13,16 +21,20 @@ enum Pass
 
 class FileSegment
 {
-    public: FileSegment(int64_t StartTime, int64_t EndTime);
+    public: FileSegment(wxFileName FileOut, int64_t StartTime, int64_t EndTime);
     public: virtual ~FileSegment();
 
-    //public: int64_t TimestampTo;
-    //public: int64_t TimestampFrom;
-    public: int64_t TimeTo; // end time in milli seconds
+    wxFileName OutputFile; // file where the segment will be stored
     public: int64_t TimeFrom; // start time in milli seconds
-    //public: wxString TimecodeTo;
-    //public: wxString TimecodeFrom;
-    //public: wxString TimecodeDuration;
+    public: int64_t TimeTo; // end time in milli seconds
+    public: int64_t FilterVideoFadeInStart; // fade in start time in milli seconds (relative to segment start)
+    public: int64_t FilterVideoFadeInDuration; // fade in duration for video in milli seconds
+    public: int64_t FilterVideoFadeOutStart; // fade out start time in milli seconds (relative to segment start)
+    public: int64_t FilterVideoFadeOutDuration; // fade out duration for video in milli seconds
+    public: int64_t FilterAudioFadeInStart; // fade in start time in milli seconds (relative to segment start)
+    public: int64_t FilterAudioFadeInDuration; // fade in duration for audio in milli seconds
+    public: int64_t FilterAudioFadeOutStart; // fade out start time in milli seconds (relative to segment start)
+    public: int64_t FilterAudioFadeOutDuration; // fade out duration for audio in milli seconds
 };
 
 WX_DEFINE_ARRAY(FileSegment*, FileSegmentArray);
@@ -49,7 +61,7 @@ class EncodingTask
     // return the commands for this encoding task (number depending on segments & multipass count)
     public: wxArrayString GetCommands();
     // return the command for use with avconv
-    private: wxString GetCommandAVConv(wxString OutputFileName, wxString StartTime, wxString Duration, Pass PassNumber = NoPass);
+    private: wxString GetCommandAVConv(FileSegment* Segment, Pass PassNumber = NoPass);
 };
 
 WX_DEFINE_ARRAY(EncodingTask*, EncodingTaskArray);

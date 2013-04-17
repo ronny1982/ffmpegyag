@@ -96,6 +96,8 @@ class AVConvGUIFrame: public wxFrame
         void OnProcessTerinate(wxProcessEvent& event);
         void OnMainWindowRClick(wxMouseEvent& event);
         void OnMenuPresetsClick(wxCommandEvent& event);
+        void OnListCtrlSegmentsRClick(wxMouseEvent& event);
+        void OnMenuSegmentFiltersClick(wxCommandEvent& event);
 
         //(*Identifiers(AVConvGUIFrame)
         static const long ID_STATICTEXT8;
@@ -220,7 +222,9 @@ class AVConvGUIFrame: public wxFrame
         wxSpinCtrl* SpinCtrlLeft;
         wxStaticText* StaticText11;
         //*)
+        wxMenu* MenuMain;
         wxMenu* MenuPresets;
+        wxMenu* MenuSegmentFilters;
 
         bool AbortEncoding;
         EncodingTaskArray EncodingTasks;
@@ -234,14 +238,6 @@ class AVConvGUIFrame: public wxFrame
         SelectedStreamIndexArray SelectedAudioStreamIndices;
         // the list of currently highlighted subtitle streams of all input files from this task
         SelectedStreamIndexArray SelectedSubtitleStreamIndices;
-        /*
-        long ActiveVideoFileIndex;
-        long ActiveVideoStreamIndex;
-        long ActiveAudioFileIndex;
-        long ActiveAudioStreamIndex;
-        long ActiveSubtitleFileIndex;
-        long ActiveSubtitleStreamIndex;
-        */
 
         // converts empty string (from setting) to StringFormat human readable string
         private: wxString FormatFromSetting(wxString Value, wxString EmptyRepresentation);

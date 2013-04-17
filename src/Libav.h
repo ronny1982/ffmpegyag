@@ -11,10 +11,10 @@
 #include <wx/textdlg.h>
 
 #ifndef INT64_C
-#define INT64_C(c)	c ## L
+#define INT64_C(c)  c ## L
 #endif
 #ifndef UINT64_C
-#define UINT64_C(c)	c ## UL
+#define UINT64_C(c) c ## UL
 #endif
 
 extern "C"
@@ -55,8 +55,10 @@ class Libav
 
     // initialize all static members with valid values
     public: static void Init();
-    // converts from milliseconds to string representation
-    public: static wxString MilliToString(int64_t MilliSeconds);
+    // converts from milliseconds to string in smpte timecode representation
+    public: static wxString MilliToSMPTE(int64_t MilliSeconds);
+    // converts from milliseconds to string in seconds representation (fractional)
+    public: static wxString MilliToSeconds(int64_t MilliSeconds);
     // returns a list of all supported encoding viceo codecs for the given container format
     public: static wxArrayString FormatVideoCodecs(wxString ContainerFormat);
     // returns a list of all supported encoding audio codecs for the given container format
@@ -65,9 +67,9 @@ class Libav
     public: static wxArrayString FormatSubtitleCodecs(wxString ContainerFormat);
 
     // declare static members
-    
+
     // the path to the best matching ffmpeg binary found by init()
-	public: static wxFileName ConverterApplication;
+    public: static wxFileName ConverterApplication;
     // supported codecs for video encoding
     public: static wxArrayString VideoCodecList;
     // supported codecs for audio encoding
