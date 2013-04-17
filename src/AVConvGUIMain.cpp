@@ -520,6 +520,8 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
 
     Connect(ID_LISTCTRL1,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlTasksItemSelect);
     Connect(ID_LISTCTRL1,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlTasksItemSelect);
+    Connect(ID_LISTCTRL2,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlSegmentsItemSelect);
+    Connect(ID_LISTCTRL2,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlSegmentsItemSelect);
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&AVConvGUIFrame::OnButtonAddTaskClick);
     Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&AVConvGUIFrame::OnButtonRemoveTaskClick);
     Connect(ID_SLIDER1,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&AVConvGUIFrame::OnFrameScroll);
@@ -634,6 +636,21 @@ void AVConvGUIFrame::UpdateSelectedTaskIndices()
     {
         SelectedTaskIndices.Add(TaskIndex);
         TaskIndex = ListCtrlTasks->GetNextItem(TaskIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    }
+}
+
+void AVConvGUIFrame::UpdateSelectedSegmentIndices()
+{
+    long SegmentIndex;
+
+    SelectedSegmentIndices.Clear();
+
+    // create the list of selected tasks
+    SegmentIndex = ListCtrlSegments->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    while(SegmentIndex > -1)
+    {
+        SelectedSegmentIndices.Add(SegmentIndex);
+        SegmentIndex = ListCtrlSegments->GetNextItem(SegmentIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     }
 }
 
@@ -1457,6 +1474,11 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
     RenderFrame();
 }
 
+void AVConvGUIFrame::OnListCtrlSegmentsItemSelect(wxListEvent& event)
+{
+    UpdateSelectedSegmentIndices();
+}
+
 void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 {
     RenderFrame();
@@ -1744,30 +1766,36 @@ void AVConvGUIFrame::OnButtonSegmentAddClick(wxCommandEvent& event)
         ListCtrlSegments->SetItemState(SegmentIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
     }
 
+    //UpdateSelectedSegmentIndices(); -> triggered by SetItemState
     //wxMessageBox(wxT("Segment Added"));
 }
 
 void AVConvGUIFrame::OnButtonSegmentDeleteClick(wxCommandEvent& event)
 {
-    long SegmentIndex = ListCtrlSegments->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    long TaskIndex;
+    long SegmentIndex = -1;
 
-    if(SegmentIndex > -1)
+    ListCtrlSegments->Freeze();
+    if(SelectedTaskIndices.GetCount() == 1)
     {
-        if(SelectedTaskIndices.GetCount() == 1)
+        TaskIndex = SelectedTaskIndices[0];
+        for(long i=SelectedSegmentIndices.GetCount()-1; i>=0; i--)
         {
-            long TaskIndex = SelectedTaskIndices[0];
-
+            SegmentIndex = SelectedSegmentIndices[i];
             EncodingTasks[TaskIndex]->OutputSegments.RemoveAt(SegmentIndex);
+            // triggers update of selected segment indices on msw
             ListCtrlSegments->DeleteItem(SegmentIndex);
-            if(SegmentIndex >= ListCtrlSegments->GetItemCount())
-            {
-                SegmentIndex--;
-            }
-            ListCtrlSegments->SetItemState(SegmentIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
         }
+        if(SegmentIndex >= ListCtrlSegments->GetItemCount())
+        {
+            SegmentIndex--;
+        }
+        ListCtrlSegments->SetItemState(SegmentIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
     }
+    ListCtrlSegments->Thaw();
 
-    //wxMessageBox(wxT("Segment Removed"));
+    //wxListEvent le;
+    //OnListCtrlSegmentsItemSelect(le); -> triggered by SetItemState
 }
 
 void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
@@ -2507,9 +2535,12 @@ void AVConvGUIFrame::OnMainWindowRClick(wxMouseEvent& event)
 
 void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
 {
-    long SegmentIndex = ListCtrlSegments->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-    if(SelectedTaskIndices.GetCount() == 1 && SegmentIndex > -1)
+    //long TaskIndex;
+    long SegmentIndex;
+    if(SelectedTaskIndices.GetCount() == 1 && SelectedSegmentIndices.GetCount() == 1)
     {
+        SegmentIndex = SelectedSegmentIndices[0];
+
         FileSegment* Segment = EncodingTasks[SelectedTaskIndices[0]]->OutputSegments[SegmentIndex];
         if(event.GetId() == VideoFadeIn)
         {
@@ -2557,7 +2588,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnListCtrlSegmentsRClick(wxMouseEvent& event)
 {
-    if(SelectedTaskIndices.GetCount() == 1 && ListCtrlSegments->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED) > -1)
+    if(SelectedTaskIndices.GetCount() == 1 && SelectedSegmentIndices.GetCount() == 1)
     {
         this->PopupMenu(MenuSegmentFilters);
     }

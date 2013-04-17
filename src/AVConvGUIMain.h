@@ -65,6 +65,7 @@ class AVConvGUIFrame: public wxFrame
         void OnButtonAddTaskClick(wxCommandEvent& event);
         void OnButtonRemoveTaskClick(wxCommandEvent& event);
         void OnListCtrlTasksItemSelect(wxListEvent& event);
+        void OnListCtrlSegmentsItemSelect(wxListEvent& event);
         void OnSpinCtrlCropChange(wxSpinEvent& event);
         void OnButtonSegmentAddClick(wxCommandEvent& event);
         void OnButtonSegmentDeleteClick(wxCommandEvent& event);
@@ -230,6 +231,8 @@ class AVConvGUIFrame: public wxFrame
         EncodingTaskArray EncodingTasks;
         // the list of currently highlighted tasks
         wxArrayLong SelectedTaskIndices;
+        // the list of currently highlighted segments
+        wxArrayLong SelectedSegmentIndices;
         // the list of currently highlighted input files (currently not in use)
         //wxArrayLong SelectedInputFilesIndex;
         // the list of currently highlighted video streams of all input files from this task
@@ -245,6 +248,8 @@ class AVConvGUIFrame: public wxFrame
         private: wxString FormatToSetting(wxString Value);
         //
         private: void UpdateSelectedTaskIndices();
+        //
+        private: void UpdateSelectedSegmentIndices();
         //
         private: void UpdateSelectedVideoIndices();
         //

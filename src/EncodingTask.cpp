@@ -41,30 +41,46 @@ wxArrayString EncodingTask::GetCommands()
     if(OutputFile.Mkdir(0755, wxPATH_MKDIR_FULL))
     {
         size_t SegmentCount = OutputSegments.GetCount();
+        FileSegment* Segment;
 
         for(size_t i=0; i<wxMax(1, SegmentCount); i++)
         {
-            OutputSegments[i]->OutputFile = OutputFile;
+            if(SegmentCount < 1)
+            {
+                Segment = new FileSegment(OutputFile, 0, 0);
+            }
+            else
+            {
+                Segment = OutputSegments[i];
+                Segment->OutputFile = OutputFile;
+            }
+
             if(SegmentCount > 1)
             {
                 // append segment number
-                OutputSegments[i]->OutputFile.SetName(OutputSegments[i]->OutputFile.GetName() + wxString::Format(wxT(".part%02d"), (int)(i+1)));
+                Segment->OutputFile.SetName(Segment->OutputFile.GetName() + wxString::Format(wxT(".part%02d"), (int)(i+1)));
             }
             if(OutputFormat.StartsWith(wxT("image2")))
             {
                 // append image number placeholder
-                OutputSegments[i]->OutputFile.SetName(OutputSegments[i]->OutputFile.GetName() + wxT(".%06d"));
+                Segment->OutputFile.SetName(Segment->OutputFile.GetName() + wxT(".%06d"));
             }
 
             if(TwoPass)
             {
-                Commands.Add(GetCommandAVConv(OutputSegments[i], FirstPass));
-                Commands.Add(GetCommandAVConv(OutputSegments[i], SecondPass));
+                Commands.Add(GetCommandAVConv(Segment, FirstPass));
+                Commands.Add(GetCommandAVConv(Segment, SecondPass));
             }
             else
             {
-                Commands.Add(GetCommandAVConv(OutputSegments[i]/*, NoPass*/));
+                Commands.Add(GetCommandAVConv(Segment/*, NoPass*/));
             }
+
+            if(SegmentCount < 1)
+            {
+                wxDELETE(Segment);
+            }
+            Segment = NULL;
         }
     }
 
