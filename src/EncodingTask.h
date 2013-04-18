@@ -1,9 +1,6 @@
 #ifndef ENCODINGTASK_H
 #define ENCODINGTASK_H
 
-#include <wx/filename.h>
-#include <wx/textfile.h>
-
 #include "EncodingFileLoader.h"
 #include "EncodingFileSaver.h"
 

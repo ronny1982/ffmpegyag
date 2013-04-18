@@ -88,25 +88,16 @@ wxArrayString EncodingTask::GetCommands()
     {
         wxFileName ConcatScript = OutputFile;
         ConcatScript.SetExt(wxT("concat"));
-        wxTextFile ConcatScriptFile;
-        if(ConcatScript.FileExists())
-        {
-            ConcatScriptFile.Open(ConcatScript.GetFullPath());
-            ConcatScriptFile.Clear();
-        }
-        else
-        {
-            ConcatScriptFile.Create(ConcatScript.GetFullPath());
-        }
+        Commands.Add(wxT("echo \"# ffmpeg concat script\" > \"") + ConcatScript.GetFullPath() + wxT("\""));
         FileSegment* Segment;
         for(size_t i=0; i<OutputSegments.GetCount(); i++)
         {
             Segment = OutputSegments[i];
-            ConcatScriptFile.AddLine(wxT("file '") + Segment->OutputFile.GetFullPath() + wxT("'"));
+            Commands.Add(wxT("echo \"file '") + Segment->OutputFile.GetFullPath() + wxT("'\" >> \"") + ConcatScript.GetFullPath() + wxT("\""));
             // TODO: enable segment duration to cut off audio packets?
             if(Segment->TimeTo > Segment->TimeFrom)
             {
-                ConcatScriptFile.AddLine(wxT("# duration ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom));
+                // (wxT("# duration ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom));
             }
             else
             {
@@ -114,13 +105,11 @@ wxArrayString EncodingTask::GetCommands()
                 {
                     // TODO: get the overall duration of all enabled streams from the input file
                     // duration - Segment->TimeFrom
-                    ConcatScriptFile.AddLine(wxT("# duration ??:??:??.???"));
+                    // (wxT("# duration ??:??:??.???"));
                 }
             }
         }
         Segment = NULL;
-        ConcatScriptFile.Write();
-        ConcatScriptFile.Close();
 
         Commands.Add(wxT("\"") + Libav::ConverterApplication.GetFullPath() + wxT("\" -f concat -i \"") + ConcatScript.GetFullPath() + wxT("\" -c copy -y \"") + OutputFile.GetFullPath() + wxT("\""));
 
