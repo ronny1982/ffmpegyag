@@ -292,7 +292,7 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                                     {
                                         AudioFilters.append(wxT(","));
                                     }
-                                    AudioFilters.append(wxT("afade=t=in:st=") + Libav::MilliToSeconds(Segment->TimeFrom + Segment->FilterAudioFadeInStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeInDuration));
+                                    AudioFilters.append(wxT("afade=t=in:st=") + Libav::MilliToSeconds(Segment->TimeFrom + Segment->FilterAudioFadeInStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeInDuration) + wxT(":curve=qua"));
                                     append = true;
                                 }
                                 if(Segment->FilterAudioFadeOutStart > 0 || Segment->FilterAudioFadeOutDuration > 0)
@@ -301,7 +301,7 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                                     {
                                         AudioFilters.append(wxT(","));
                                     }
-                                    AudioFilters.append(wxT("afade=t=out:st=") + Libav::MilliToSeconds(Segment->TimeFrom + Segment->FilterAudioFadeOutStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeOutDuration));
+                                    AudioFilters.append(wxT("afade=t=out:st=") + Libav::MilliToSeconds(Segment->TimeFrom + Segment->FilterAudioFadeOutStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeOutDuration) + wxT(":curve=qua"));
                                     append = true;
                                 }
 
