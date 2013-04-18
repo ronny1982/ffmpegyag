@@ -1613,11 +1613,9 @@ void AVConvGUIFrame::RenderFrame()
                 glEnd();
 
                 glDisable(GL_TEXTURE_2D);
-
                 // this will not free memory of Texture->Data
                 glDeleteTextures(1, &TexturePointer);
 
-                // TODO: get the index of selected segment (if segment count > 0)
                 if(SelectedSegmentIndices.GetCount() == 1)
                 {
                     FileSegment* Segment = EncodingTasks[SelectedTask]->OutputSegments[SelectedSegmentIndices[0]];
@@ -1640,23 +1638,21 @@ void AVConvGUIFrame::RenderFrame()
                         {
                             if(time <= Segment->FilterVideoFadeInStart + Segment->FilterVideoFadeInDuration)
                             {
-                                double ratio;
-                                if(time < Segment->FilterVideoFadeInStart)
+                                float ratio = 0.0;
+                                if(time >= Segment->FilterVideoFadeInStart)
                                 {
-                                    // blackout frame
-                                    ratio = 0.0;
+                                    ratio = (float)(time - Segment->FilterVideoFadeInStart) / (float)Segment->FilterVideoFadeInDuration;
                                 }
-                                else
-                                {
-                                    // calculate fading
-                                    ratio = (double)(time - Segment->FilterVideoFadeInStart) / (double)Segment->FilterVideoFadeInDuration;
-                                }
-                                GlPanelTop = GlPanelBottom + ratio*(GlPanelTop - GlPanelBottom);
-                                glColor3f(1.0, 0.0, 0.0);
-                                glBegin(GL_LINES);
-                                    glVertex2d(GlPanelRight, GlPanelTop);
-                                    glVertex2d(GlPanelLeft, GlPanelBottom);
+                                glEnable(GL_BLEND);
+                                glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+                                glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
+                                glBegin(GL_QUADS);
+                                    glVertex2d(GlPanelLeft, GlPanelTop); // top left
+                                    glVertex2d(GlPanelRight, GlPanelTop); // top right
+                                    glVertex2d(GlPanelRight, GlPanelBottom); // bottom right
+                                    glVertex2d(GlPanelLeft, GlPanelBottom); // bottom left
                                 glEnd();
+                                glDisable(GL_BLEND);
                             }
                         }
 
@@ -1665,32 +1661,25 @@ void AVConvGUIFrame::RenderFrame()
                         {
                             if(time >= Segment->FilterVideoFadeOutStart)
                             {
-                                double ratio;
-                                if(time > Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration)
+                                float ratio = 0.0;
+                                if(time <= Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration)
                                 {
-                                    // blackout frame
-                                    ratio = 0.0;
+                                    ratio = (float)(Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration - time) / (float)Segment->FilterVideoFadeOutDuration;
                                 }
-                                else
-                                {
-                                    // calculate fading
-                                    ratio = (double)(Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration - time) / (double)Segment->FilterVideoFadeOutDuration;
-                                }
-                                GlPanelTop = GlPanelBottom + ratio*(GlPanelTop - GlPanelBottom);
-                                glColor3f(1.0, 0.0, 0.0);
-                                glBegin(GL_LINES);
-                                    glVertex2d(GlPanelLeft, GlPanelTop);
-                                    glVertex2d(GlPanelRight, GlPanelBottom);
+                                glEnable(GL_BLEND);
+                                glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+                                glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
+                                glBegin(GL_QUADS);
+                                    glVertex2d(GlPanelLeft, GlPanelTop); // top left
+                                    glVertex2d(GlPanelRight, GlPanelTop); // top right
+                                    glVertex2d(GlPanelRight, GlPanelBottom); // bottom right
+                                    glVertex2d(GlPanelLeft, GlPanelBottom); // bottom left
                                 glEnd();
+                                glDisable(GL_BLEND);
                             }
                         }
                     }
                 }
-
-                // TODO: add black overlay (pixel shader?) to tint texture depending on segment fade in/out
-                //if(SelectedFrame >  && SelectedFrame < )
-                //{
-                //}
             }
             else
             {

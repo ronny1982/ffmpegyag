@@ -451,9 +451,13 @@ void EncodingFileLoader::FlushBuffer()
     GOPBuffer.Flush();
     if(pFormatCtx != NULL)
     {
+        // FIXME: SEGV when flushing a codec that has not been opened
         for(unsigned int i=0; i<pFormatCtx->nb_streams; i++)
         {
-            avcodec_flush_buffers(pFormatCtx->streams[i]->codec);
+            if(pFormatCtx->streams[i]->codec->codec)
+            {
+                avcodec_flush_buffers(pFormatCtx->streams[i]->codec);
+            }
         }
     }
 }
