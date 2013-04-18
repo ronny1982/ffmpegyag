@@ -1477,6 +1477,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
 void AVConvGUIFrame::OnListCtrlSegmentsItemSelect(wxListEvent& event)
 {
     UpdateSelectedSegmentIndices();
+    RenderFrame();
 }
 
 void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
@@ -1504,8 +1505,6 @@ void AVConvGUIFrame::RenderFrame()
         if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)
         {
             long SelectedTask = SelectedTaskIndices[0];
-            // TODO: get the index of selected segment (if segment count > 0)
-            long SelectedSegment = 0;
             long SelectedStream = SelectedVideoStreamIndices[0].StreamIndex;
             long SelectedFrame = (long)SliderFrame->GetValue();
             EncodingFileLoader* efl = EncodingTasks[SelectedTask]->InputFiles[0];
@@ -1602,15 +1601,12 @@ void AVConvGUIFrame::RenderFrame()
                     // top left
                     glTexCoord2d(TextureLeft, TextureTop);
                     glVertex2d(GlPanelLeft, GlPanelTop);
-
                     // top right
                     glTexCoord2d(TextureRight, TextureTop);
                     glVertex2d(GlPanelRight, GlPanelTop);
-
                     // bottom right
                     glTexCoord2d(TextureRight, TextureBottom);
                     glVertex2d(GlPanelRight, GlPanelBottom);
-
                     // bottom left
                     glTexCoord2d(TextureLeft, TextureBottom);
                     glVertex2d(GlPanelLeft, GlPanelBottom);
@@ -1621,12 +1617,27 @@ void AVConvGUIFrame::RenderFrame()
                 // this will not free memory of Texture->Data
                 glDeleteTextures(1, &TexturePointer);
 
+                // TODO: get the index of selected segment (if segment count > 0)
+                if(SelectedSegmentIndices.GetCount() == 1)
+                {
+                    FileSegment* Segment = EncodingTasks[SelectedTask]->OutputSegments[SelectedSegmentIndices[0]];
+                    // TODO: draw red lines when frame does not belong to segment
+                    if(Texture->Timecode < Segment->TimeFrom || (Texture->Timecode > Segment->TimeTo && Segment->TimeFrom < Segment->TimeTo))
+                    {
+                        glColor3f(1.0, 0.0, 0.0);
+                        glBegin(GL_LINES);
+                            glVertex2d(GlPanelLeft, GlPanelTop);
+                            glVertex2d(GlPanelRight, GlPanelBottom);
+                            glVertex2d(GlPanelRight, GlPanelTop);
+                            glVertex2d(GlPanelLeft, GlPanelBottom);
+                        glEnd();
+                    }
+                }
+
                 // TODO: add black overlay (pixel shader?) to tint texture depending on segment fade in/out
                 //if(SelectedFrame >  && SelectedFrame < )
                 //{
                 //}
-
-                // TODO: draw red lines when frame does not belong to segment
             }
             else
             {
@@ -2550,6 +2561,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
             {
                 win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->FilterVideoFadeInStart);
                 win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterVideoFadeInDuration);
+                RenderFrame();
             }
         }
         if(event.GetId() == VideoFadeOut)
@@ -2560,6 +2572,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
             {
                 win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->FilterVideoFadeOutStart);
                 win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterVideoFadeOutDuration);
+                RenderFrame();
             }
         }
         if(event.GetId() == AudioFadeIn)
