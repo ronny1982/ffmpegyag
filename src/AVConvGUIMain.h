@@ -65,6 +65,7 @@ class AVConvGUIFrame: public wxFrame
         void OnButtonAddTaskClick(wxCommandEvent& event);
         void OnButtonRemoveTaskClick(wxCommandEvent& event);
         void OnListCtrlTasksItemSelect(wxListEvent& event);
+        void OnCheckBoxFileSegmentJoinClick(wxCommandEvent& event);
         void OnListCtrlSegmentsItemSelect(wxListEvent& event);
         void OnSpinCtrlCropChange(wxSpinEvent& event);
         void OnButtonSegmentAddClick(wxCommandEvent& event);

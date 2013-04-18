@@ -239,9 +239,9 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2->Add(SpinCtrlRight, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizerPreProcessing->Add(BoxSizer2, 1, wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     CheckBoxFileSegmentJoin = new wxCheckBox(this, ID_CHECKBOX1, _("Concatenate File Segments"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
+    CheckBoxFileSegmentJoin->Disable();
     CheckBoxFileSegmentJoin->SetValue(false);
     CheckBoxFileSegmentJoin->SetToolTip(_("Experimental, do not use!"));
-    //CheckBoxFileSegmentJoin->Disable();
     FlexGridSizerPreProcessing->Add(CheckBoxFileSegmentJoin, 1, wxLEFT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     ListCtrlSegments = new wxListCtrl(this, ID_LISTCTRL2, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL, wxDefaultValidator, _T("ID_LISTCTRL2"));
     ListCtrlSegments->Disable();
@@ -520,6 +520,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
 
     Connect(ID_LISTCTRL1,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlTasksItemSelect);
     Connect(ID_LISTCTRL1,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlTasksItemSelect);
+    Connect(ID_CHECKBOX1,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&AVConvGUIFrame::OnCheckBoxFileSegmentJoinClick);
     Connect(ID_LISTCTRL2,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlSegmentsItemSelect);
     Connect(ID_LISTCTRL2,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlSegmentsItemSelect);
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&AVConvGUIFrame::OnButtonAddTaskClick);
@@ -1134,6 +1135,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
     {
         // enable/disable controls
         //{
+            CheckBoxFileSegmentJoin->Disable();
             ListCtrlSegments->Disable();
             ButtonSegmentAdd->Disable();
             ButtonSegmentDelete->Disable();
@@ -1158,6 +1160,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
             UpdateSelectedAudioIndices();
             UpdateSelectedSubtitleIndices();
 
+            CheckBoxFileSegmentJoin->SetValue(false);
             ListCtrlSegments->DeleteAllItems();
 
             TextCtrlFileOut->Clear();
@@ -1167,6 +1170,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
     {
         // enable/disable controls
         //{
+            CheckBoxFileSegmentJoin->Enable();
             ListCtrlSegments->Enable();
             ButtonSegmentAdd->Enable();
             ButtonSegmentDelete->Enable();
@@ -1186,6 +1190,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
             long TaskIndex = SelectedTaskIndices[0];
             long ActiveStreamIndex;
 
+            CheckBoxFileSegmentJoin->SetValue(EncodingTasks[TaskIndex]->OutputSegmentsConcat);
             ListCtrlSegments->DeleteAllItems();
             for(size_t i=0; i<EncodingTasks[TaskIndex]->OutputSegments.GetCount(); i++)
             {
@@ -1276,6 +1281,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
         {
             // enable/disable controls
             //{
+                CheckBoxFileSegmentJoin->Disable();
                 ListCtrlSegments->Disable();
                 ButtonSegmentAdd->Disable();
                 ButtonSegmentDelete->Disable();
@@ -1292,6 +1298,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
 
             // set control values
             //{
+                CheckBoxFileSegmentJoin->SetValue(false);
                 ListCtrlSegments->DeleteAllItems();
 
                 wxFileName FileOut;
@@ -1483,6 +1490,17 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
     EnableDisableAVFormatControls();
 
     RenderFrame();
+}
+
+void AVConvGUIFrame::OnCheckBoxFileSegmentJoinClick(wxCommandEvent& event)
+{
+    long TaskIndex;
+
+    for(size_t i=0; i<SelectedTaskIndices.GetCount(); i++)
+    {
+        TaskIndex = SelectedTaskIndices[i];
+        EncodingTasks[TaskIndex]->OutputSegmentsConcat = CheckBoxFileSegmentJoin->GetValue();
+    }
 }
 
 void AVConvGUIFrame::OnListCtrlSegmentsItemSelect(wxListEvent& event)
