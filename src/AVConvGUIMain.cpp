@@ -1101,18 +1101,29 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnButtonRemoveTaskClick(wxCommandEvent& event)
 {
+    long TaskIndex = -1;
+
     ListCtrlTasks->Freeze();
     for(long i=SelectedTaskIndices.GetCount()-1; i>=0; i--)
     {
-        wxDELETE(EncodingTasks[SelectedTaskIndices[i]]); // destructor executes flush buffer
-        EncodingTasks.RemoveAt(SelectedTaskIndices[i]);
+        TaskIndex = SelectedTaskIndices[i];
+        wxDELETE(EncodingTasks[TaskIndex]); // destructor executes flush buffer
+        EncodingTasks.RemoveAt(TaskIndex);
         // triggers update of selected task indices on msw
-        ListCtrlTasks->DeleteItem(SelectedTaskIndices[i]);
+        ListCtrlTasks->DeleteItem(TaskIndex);
+    }
+    if(TaskIndex >= ListCtrlTasks->GetItemCount())
+    {
+        TaskIndex--;
+    }
+    ListCtrlTasks->SetItemState(TaskIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+    if(TaskIndex < 0)
+    {
+        // SetItemState is not triggering event, do it manually
+        wxListEvent le;
+        OnListCtrlTasksItemSelect(le);
     }
     ListCtrlTasks->Thaw();
-
-    wxListEvent le;
-    OnListCtrlTasksItemSelect(le);
 }
 
 void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
@@ -1679,6 +1690,7 @@ void AVConvGUIFrame::RenderFrame()
                             }
                         }
                     }
+                    Segment = NULL;
                 }
             }
             else
@@ -1825,7 +1837,7 @@ void AVConvGUIFrame::OnButtonSegmentAddClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnButtonSegmentDeleteClick(wxCommandEvent& event)
 {
-    long TaskIndex;
+    long TaskIndex = -1;
     long SegmentIndex = -1;
 
     ListCtrlSegments->Freeze();
@@ -1835,6 +1847,7 @@ void AVConvGUIFrame::OnButtonSegmentDeleteClick(wxCommandEvent& event)
         for(long i=SelectedSegmentIndices.GetCount()-1; i>=0; i--)
         {
             SegmentIndex = SelectedSegmentIndices[i];
+            wxDELETE(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]);
             EncodingTasks[TaskIndex]->OutputSegments.RemoveAt(SegmentIndex);
             // triggers update of selected segment indices on msw
             ListCtrlSegments->DeleteItem(SegmentIndex);
@@ -1844,11 +1857,14 @@ void AVConvGUIFrame::OnButtonSegmentDeleteClick(wxCommandEvent& event)
             SegmentIndex--;
         }
         ListCtrlSegments->SetItemState(SegmentIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+        if(SegmentIndex < 0)
+        {
+            // SetItemState is not triggering event, do it manually
+            wxListEvent le;
+            OnListCtrlSegmentsItemSelect(le);
+        }
     }
     ListCtrlSegments->Thaw();
-
-    //wxListEvent le;
-    //OnListCtrlSegmentsItemSelect(le); -> triggered by SetItemState
 }
 
 void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
