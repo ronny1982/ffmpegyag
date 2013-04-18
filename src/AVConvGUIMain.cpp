@@ -1482,6 +1482,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
         }
     }
 
+    UpdateSelectedSegmentIndices();
     wxCommandEvent ce;
     OnCheckListBoxVideoStreamsSelect(ce);
     OnCheckListBoxAudioStreamsSelect(ce);
