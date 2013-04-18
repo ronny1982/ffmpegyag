@@ -238,9 +238,10 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     SpinCtrlRight->SetToolTip(_("Crop the right side of the source video.\nApplies to the current selected Video Stream\nin all segements."));
     BoxSizer2->Add(SpinCtrlRight, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizerPreProcessing->Add(BoxSizer2, 1, wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    CheckBoxFileSegmentJoin = new wxCheckBox(this, ID_CHECKBOX1, _("Join File Segments"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
+    CheckBoxFileSegmentJoin = new wxCheckBox(this, ID_CHECKBOX1, _("Concatenate File Segments"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
     CheckBoxFileSegmentJoin->SetValue(false);
-    CheckBoxFileSegmentJoin->Disable();
+    CheckBoxFileSegmentJoin->SetToolTip(_("Experimental, do not use!"));
+    //CheckBoxFileSegmentJoin->Disable();
     FlexGridSizerPreProcessing->Add(CheckBoxFileSegmentJoin, 1, wxLEFT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     ListCtrlSegments = new wxListCtrl(this, ID_LISTCTRL2, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL, wxDefaultValidator, _T("ID_LISTCTRL2"));
     ListCtrlSegments->Disable();

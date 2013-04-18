@@ -84,21 +84,58 @@ wxArrayString EncodingTask::GetCommands()
         }
     }
 
-    // TODO: merge files
-/*
-        if(FileSegmentConcat && SegmentCount > 1 && !FileFormat.StartsWith(wxT("image2")))
+    if(OutputSegmentsConcat && OutputSegments.GetCount() > 1 && !OutputFormat.StartsWith(wxT("image2")))
+    {
+        wxFileName ConcatScript = OutputFile;
+        ConcatScript.SetExt(wxT("concat"));
+        wxTextFile ConcatScriptFile;
+        if(ConcatScript.FileExists())
         {
-            // FIXME: concat currently not possible with ffmpeg / avconv
-
-            // only join if not format.startswith("image2") because a sequence of image can't be joined to another sequence of images
-
-            // input format: FileFormat
-            // input files: SegmentFiles;
-            // output format: FileFormat
-            // output file: FileOut.GetFullPath()
+            ConcatScriptFile.Open(ConcatScript.GetFullPath());
+            ConcatScriptFile.Clear();
         }
+        else
+        {
+            ConcatScriptFile.Create(ConcatScript.GetFullPath());
+        }
+        FileSegment* Segment;
+        for(size_t i=0; i<OutputSegments.GetCount(); i++)
+        {
+            Segment = OutputSegments[i];
+            ConcatScriptFile.AddLine(wxT("file '") + Segment->OutputFile.GetFullPath() + wxT("'"));
+            // TODO: enable segment duration to cut off audio packets?
+            if(Segment->TimeTo > Segment->TimeFrom)
+            {
+                ConcatScriptFile.AddLine(wxT("# duration ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom));
+            }
+            else
+            {
+                if(Segment->TimeFrom > 0)
+                {
+                    // TODO: get the overall duration of all enabled streams from the input file
+                    // duration - Segment->TimeFrom
+                    ConcatScriptFile.AddLine(wxT("# duration ??:??:??.???"));
+                }
+            }
+        }
+        Segment = NULL;
+        ConcatScriptFile.Write();
+        ConcatScriptFile.Close();
+
+        Commands.Add(wxT("\"") + Libav::ConverterApplication.GetFullPath() + wxT("\" -f concat -i \"") + ConcatScript.GetFullPath() + wxT("\" -c copy -y \"") + OutputFile.GetFullPath() + wxT("\""));
+
+        // TODO: delete segment files and concat script?
+
+        // FIXME: PROBLEMS:
+        // streams with different durations (i.e. audio > video) leads to a gap
+        // since next segment offset is the overall duration of previous segment
+        // first timestamp > 0 leads to a gap, since timestamps are shifted
+        // with the offset of the overall duration of the previous segment
+
+        // sidenote: aac   = 1024 samples/packet (23.2ms/packet @ 44.1kHz)
+        //           heaac = 2048 samples/packet (46.4ms/packet @ 44.1kHz)
     }
-*/
+
     return Commands;
 }
 
