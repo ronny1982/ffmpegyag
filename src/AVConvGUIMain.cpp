@@ -1621,7 +1621,6 @@ void AVConvGUIFrame::RenderFrame()
                 if(SelectedSegmentIndices.GetCount() == 1)
                 {
                     FileSegment* Segment = EncodingTasks[SelectedTask]->OutputSegments[SelectedSegmentIndices[0]];
-                    // TODO: draw red lines when frame does not belong to segment
                     if(Texture->Timecode < Segment->TimeFrom || (Texture->Timecode > Segment->TimeTo && Segment->TimeFrom < Segment->TimeTo))
                     {
                         glColor3f(1.0, 0.0, 0.0);
@@ -1631,6 +1630,60 @@ void AVConvGUIFrame::RenderFrame()
                             glVertex2d(GlPanelRight, GlPanelTop);
                             glVertex2d(GlPanelLeft, GlPanelBottom);
                         glEnd();
+                    }
+                    else
+                    {
+                        int64_t time = Texture->Timecode - Segment->TimeFrom;
+
+                        // fade in
+                        if(Segment->FilterVideoFadeInStart > 0 && Segment->FilterVideoFadeInDuration > 0)
+                        {
+                            if(time <= Segment->FilterVideoFadeInStart + Segment->FilterVideoFadeInDuration)
+                            {
+                                double ratio;
+                                if(time < Segment->FilterVideoFadeInStart)
+                                {
+                                    // blackout frame
+                                    ratio = 0.0;
+                                }
+                                else
+                                {
+                                    // calculate fading
+                                    ratio = (double)(time - Segment->FilterVideoFadeInStart) / (double)Segment->FilterVideoFadeInDuration;
+                                }
+                                GlPanelTop = GlPanelBottom + ratio*(GlPanelTop - GlPanelBottom);
+                                glColor3f(1.0, 0.0, 0.0);
+                                glBegin(GL_LINES);
+                                    glVertex2d(GlPanelRight, GlPanelTop);
+                                    glVertex2d(GlPanelLeft, GlPanelBottom);
+                                glEnd();
+                            }
+                        }
+
+                        // fade out
+                        if(Segment->FilterVideoFadeOutStart > 0 && Segment->FilterVideoFadeOutDuration > 0)
+                        {
+                            if(time >= Segment->FilterVideoFadeOutStart)
+                            {
+                                double ratio;
+                                if(time > Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration)
+                                {
+                                    // blackout frame
+                                    ratio = 0.0;
+                                }
+                                else
+                                {
+                                    // calculate fading
+                                    ratio = (double)(Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration - time) / (double)Segment->FilterVideoFadeOutDuration;
+                                }
+                                GlPanelTop = GlPanelBottom + ratio*(GlPanelTop - GlPanelBottom);
+                                glColor3f(1.0, 0.0, 0.0);
+                                glBegin(GL_LINES);
+                                    glVertex2d(GlPanelLeft, GlPanelTop);
+                                    glVertex2d(GlPanelRight, GlPanelBottom);
+                                glEnd();
+                            }
+                        }
                     }
                 }
 
