@@ -545,11 +545,11 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
             // on copy it will seek the closest keyframe after the given position
             if(Segment->TimeFrom > 15000)
             {
-                Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->TimeFrom));
+                Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(15000));
             }
             else
             {
-                Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(15000));
+                Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->TimeFrom));
             }
         }
         if(Segment->TimeFrom < Segment->TimeTo)
