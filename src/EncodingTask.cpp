@@ -147,10 +147,10 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
     // trim 'fast seeking' based on keyframes
     // requires ffmpeg 0.9.1 for a pts<dts bugfix (usually when b-frames are present)
     //{
-        if(Segment->TimeFrom > 0)
+        if(Segment->TimeFrom > 15000)
         {
             // on copy it will seek the closest keyframe before the given position
-            Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->TimeFrom));
+            Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->TimeFrom - 15000));
         }
     //}
 
@@ -539,15 +539,19 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
 
     // trim 'accurate seeking' based on decoding each frame with given codec
     //{
-        /*
-        // NOTE: replaced by 'fast' seek since it is reliable in current ffmpeg releases (>1.1)
         if(Segment->TimeFrom > 0)
         {
             // accurate seek from the current fast seek position to the exact requested position
             // on copy it will seek the closest keyframe after the given position
-            Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->TimeFrom));
+            if(Segment->TimeFrom > 15000)
+            {
+                Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->TimeFrom));
+            }
+            else
+            {
+                Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(15000));
+            }
         }
-        */
         if(Segment->TimeFrom < Segment->TimeTo)
         {
             //Command.Append(wxT(" -to ") + Libav::MilliToSMPTE(Segment->TimeTo));
