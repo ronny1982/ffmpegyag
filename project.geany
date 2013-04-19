@@ -24,13 +24,13 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=3
-FILE_NAME_0=1759;C;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/AVConvGUIMain.h;0;4
-FILE_NAME_1=108198;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/AVConvGUIMain.cpp;0;4
-FILE_NAME_2=2294;C;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingTask.h;0;4
-FILE_NAME_3=11574;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingTask.cpp;0;4
+current_page=1
+FILE_NAME_0=6104;C;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/AVConvGUIMain.h;0;4
+FILE_NAME_1=131433;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/AVConvGUIMain.cpp;0;4
+FILE_NAME_2=46;C;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingTask.h;0;4
+FILE_NAME_3=2526;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingTask.cpp;0;4
 FILE_NAME_4=1466;C;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingFileLoader.h;0;4
-FILE_NAME_5=19805;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingFileLoader.cpp;0;4
+FILE_NAME_5=21657;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingFileLoader.cpp;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag

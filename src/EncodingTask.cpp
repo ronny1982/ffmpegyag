@@ -86,43 +86,47 @@ wxArrayString EncodingTask::GetCommands()
 
     if(OutputSegmentsConcat && OutputSegments.GetCount() > 1 && !OutputFormat.StartsWith(wxT("image2")))
     {
+        wxString LineBreak = wxT("\\n");
+        // TODO: check if this is required for windows or if ffmpeg can deal with unix linebreaks in windows
+        /*
+        #ifdef __WINDOWS__
+        LineBreak = wxT("\\r\\n"));
+        #endif
+        */
         wxFileName ConcatScript = OutputFile;
         ConcatScript.SetExt(wxT("concat"));
-        Commands.Add(wxT("echo \"# ffmpeg concat script\" > \"") + ConcatScript.GetFullPath() + wxT("\""));
+        wxString ConcatCommand = wxT("echo -e \"");
+        // find the duration of the longest video stream (used as master stream for clipping segments)
+        int64_t EndTime = 0;
+        for(size_t f=0; f<InputFiles.GetCount(); f++)
+        {
+            for(size_t v=0; v<InputFiles[f]->VideoStreams.GetCount(); v++)
+            {
+                EndTime = wxMax(EndTime, InputFiles[f]->VideoStreams[v]->Duration);
+            }
+        }
         FileSegment* Segment;
         for(size_t i=0; i<OutputSegments.GetCount(); i++)
         {
             Segment = OutputSegments[i];
-            Commands.Add(wxT("echo \"file '") + Segment->OutputFile.GetFullPath() + wxT("'\" >> \"") + ConcatScript.GetFullPath() + wxT("\""));
-            // TODO: enable segment duration to cut off audio packets?
-            if(Segment->TimeTo > Segment->TimeFrom)
+            ConcatCommand.Append(wxT("file '") + Segment->OutputFile.GetFullPath() + wxT("'") + LineBreak);
+            // NOTE: minimize gaps by forcing clipping (Issue #2 for details)
+            if(Segment->TimeFrom < Segment->TimeTo)
             {
-                // (wxT("# duration ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom));
+                ConcatCommand.Append(wxT("# duration ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom) + LineBreak);
             }
             else
             {
-                if(Segment->TimeFrom > 0)
-                {
-                    // TODO: get the overall duration of all enabled streams from the input file
-                    // duration - Segment->TimeFrom
-                    // (wxT("# duration ??:??:??.???"));
-                }
+                ConcatCommand.Append(wxT("# duration ") + Libav::MilliToSMPTE(EndTime - Segment->TimeFrom) + LineBreak);
             }
+
         }
         Segment = NULL;
-
+        Commands.Add(ConcatCommand + wxT("\" > \"") + ConcatScript.GetFullPath() + wxT("\""));
         Commands.Add(wxT("\"") + Libav::ConverterApplication.GetFullPath() + wxT("\" -f concat -i \"") + ConcatScript.GetFullPath() + wxT("\" -c copy -y \"") + OutputFile.GetFullPath() + wxT("\""));
 
+        // FIXME: ffmpeg got segmentation fault when concatenating parts with subtitles
         // TODO: delete segment files and concat script?
-
-        // FIXME: PROBLEMS:
-        // streams with different durations (i.e. audio > video) leads to a gap
-        // since next segment offset is the overall duration of previous segment
-        // first timestamp > 0 leads to a gap, since timestamps are shifted
-        // with the offset of the overall duration of the previous segment
-
-        // sidenote: aac   = 1024 samples/packet (23.2ms/packet @ 44.1kHz)
-        //           heaac = 2048 samples/packet (46.4ms/packet @ 44.1kHz)
     }
 
     return Commands;
