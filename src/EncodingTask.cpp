@@ -86,16 +86,17 @@ wxArrayString EncodingTask::GetCommands()
 
     if(OutputSegmentsConcat && OutputSegments.GetCount() > 1 && !OutputFormat.StartsWith(wxT("image2")))
     {
-        wxString LineBreak = wxT("\\n");
+        wxString LineBreak = wxT("\n");
         // TODO: check if this is required for windows or if ffmpeg can deal with unix linebreaks in windows
         /*
         #ifdef __WINDOWS__
-        LineBreak = wxT("\\r\\n"));
+        LineBreak = wxT("\r\n"));
         #endif
         */
         wxFileName ConcatScript = OutputFile;
         ConcatScript.SetExt(wxT("concat"));
-        wxString ConcatCommand = wxT("echo -e \"");
+        // FIXME: this command will only work in linux, not windows!
+        wxString ConcatCommand = wxT("sh -c \"echo \\\"# ffmpeg concat script");
         // find the duration of the longest video stream (used as master stream for clipping segments)
         int64_t EndTime = 0;
         for(size_t f=0; f<InputFiles.GetCount(); f++)
@@ -109,20 +110,22 @@ wxArrayString EncodingTask::GetCommands()
         for(size_t i=0; i<OutputSegments.GetCount(); i++)
         {
             Segment = OutputSegments[i];
-            ConcatCommand.Append(wxT("file '") + Segment->OutputFile.GetFullPath() + wxT("'") + LineBreak);
+            ConcatCommand.Append(LineBreak + wxT("file '") + Segment->OutputFile.GetFullPath() + wxT("'"));
             // NOTE: minimize gaps by forcing clipping (Issue #2 for details)
+            // disabled... forced clipping leads to packet overlapping
+            /*
             if(Segment->TimeFrom < Segment->TimeTo)
             {
-                ConcatCommand.Append(wxT("# duration ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom) + LineBreak);
+                ConcatCommand.Append(LineBreak + wxT("duration ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom));
             }
             else
             {
-                ConcatCommand.Append(wxT("# duration ") + Libav::MilliToSMPTE(EndTime - Segment->TimeFrom) + LineBreak);
+                ConcatCommand.Append(LineBreak + wxT("duration ") + Libav::MilliToSMPTE(EndTime - Segment->TimeFrom));
             }
-
+            */
         }
         Segment = NULL;
-        Commands.Add(ConcatCommand + wxT("\" > \"") + ConcatScript.GetFullPath() + wxT("\""));
+        Commands.Add(ConcatCommand + wxT("\\\" > \\\"") + ConcatScript.GetFullPath() + wxT("\\\"\""));
         Commands.Add(wxT("\"") + Libav::ConverterApplication.GetFullPath() + wxT("\" -f concat -i \"") + ConcatScript.GetFullPath() + wxT("\" -c copy -y \"") + OutputFile.GetFullPath() + wxT("\""));
 
         // FIXME: ffmpeg got segmentation fault when concatenating parts with subtitles

@@ -2717,20 +2717,9 @@ void AVConvGUIFrame::OnButtonScriptClick(wxCommandEvent& event)
             wxArrayString TaskCommands = EncodingTasks[t]->GetCommands();
             for(size_t c=0; c<TaskCommands.GetCount(); c++)
             {
-                // FIXME: echo commands and concat command -> wrong segment number in status bar
-                // error on concat
-                // exported script works fine
                 ScriptFile.AddLine(TaskCommands[c]);
             }
             ScriptFile.AddLine(wxEmptyString);
-            /*
-            #ifdef __LINUX__
-            ScriptFile.AddLine(wxT("clear"));
-            #endif
-            #ifdef __WINDOWS__
-            ScriptFile.AddLine(wxT("cls"));
-            #endif
-            */
         }
 
         ScriptFile.Write();
