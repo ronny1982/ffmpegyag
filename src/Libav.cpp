@@ -564,7 +564,7 @@ wxArrayString Libav::FormatSubtitleCodecs(wxString ContainerFormat)
 
     if(ContainerFormat.IsSameAs(wxT("mp4")))
     {
-        codecs.Add(wxT("ass"));
+
     }
 
     if(ContainerFormat.IsSameAs(wxT("mov")))

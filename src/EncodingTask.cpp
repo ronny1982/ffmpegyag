@@ -129,7 +129,6 @@ wxArrayString EncodingTask::GetCommands()
         Commands.Add(wxT("\"") + Libav::ConverterApplication.GetFullPath() + wxT("\" -f concat -i \"") + ConcatScript.GetFullPath() + wxT("\" -c copy -y \"") + OutputFile.GetFullPath() + wxT("\""));
 
         // FIXME: ffmpeg got segmentation fault when concatenating parts with subtitles
-        // TODO: delete segment files and concat script?
     }
 
     return Commands;

@@ -241,7 +241,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     CheckBoxFileSegmentJoin = new wxCheckBox(this, ID_CHECKBOX1, _("Concatenate File Segments"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
     CheckBoxFileSegmentJoin->Disable();
     CheckBoxFileSegmentJoin->SetValue(false);
-    CheckBoxFileSegmentJoin->SetToolTip(_("Experimental, do not use!"));
+    CheckBoxFileSegmentJoin->SetToolTip(_("Experimental, do not use!\n+ requires ffmpeg >= v1.1\n+ fails on segents with subtitles\n+ produces 'gaps' when segment->streams duration differs"));
     FlexGridSizerPreProcessing->Add(CheckBoxFileSegmentJoin, 1, wxLEFT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     ListCtrlSegments = new wxListCtrl(this, ID_LISTCTRL2, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL, wxDefaultValidator, _T("ID_LISTCTRL2"));
     ListCtrlSegments->Disable();
