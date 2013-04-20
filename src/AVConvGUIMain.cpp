@@ -1901,9 +1901,14 @@ void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
             EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom = time;
 
             ListCtrlSegments->SetItem(SegmentIndex, 0, Libav::MilliToSMPTE(time));
+
+            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom)
+            {
+                wxMessageBox(wxT("Segment: EndTime < StartTime\nEndTime will be ignored (using stream duration)!"));
+            }
         }
     }
-
+    RenderFrame();
     //wxMessageBox(wxT("Set Segment From"));
 }
 
@@ -1922,9 +1927,14 @@ void AVConvGUIFrame::OnButtonSegmentToClick(wxCommandEvent& event)
             EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo = time;
 
             ListCtrlSegments->SetItem(SegmentIndex, 1, Libav::MilliToSMPTE(time));
+
+            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom)
+            {
+                wxMessageBox(wxT("Segment: EndTime < StartTime\nEndTime will be ignored (using stream duration)!"));
+            }
         }
     }
-
+    RenderFrame();
     //wxMessageBox(wxT("Set Segment To"));
 }
 
@@ -2630,9 +2640,14 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         SegmentIndex = SelectedSegmentIndices[0];
 
         FileSegment* Segment = EncodingTasks[SelectedTaskIndices[0]]->OutputSegments[SegmentIndex];
+        int64_t SegmentDuration = Segment->GetDuration();
+        if(SegmentDuration <= 0)
+        {
+            SegmentDuration = EncodingTasks[SelectedTaskIndices[0]]->GetMultiplexDuration(true, false, false, true) - Segment->TimeFrom;
+        }
         if(event.GetId() == VideoFadeIn)
         {
-            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nFrames before the start time are blacked out.\n\nExample:\nFade in from 5.0 over 2.5 seconds -> 5000:2500"), wxT("Video Fade-In"));
+            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nFrames before the start time are blacked out.\n\nExample:\nFade in from 5.0 over 2.5 seconds -> 5000:2500\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Video Fade-In"));
             win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterVideoFadeInStart, (long)Segment->FilterVideoFadeInDuration));
             if(win.ShowModal() == wxID_OK)
             {
@@ -2643,7 +2658,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == VideoFadeOut)
         {
-            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nFrames after the duration are blacked out.\n\nExample:\nFade out from 4773.8 over 2.7 seconds -> 4773800:2700"), wxT("Video Fade-Out"));
+            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nFrames after the duration are blacked out.\n\nExample:\nFade out from 4773.8 over 2.7 seconds -> 4773800:2700\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Video Fade-Out"));
             win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterVideoFadeOutStart, (long)Segment->FilterVideoFadeOutDuration));
             if(win.ShowModal() == wxID_OK)
             {
@@ -2654,7 +2669,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == AudioFadeIn)
         {
-            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nSound before the start time is silenced.\n\nExample:\nFade in from 5.0 over 2.5 seconds -> 5000:2500"), wxT("Audio Fade-In"));
+            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nSound before the start time will be silenced.\n\nExample:\nFade in from 5.0 over 2.5 seconds -> 5000:2500\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-In"));
             win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterAudioFadeInStart, (long)Segment->FilterAudioFadeInDuration));
             if(win.ShowModal() == wxID_OK)
             {
@@ -2664,7 +2679,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == AudioFadeOut)
         {
-            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nSound after the duration is silenced.\n\nExample:\nFade out from 4773.8 over 2.7 seconds -> 4773800:2700"), wxT("Audio Fade-Out"));
+            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nSound after the duration will be silenced.\n\nExample:\nFade out from 4773.8 over 2.7 seconds -> 4773800:2700\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-Out"));
             win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterAudioFadeOutStart, (long)Segment->FilterAudioFadeOutDuration));
             if(win.ShowModal() == wxID_OK)
             {
