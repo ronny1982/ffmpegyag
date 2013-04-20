@@ -35,6 +35,8 @@ class FileSegment
     public: int64_t FilterAudioFadeInDuration; // fade in duration for audio in milli seconds
     public: int64_t FilterAudioFadeOutStart; // fade out start time in milli seconds (relative to segment start)
     public: int64_t FilterAudioFadeOutDuration; // fade out duration for audio in milli seconds
+
+    public: int64_t GetDuration();
 };
 
 WX_DEFINE_ARRAY(FileSegment*, FileSegmentArray);
@@ -54,6 +56,11 @@ class EncodingTask
     public: bool RemoveMetadata;
     public: bool RemoveChapters;
 
+    // search through all selected streams and return the muxed duration
+    // requires that all streams timestamps are shifted regarding the other streams (no single stream shifting)
+    // use UnEnabled=true to include not enabled streams, use UnEnabled=false to consider only enabled streams
+    // use Longest=true to get longest stream duration, or Longest=false to get shortest stream duration
+    public: int64_t GetMultiplexDuration(bool IncludeVideoStreams = true, bool IncludeAudioStreams = true, bool UnEnabled = true, bool Longest = true);
     // return the commands for this encoding task (number depending on segments & multipass count)
     public: wxArrayString GetCommands();
     // return the command for use with avconv

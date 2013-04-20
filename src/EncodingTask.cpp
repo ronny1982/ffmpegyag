@@ -20,6 +20,11 @@ FileSegment::~FileSegment()
     //
 }
 
+int64_t FileSegment::GetDuration()
+{
+    return (TimeTo - TimeFrom);
+}
+
 EncodingTask::EncodingTask()
 {
     OutputSegmentsConcat = false;
@@ -32,6 +37,79 @@ EncodingTask::~EncodingTask()
 {
     WX_CLEAR_ARRAY(InputFiles);
     WX_CLEAR_ARRAY(OutputSegments);
+}
+
+int64_t EncodingTask::GetMultiplexDuration(bool IncludeVideoStreams, bool IncludeAudioStreams, bool UnEnabled, bool Longest)
+{
+    int64_t MuxStartTime = 0;
+    int64_t MuxDuration = 0;
+    for(size_t f=0; f<InputFiles.GetCount(); f++)
+    {
+        for(size_t v=0; v<InputFiles[f]->VideoStreams.GetCount(); v++)
+        {
+            if(IncludeVideoStreams && (UnEnabled || InputFiles[f]->VideoStreams[v]->Enabled))
+            {
+                // initial MuxStartTime seems uninitialized or unchanged, we can apply current stream->StartTime to MuxStartTime
+                if(MuxStartTime == 0)
+                {
+                    MuxStartTime = InputFiles[f]->VideoStreams[v]->StartTime;
+                }
+                else
+                {
+                    MuxStartTime = wxMin(MuxStartTime, InputFiles[f]->VideoStreams[v]->StartTime);
+                }
+                // initial MuxDuration seems uninitialized or unchanged, we can apply current stream->Duration to MuxDuration
+                if(MuxDuration == 0)
+                {
+                    MuxDuration = InputFiles[f]->VideoStreams[v]->StartTime - MuxStartTime + InputFiles[f]->VideoStreams[v]->Duration;
+                }
+                else
+                {
+                    if(Longest)
+                    {
+                        MuxDuration = wxMax(MuxDuration, InputFiles[f]->VideoStreams[v]->StartTime - MuxStartTime + InputFiles[f]->VideoStreams[v]->Duration);
+                    }
+                    else
+                    {
+                        MuxDuration = wxMin(MuxDuration, InputFiles[f]->VideoStreams[v]->StartTime - MuxStartTime + InputFiles[f]->VideoStreams[v]->Duration);
+                    }
+                }
+            }
+        }
+
+        for(size_t a=0; a<InputFiles[f]->AudioStreams.GetCount(); a++)
+        {
+            if(IncludeAudioStreams && (UnEnabled || InputFiles[f]->AudioStreams[a]->Enabled))
+            {
+                // initial MuxStartTime seems uninitialized or unchanged, we can apply current stream->StartTime to MuxStartTime
+                if(MuxStartTime == 0)
+                {
+                    MuxStartTime = InputFiles[f]->AudioStreams[a]->StartTime;
+                }
+                else
+                {
+                    MuxStartTime = wxMin(MuxStartTime, InputFiles[f]->AudioStreams[a]->StartTime);
+                }
+                // initial MuxDuration seems uninitialized or unchanged, we can apply current stream->Duration to MuxDuration
+                if(MuxDuration == 0)
+                {
+                    MuxDuration = InputFiles[f]->AudioStreams[a]->StartTime - MuxStartTime + InputFiles[f]->AudioStreams[a]->Duration;
+                }
+                else
+                {
+                    if(Longest)
+                    {
+                        MuxDuration = wxMax(MuxDuration, InputFiles[f]->AudioStreams[a]->StartTime - MuxStartTime + InputFiles[f]->AudioStreams[a]->Duration);
+                    }
+                    else
+                    {
+                        MuxDuration = wxMin(MuxDuration, InputFiles[f]->AudioStreams[a]->StartTime - MuxStartTime + InputFiles[f]->AudioStreams[a]->Duration);
+                    }
+                }
+            }
+        }
+    }
+    return MuxDuration;
 }
 
 wxArrayString EncodingTask::GetCommands()
@@ -98,14 +176,7 @@ wxArrayString EncodingTask::GetCommands()
         // FIXME: this command will only work in linux, not windows!
         wxString ConcatCommand = wxT("sh -c \"echo \\\"# ffmpeg concat script");
         // find the duration of the longest video stream (used as master stream for clipping segments)
-        int64_t EndTime = 0;
-        for(size_t f=0; f<InputFiles.GetCount(); f++)
-        {
-            for(size_t v=0; v<InputFiles[f]->VideoStreams.GetCount(); v++)
-            {
-                EndTime = wxMax(EndTime, InputFiles[f]->VideoStreams[v]->Duration);
-            }
-        }
+        //int64_t EndTime = GetMultiplexDuration(true, false, false, true);
         FileSegment* Segment;
         for(size_t i=0; i<OutputSegments.GetCount(); i++)
         {
@@ -114,9 +185,9 @@ wxArrayString EncodingTask::GetCommands()
             // NOTE: minimize gaps by forcing clipping (Issue #2 for details)
             // disabled... forced clipping leads to packet overlapping
             /*
-            if(Segment->TimeFrom < Segment->TimeTo)
+            if(Segment->GetDuration() > 0)
             {
-                ConcatCommand.Append(LineBreak + wxT("duration ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom));
+                ConcatCommand.Append(LineBreak + wxT("duration ") + Libav::MilliToSMPTE(Segment->GetDuration()));
             }
             else
             {
