@@ -495,6 +495,7 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long KeyFrameI
     else
     {
         // FIXME: byte positions sometimes wrong -> av_read_frame failed (i.e. Bakemonogatari.mkv)
+        // works fine in thor.m2ts
         if(av_seek_frame(pFormatCtx, StreamID, info->Position, AVSEEK_FLAG_BYTE) > -1)
         {
             return true;
@@ -533,9 +534,13 @@ int64_t EncodingFileLoader::GetTimeFromFrame(long VideoStreamIndex, long FrameIn
 
 long EncodingFileLoader::GetFrameFromTimestamp(long VideoStreamIndex, int64_t Timestamp)
 {
+    long result = 0;
+
+    size_t StartIndex = 0;
+    size_t DivideIndex= 0;
+    size_t EndIndex = 0;
     if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
-        // TODO: divide & conquer search for timestamp in IndexEntries
         for(size_t i=0; i<VideoStreams[VideoStreamIndex]->IndexEntries.GetCount(); i++)
         {
             if(VideoStreams[VideoStreamIndex]->IndexEntries[i]->Timestamp > Timestamp)
@@ -544,19 +549,57 @@ long EncodingFileLoader::GetFrameFromTimestamp(long VideoStreamIndex, int64_t Ti
                 {
                     if(Timestamp-VideoStreams[VideoStreamIndex]->IndexEntries[i-1]->Timestamp < VideoStreams[VideoStreamIndex]->IndexEntries[i]->Timestamp-Timestamp)
                     {
-                        return (long)(i-1);
+                        result = (long)(i-1);
                     }
                     else
                     {
-                        return (long)i;
+                        result = (long)i;
                     }
                 }
-                return (long)0;
+                result = (long)0;
             }
         }
-        return (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount()-1;
+        result = (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount()-1;
+
+        // TODO: divide & conquer search for timestamp in IndexEntries
+        if(VideoStreams[VideoStreamIndex]->IndexEntries.GetCount() > 0)
+        {
+            StartIndex = 0;
+            EndIndex = VideoStreams[VideoStreamIndex]->IndexEntries.GetCount() - 1;
+            //DivideIndex = (StartIndex + EndIndex) / 2;
+
+            // check if timestamp is inside IndexEntries
+            if(VideoStreams[VideoStreamIndex]->IndexEntries[StartIndex]->Timestamp > Timestamp)
+            {
+                EndIndex = StartIndex;
+            }
+            if(VideoStreams[VideoStreamIndex]->IndexEntries[EndIndex]->Timestamp < Timestamp)
+            {
+                StartIndex = EndIndex;
+            }
+
+            // divide & conquer until closest index have been found
+            while(StartIndex+1 < EndIndex)
+            {
+                DivideIndex = (StartIndex + EndIndex) / 2;
+                if(Timestamp < VideoStreams[VideoStreamIndex]->IndexEntries[DivideIndex]->Timestamp)
+                {
+                    EndIndex = DivideIndex;
+                }
+                else
+                {
+                    StartIndex = DivideIndex;
+                }
+            }
+            // linear interpolation to calculate index of closest timestamp
+            if(StartIndex + 1 != EndIndex)
+            {
+                printf("ERROR: GetFrameFromTimestamp\n");
+            }
+            // TEST: compare result from loop with Divide & Conquer Result
+        }
     }
-    return (long)0;
+    return result;
 }
 
 long EncodingFileLoader::GetFrameFromTime(long VideoStreamIndex, int64_t Time)

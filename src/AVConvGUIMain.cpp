@@ -927,9 +927,6 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
         {
             HadSelectedTasks = true;
         }
-        // TODO: change selection behaviour on new added tasks
-        // never auto select new added tasks
-        // HadSelectedTasks = true;
 
         ListCtrlTasks->Freeze();
 
@@ -1077,9 +1074,6 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
                     if(!HadSelectedTasks)
                     {
                         ListCtrlTasks->SetItemState(InsertIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
-                        // TODO: change selection behaviour on new added tasks
-                        // never auto select more then the first new added task
-                        // HadSelectedTasks = true;
                     }
                 }
                 else

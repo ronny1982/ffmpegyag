@@ -24,15 +24,13 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=7
+current_page=1
 FILE_NAME_0=6104;C;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/AVConvGUIMain.h;0;4
-FILE_NAME_1=14028;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/AVConvGUIMain.cpp;0;4
-FILE_NAME_2=46;C;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingTask.h;0;4
-FILE_NAME_3=13010;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingTask.cpp;0;4
+FILE_NAME_1=129775;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/AVConvGUIMain.cpp;0;4
+FILE_NAME_2=2488;C;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingTask.h;0;4
+FILE_NAME_3=4097;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/EncodingTask.cpp;0;4
 FILE_NAME_4=0;C;0;16;0;1;0;./src/EncodingFileLoader.h;0;4
 FILE_NAME_5=0;C++;0;16;0;1;0;./src/EncodingFileLoader.cpp;0;4
-FILE_NAME_6=0;C;0;16;0;1;0;./src/Libav.h;0;4
-FILE_NAME_7=32835;C++;0;16;0;1;0;/home/ronny/Documents/development/ffmpegyag/src/Libav.cpp;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag
