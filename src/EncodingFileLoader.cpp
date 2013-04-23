@@ -539,46 +539,15 @@ long EncodingFileLoader::GetFrameFromTimestamp(long VideoStreamIndex, int64_t Ti
     size_t StartIndex = 0;
     size_t DivideIndex= 0;
     size_t EndIndex = 0;
+
     if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
-        for(size_t i=0; i<VideoStreams[VideoStreamIndex]->IndexEntries.GetCount(); i++)
-        {
-            if(VideoStreams[VideoStreamIndex]->IndexEntries[i]->Timestamp > Timestamp)
-            {
-                if(i > 0)
-                {
-                    if(Timestamp-VideoStreams[VideoStreamIndex]->IndexEntries[i-1]->Timestamp < VideoStreams[VideoStreamIndex]->IndexEntries[i]->Timestamp-Timestamp)
-                    {
-                        result = (long)(i-1);
-                    }
-                    else
-                    {
-                        result = (long)i;
-                    }
-                }
-                result = (long)0;
-            }
-        }
-        result = (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount()-1;
-
-        // TODO: divide & conquer search for timestamp in IndexEntries
         if(VideoStreams[VideoStreamIndex]->IndexEntries.GetCount() > 0)
         {
             StartIndex = 0;
             EndIndex = VideoStreams[VideoStreamIndex]->IndexEntries.GetCount() - 1;
-            //DivideIndex = (StartIndex + EndIndex) / 2;
 
-            // check if timestamp is inside IndexEntries
-            if(VideoStreams[VideoStreamIndex]->IndexEntries[StartIndex]->Timestamp > Timestamp)
-            {
-                EndIndex = StartIndex;
-            }
-            if(VideoStreams[VideoStreamIndex]->IndexEntries[EndIndex]->Timestamp < Timestamp)
-            {
-                StartIndex = EndIndex;
-            }
-
-            // divide & conquer until closest index have been found
+            // divide & conquer until partition can not divided anymore
             while(StartIndex+1 < EndIndex)
             {
                 DivideIndex = (StartIndex + EndIndex) / 2;
@@ -591,12 +560,16 @@ long EncodingFileLoader::GetFrameFromTimestamp(long VideoStreamIndex, int64_t Ti
                     StartIndex = DivideIndex;
                 }
             }
-            // linear interpolation to calculate index of closest timestamp
-            if(StartIndex + 1 != EndIndex)
+
+            // return index of closest timestamp (works even if requested timestamp lies outside of interval)
+            if(Timestamp - VideoStreams[VideoStreamIndex]->IndexEntries[StartIndex]->Timestamp < VideoStreams[VideoStreamIndex]->IndexEntries[EndIndex]->Timestamp - Timestamp )
             {
-                printf("ERROR: GetFrameFromTimestamp\n");
+                result = (long)StartIndex;
             }
-            // TEST: compare result from loop with Divide & Conquer Result
+            else
+            {
+                result = (long)EndIndex;
+            }
         }
     }
     return result;
