@@ -4,22 +4,6 @@
 #include "EncodingFileLoader.h"
 #include "EncodingFileSaver.h"
 
-enum Filer
-{
-    VideoFadeIn,
-    VideoFadeInStart,
-    VideoFadeInEnd,
-    VideoFadeOut,
-    VideoFadeOutStart,
-    VideoFadeOutEnd,
-    AudioFadeIn,
-    AudioFadeInStart,
-    AudioFadeInEnd,
-    AudioFadeOut,
-    AudioFadeOutStart,
-    AudioFadeOutEnd,
-};
-
 enum Pass
 {
     NoPass, // No-Pass processing (default)

@@ -98,6 +98,22 @@ const long AVConvGUIFrame::ID_BUTTON2 = wxNewId();
 const long AVConvGUIFrame::ID_BUTTON9 = wxNewId();
 const long AVConvGUIFrame::ID_STATUSBAR1 = wxNewId();
 //*)
+const long AVConvGUIFrame::ID_VideoFadeIn = wxNewId();
+const long AVConvGUIFrame::ID_VideoFadeInStart = wxNewId();
+const long AVConvGUIFrame::ID_VideoFadeInEnd = wxNewId();
+const long AVConvGUIFrame::ID_VideoFadeInReset = wxNewId();
+const long AVConvGUIFrame::ID_VideoFadeOut = wxNewId();
+const long AVConvGUIFrame::ID_VideoFadeOutStart = wxNewId();
+const long AVConvGUIFrame::ID_VideoFadeOutEnd = wxNewId();
+const long AVConvGUIFrame::ID_VideoFadeOutReset = wxNewId();
+const long AVConvGUIFrame::ID_AudioFadeIn = wxNewId();
+const long AVConvGUIFrame::ID_AudioFadeInStart = wxNewId();
+const long AVConvGUIFrame::ID_AudioFadeInEnd = wxNewId();
+const long AVConvGUIFrame::ID_AudioFadeInReset = wxNewId();
+const long AVConvGUIFrame::ID_AudioFadeOut = wxNewId();
+const long AVConvGUIFrame::ID_AudioFadeOutStart = wxNewId();
+const long AVConvGUIFrame::ID_AudioFadeOutEnd = wxNewId();
+const long AVConvGUIFrame::ID_AudioFadeOutReset = wxNewId();
 
 BEGIN_EVENT_TABLE(AVConvGUIFrame,wxFrame)
     //(*EventTable(AVConvGUIFrame)
@@ -501,17 +517,33 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     MenuSegmentFilters->AppendSeparator();
     MenuSegmentFilters->Append(-1, _("Video Filters"))->Enable(false);
     MenuSegmentFilters->AppendSeparator();
-    MenuSegmentFilters->Append(VideoFadeIn, _("Video Fade-In"));
-    MenuSegmentFilters->Append(VideoFadeInStart, _("   From {"));
-    MenuSegmentFilters->Append(VideoFadeInEnd, _("   } To"));
-    MenuSegmentFilters->Append(VideoFadeOut, _("Video Fade-Out"));
-    MenuSegmentFilters->Append(VideoFadeOutStart, _("   From {"));
-    MenuSegmentFilters->Append(VideoFadeOutEnd, _("   } To"));
+    wxMenu* MenuVideoFadeIn = new wxMenu();
+    MenuVideoFadeIn->Append(ID_VideoFadeIn, _("Configure"));
+    MenuVideoFadeIn->Append(ID_VideoFadeInStart, _("From {"));
+    MenuVideoFadeIn->Append(ID_VideoFadeInEnd, _("} To"));
+    MenuVideoFadeIn->Append(ID_VideoFadeInReset, _("Reset"));
+    MenuSegmentFilters->AppendSubMenu(MenuVideoFadeIn, _("Video Fade-In"));
+    wxMenu* MenuVideoFadeOut = new wxMenu();
+    MenuVideoFadeOut->Append(ID_VideoFadeOut, _("Configure"));
+    MenuVideoFadeOut->Append(ID_VideoFadeOutStart, _("From {"));
+    MenuVideoFadeOut->Append(ID_VideoFadeOutEnd, _("} To"));
+    MenuVideoFadeOut->Append(ID_VideoFadeOutReset, _("Reset"));
+    MenuSegmentFilters->AppendSubMenu(MenuVideoFadeOut, _("Video Fade-Out"));
     MenuSegmentFilters->AppendSeparator();
     MenuSegmentFilters->Append(-1, _("Audio Filters"))->Enable(false);
     MenuSegmentFilters->AppendSeparator();
-    MenuSegmentFilters->Append(AudioFadeIn, _("Audio Fade-In"));
-    MenuSegmentFilters->Append(AudioFadeOut, _("Audio Fade-Out"));
+    wxMenu* MenuAudioFadeIn = new wxMenu();
+    MenuAudioFadeIn->Append(ID_AudioFadeIn, _("Configure"));
+    MenuAudioFadeIn->Append(ID_AudioFadeInStart, _("From {"));
+    MenuAudioFadeIn->Append(ID_AudioFadeInEnd, _("} To"));
+    MenuAudioFadeIn->Append(ID_AudioFadeInReset, _("Reset"));
+    MenuSegmentFilters->AppendSubMenu(MenuAudioFadeIn, _("Audio Fade-In"));
+    wxMenu* MenuAudioFadeOut = new wxMenu();
+    MenuAudioFadeOut->Append(ID_AudioFadeOut, _("Configure"));
+    MenuAudioFadeOut->Append(ID_AudioFadeOutStart, _("From {"));
+    MenuAudioFadeOut->Append(ID_AudioFadeOutEnd, _("} To"));
+    MenuAudioFadeOut->Append(ID_AudioFadeOutReset, _("Reset"));
+    MenuSegmentFilters->AppendSubMenu(MenuAudioFadeOut, _("Audio Fade-Out"));
     MenuMain = new wxMenu(_("Main Menu"));
     MenuMain->Append(-1, _("Save Script"))->Enable(false);
     MenuMain->AppendSeparator();
@@ -563,8 +595,18 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     GLCanvasPreview->Connect(wxEVT_SIZE,(wxObjectEventFunction)&AVConvGUIFrame::OnGLCanvasPreviewResize,0,this);
     MenuPresets->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuPresetsClick, NULL, this);
     Connect(wxEVT_RIGHT_DOWN,(wxObjectEventFunction)&AVConvGUIFrame::OnMainWindowRClick);
-    MenuSegmentFilters->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
+    MenuVideoFadeIn->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
+    MenuVideoFadeOut->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
+    MenuAudioFadeIn->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
+    MenuAudioFadeOut->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
     Connect(ID_LISTCTRL2,wxEVT_COMMAND_LIST_ITEM_RIGHT_CLICK,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlSegmentsRClick);
+
+    // TODO: verify if the submenu pointers have to be freed, or if they
+    // will automatically be freed when the parent menu is destroyed...
+    MenuVideoFadeIn = NULL;
+    MenuVideoFadeOut = NULL;
+    MenuAudioFadeIn = NULL;
+    MenuAudioFadeOut = NULL;
 
     ComboBoxFileFormat->SetValue(wxT("matroska"));
     ComboBoxVideoCodec->SetValue(wxT("libx264"));
@@ -2056,6 +2098,7 @@ void AVConvGUIFrame::OnCheckListBoxVideoStreamsSelect(wxCommandEvent& event)
             VideoStream* vStream = EncodingTasks[TaskIndex]->InputFiles[VideoIndex.FileIndex]->VideoStreams[VideoIndex.StreamIndex];
             SliderFrame->SetValue(0);
             SliderFrame->SetRange(0, vStream->FrameCount); // keep additional frame that marks full duration of stream (last frame timestamp + last frame duration)
+            SliderFrame->SetPageSize(150);
             TextCtrlTime->SetValue(wxT("00:00:00.000 / ") + Libav::MilliToSMPTE(vStream->Duration) + wxT(" []"));
             if(vStream->EncodingSettings.Crop[0] > 0)
             {
@@ -2636,14 +2679,13 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
     if(SelectedTaskIndices.GetCount() == 1 && SelectedSegmentIndices.GetCount() == 1)
     {
         SegmentIndex = SelectedSegmentIndices[0];
-
         FileSegment* Segment = EncodingTasks[SelectedTaskIndices[0]]->OutputSegments[SegmentIndex];
         int64_t SegmentDuration = Segment->GetDuration();
         if(SegmentDuration <= 0)
         {
             SegmentDuration = EncodingTasks[SelectedTaskIndices[0]]->GetMultiplexDuration(true, false, false, true) - Segment->TimeFrom;
         }
-        if(event.GetId() == VideoFadeIn)
+        if(event.GetId() == ID_VideoFadeIn)
         {
             wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nFrames before the start time are blacked out.\n\nExample:\nFade in from 5.0 over 2.5 seconds -> 5000:2500\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Video Fade-In"));
             win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterVideoFadeInStart, (long)Segment->FilterVideoFadeInDuration));
@@ -2651,20 +2693,22 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
             {
                 win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->FilterVideoFadeInStart);
                 win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterVideoFadeInDuration);
-                RenderFrame();
             }
         }
-        if(event.GetId() == VideoFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
+        if(event.GetId() == ID_VideoFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
             Segment->FilterVideoFadeInStart = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom;
-            RenderFrame();
         }
-        if(event.GetId() == VideoFadeInEnd)
+        if(event.GetId() == ID_VideoFadeInEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
             Segment->FilterVideoFadeInDuration = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom - Segment->FilterVideoFadeInStart;
-            RenderFrame();
         }
-        if(event.GetId() == VideoFadeOut)
+        if(event.GetId() == ID_VideoFadeInReset)
+        {
+            Segment->FilterVideoFadeInStart = 0;
+            Segment->FilterVideoFadeInDuration = 0;
+        }
+        if(event.GetId() == ID_VideoFadeOut)
         {
             wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nFrames after the duration are blacked out.\n\nExample:\nFade out from 4773.8 over 2.7 seconds -> 4773800:2700\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Video Fade-Out"));
             win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterVideoFadeOutStart, (long)Segment->FilterVideoFadeOutDuration));
@@ -2672,10 +2716,22 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
             {
                 win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->FilterVideoFadeOutStart);
                 win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterVideoFadeOutDuration);
-                RenderFrame();
             }
         }
-        if(event.GetId() == AudioFadeIn)
+        if(event.GetId() == ID_VideoFadeOutStart && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            Segment->FilterVideoFadeOutStart = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom;
+        }
+        if(event.GetId() == ID_VideoFadeOutEnd && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            Segment->FilterVideoFadeOutDuration = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom - Segment->FilterVideoFadeOutStart;
+        }
+        if(event.GetId() == ID_VideoFadeOutReset)
+        {
+            Segment->FilterVideoFadeOutStart = 0;
+            Segment->FilterVideoFadeOutDuration = 0;
+        }
+        if(event.GetId() == ID_AudioFadeIn)
         {
             wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nSound before the start time will be silenced.\n\nExample:\nFade in from 5.0 over 2.5 seconds -> 5000:2500\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-In"));
             win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterAudioFadeInStart, (long)Segment->FilterAudioFadeInDuration));
@@ -2685,7 +2741,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
                 win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterAudioFadeInDuration);
             }
         }
-        if(event.GetId() == AudioFadeOut)
+        if(event.GetId() == ID_AudioFadeOut)
         {
             wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nSound after the duration will be silenced.\n\nExample:\nFade out from 4773.8 over 2.7 seconds -> 4773800:2700\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-Out"));
             win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterAudioFadeOutStart, (long)Segment->FilterAudioFadeOutDuration));
@@ -2696,6 +2752,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
             }
         }
         Segment = NULL;
+        RenderFrame();
     }
 }
 

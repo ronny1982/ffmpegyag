@@ -161,6 +161,22 @@ class AVConvGUIFrame: public wxFrame
         static const long ID_BUTTON9;
         static const long ID_STATUSBAR1;
         //*)
+        static const long ID_VideoFadeIn;
+        static const long ID_VideoFadeInStart;
+        static const long ID_VideoFadeInEnd;
+        static const long ID_VideoFadeInReset;
+        static const long ID_VideoFadeOut;
+        static const long ID_VideoFadeOutStart;
+        static const long ID_VideoFadeOutEnd;
+        static const long ID_VideoFadeOutReset;
+        static const long ID_AudioFadeIn;
+        static const long ID_AudioFadeInStart;
+        static const long ID_AudioFadeInEnd;
+        static const long ID_AudioFadeInReset;
+        static const long ID_AudioFadeOut;
+        static const long ID_AudioFadeOutStart;
+        static const long ID_AudioFadeOutEnd;
+        static const long ID_AudioFadeOutReset;
 
         //(*Declarations(AVConvGUIFrame)
         wxComboBox* ComboBoxFileFormat;
