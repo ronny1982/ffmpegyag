@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/bash
 
 PKGNAME="ffmpegyag"
 PKGVERSION="0.6.0"
@@ -19,11 +19,11 @@ BINFILE="$DISTROOT/bin/$PKGNAME"
 
 CC="g++"
 CFLAGS="
-	-c
-	-Wall
-	-O2
-	$(wx-config --static=yes --debug=no --cflags)
-	"
+    -c
+    -Wall
+    -O2
+    $(wx-config --static=no --debug=no --cflags)
+    "
 
 RC=""
 RCFLAGS=""
@@ -31,8 +31,8 @@ RCFLAGS=""
 LD="g++"
 LDFLAGS="-s"
 LDLIBS="
-	$(wx-config --static=yes --debug=no --libs --gl-libs)
-	-lavformat
-	-lavcodec
-	-lswscale
-	"
+    $(wx-config --static=no --debug=no --libs --gl-libs)
+    -lavformat
+    -lavcodec
+    -lswscale
+    "
