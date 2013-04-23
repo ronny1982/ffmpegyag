@@ -517,12 +517,7 @@ int64_t EncodingFileLoader::GetTimeFromFrame(long VideoStreamIndex, long FrameIn
     {
         if(FrameIndex < (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount())
         {
-            int64_t time = VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp;
-            int64_t offset = VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp; // pFormatCtx->streams[VideoStreamID]->start_time
-            int64_t num = pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.num;
-            int64_t den = pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.den;
-
-            return (int64_t)1000 * (time-offset) * num / den;
+            GetTimeFromTimestamp(VideoStreamIndex, VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp);
         }
         else
         {
