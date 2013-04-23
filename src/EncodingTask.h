@@ -35,6 +35,7 @@ class FileSegment
     wxFileName OutputFile; // file where the segment will be stored
     public: int64_t TimeFrom; // start time in milli seconds
     public: int64_t TimeTo; // end time in milli seconds
+    // filter times are relative inside segments!
     public: int64_t FilterVideoFadeInStart; // fade in start time in milli seconds (relative to segment start)
     public: int64_t FilterVideoFadeInDuration; // fade in duration for video in milli seconds
     public: int64_t FilterVideoFadeOutStart; // fade out start time in milli seconds (relative to segment start)

@@ -1662,7 +1662,7 @@ void AVConvGUIFrame::RenderFrame()
                         int64_t time = Texture->Timecode - Segment->TimeFrom;
 
                         // fade in
-                        if(Segment->FilterVideoFadeInStart > 0 && Segment->FilterVideoFadeInDuration > 0)
+                        if(Segment->FilterVideoFadeInStart > 0 || Segment->FilterVideoFadeInDuration > 0)
                         {
                             if(time <= Segment->FilterVideoFadeInStart + Segment->FilterVideoFadeInDuration)
                             {
@@ -1685,7 +1685,7 @@ void AVConvGUIFrame::RenderFrame()
                         }
 
                         // fade out
-                        if(Segment->FilterVideoFadeOutStart > 0 && Segment->FilterVideoFadeOutDuration > 0)
+                        if(Segment->FilterVideoFadeOutStart > 0 || Segment->FilterVideoFadeOutDuration > 0)
                         {
                             if(time >= Segment->FilterVideoFadeOutStart)
                             {
@@ -2657,9 +2657,12 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         if(event.GetId() == VideoFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
             Segment->FilterVideoFadeInStart = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom;
+            RenderFrame();
         }
         if(event.GetId() == VideoFadeInEnd)
         {
+            Segment->FilterVideoFadeInDuration = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom - Segment->FilterVideoFadeInStart;
+            RenderFrame();
         }
         if(event.GetId() == VideoFadeOut)
         {
