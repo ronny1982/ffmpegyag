@@ -2741,6 +2741,19 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
                 win.GetValue().AfterLast(':').ToLong((long*)&Segment->AudioFadeIn.To);
             }
         }
+        if(event.GetId() == ID_AudioFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            Segment->AudioFadeIn.From = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+        }
+        if(event.GetId() == ID_AudioFadeInEnd && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            Segment->AudioFadeIn.To = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+        }
+        if(event.GetId() == ID_AudioFadeInReset)
+        {
+            Segment->AudioFadeIn.From = 0;
+            Segment->AudioFadeIn.To = 0;
+        }
         if(event.GetId() == ID_AudioFadeOut)
         {
             wxTextEntryDialog win(NULL, wxT("Please enter the start time and the end time.\nValues must be seperated by : and in milli seconds.\nSound after the end time will be silenced.\n\nExample:\nFade out from 4773.8 to 4775.3 seconds -> 4773800:4775300\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-Out"));
@@ -2750,6 +2763,19 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
                 win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->AudioFadeOut.From);
                 win.GetValue().AfterLast(':').ToLong((long*)&Segment->AudioFadeOut.To);
             }
+        }
+        if(event.GetId() == ID_AudioFadeOutStart && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            Segment->AudioFadeOut.From = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+        }
+        if(event.GetId() == ID_AudioFadeOutEnd && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            Segment->AudioFadeOut.To = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+        }
+        if(event.GetId() == ID_AudioFadeOutReset)
+        {
+            Segment->AudioFadeOut.From = 0;
+            Segment->AudioFadeOut.To = 0;
         }
         Segment = NULL;
         RenderFrame();
