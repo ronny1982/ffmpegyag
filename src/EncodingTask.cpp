@@ -569,9 +569,11 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                                     {
                                         VideoFilters.append(wxT(","));
                                     }
+                                    // TODO: newer versions of ffmpeg supports time based parameters (st= and d=)
                                     long FrameStart = InputFiles[f]->GetFrameFromTime(v, Segment->Time.From - FastSearchOffset + Segment->VideoFadeIn.From);
                                     long FrameEnd = InputFiles[f]->GetFrameFromTime(v, Segment->Time.From - FastSearchOffset + Segment->VideoFadeIn.To);
-                                    VideoFilters.append(wxString::Format(wxT("fade=t=in:s=%lu:n=%lu"), FrameStart, FrameEnd - FrameStart));
+                                    //VideoFilters.append(wxString::Format(wxT("fade=t=in:s=%lu:n=%lu"), FrameStart, FrameEnd - FrameStart));
+                                    VideoFilters.append(wxString::Format(wxT("fade=in:%lu:%lu"), FrameStart, FrameEnd - FrameStart));
                                     append = true;
                                 }
                                 if(Segment->VideoFadeOut.From > 0 || Segment->VideoFadeOut.From < Segment->VideoFadeOut.To)
@@ -580,9 +582,11 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                                     {
                                         VideoFilters.append(wxT(","));
                                     }
+                                    // TODO: newer versions of ffmpeg supports time based parameters (st= and d=)
                                     long FrameStart = InputFiles[f]->GetFrameFromTime(v, Segment->Time.From - FastSearchOffset + Segment->VideoFadeOut.From);
                                     long FrameEnd = InputFiles[f]->GetFrameFromTime(v, Segment->Time.From - FastSearchOffset + Segment->VideoFadeOut.To);
-                                    VideoFilters.append(wxString::Format(wxT("fade=t=out:s=%lu:n=%lu"), FrameStart, FrameEnd - FrameStart));
+                                    //VideoFilters.append(wxString::Format(wxT("fade=t=out:s=%lu:n=%lu"), FrameStart, FrameEnd - FrameStart));
+                                    VideoFilters.append(wxString::Format(wxT("fade=out:%lu:%lu"), FrameStart, FrameEnd - FrameStart));
                                     append = true;
                                 }
 

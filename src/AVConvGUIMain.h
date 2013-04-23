@@ -161,6 +161,8 @@ class AVConvGUIFrame: public wxFrame
         static const long ID_BUTTON9;
         static const long ID_STATUSBAR1;
         //*)
+        static const long ID_GotoSegmentStart;
+        static const long ID_GotoSegmentEnd;
         static const long ID_VideoFadeIn;
         static const long ID_VideoFadeInStart;
         static const long ID_VideoFadeInEnd;

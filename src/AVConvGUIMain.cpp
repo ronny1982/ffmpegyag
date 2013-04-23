@@ -98,6 +98,8 @@ const long AVConvGUIFrame::ID_BUTTON2 = wxNewId();
 const long AVConvGUIFrame::ID_BUTTON9 = wxNewId();
 const long AVConvGUIFrame::ID_STATUSBAR1 = wxNewId();
 //*)
+const long AVConvGUIFrame::ID_GotoSegmentStart = wxNewId();
+const long AVConvGUIFrame::ID_GotoSegmentEnd = wxNewId();
 const long AVConvGUIFrame::ID_VideoFadeIn = wxNewId();
 const long AVConvGUIFrame::ID_VideoFadeInStart = wxNewId();
 const long AVConvGUIFrame::ID_VideoFadeInEnd = wxNewId();
@@ -514,6 +516,8 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1->SetSizeHints(this);
     MenuPresets = new wxMenu();
     MenuSegmentFilters = new wxMenu();
+    MenuSegmentFilters->Append(ID_GotoSegmentStart, _("Goto Start {"));
+    MenuSegmentFilters->Append(ID_GotoSegmentEnd, _("} Goto End"));
     MenuSegmentFilters->AppendSeparator();
     MenuSegmentFilters->Append(-1, _("Video Filters"))->Enable(false);
     MenuSegmentFilters->AppendSeparator();
@@ -595,6 +599,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     GLCanvasPreview->Connect(wxEVT_SIZE,(wxObjectEventFunction)&AVConvGUIFrame::OnGLCanvasPreviewResize,0,this);
     MenuPresets->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuPresetsClick, NULL, this);
     Connect(wxEVT_RIGHT_DOWN,(wxObjectEventFunction)&AVConvGUIFrame::OnMainWindowRClick);
+    MenuSegmentFilters->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
     MenuVideoFadeIn->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
     MenuVideoFadeOut->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
     MenuAudioFadeIn->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
@@ -1948,6 +1953,7 @@ void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
             }
         }
     }
+    SliderFrame->SetFocus();
     RenderFrame();
     //wxMessageBox(wxT("Set Segment From"));
 }
@@ -1974,6 +1980,7 @@ void AVConvGUIFrame::OnButtonSegmentToClick(wxCommandEvent& event)
             }
         }
     }
+    SliderFrame->SetFocus();
     RenderFrame();
     //wxMessageBox(wxT("Set Segment To"));
 }
@@ -2674,16 +2681,27 @@ void AVConvGUIFrame::OnMainWindowRClick(wxMouseEvent& event)
 
 void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
 {
-    //long TaskIndex;
+    long TaskIndex;
     long SegmentIndex;
     if(SelectedTaskIndices.GetCount() == 1 && SelectedSegmentIndices.GetCount() == 1)
     {
+        TaskIndex = SelectedTaskIndices[0];
         SegmentIndex = SelectedSegmentIndices[0];
         FileSegment* Segment = EncodingTasks[SelectedTaskIndices[0]]->OutputSegments[SegmentIndex];
         int64_t SegmentDuration = Segment->Time.GetDuration();
         if(SegmentDuration <= 0)
         {
-            SegmentDuration = EncodingTasks[SelectedTaskIndices[0]]->GetMultiplexDuration(true, false, false, true) - Segment->Time.From;
+            SegmentDuration = EncodingTasks[TaskIndex]->GetMultiplexDuration(true, false, false, true) - Segment->Time.From;
+        }
+        if(event.GetId() == ID_GotoSegmentStart && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            SliderFrame->SetValue((int)EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetFrameFromTime((int)SelectedVideoStreamIndices[0].StreamIndex, Segment->Time.From));
+            SliderFrame->SetFocus();
+        }
+        if(event.GetId() == ID_GotoSegmentEnd && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            SliderFrame->SetValue((int)EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetFrameFromTime((int)SelectedVideoStreamIndices[0].StreamIndex, Segment->Time.To));
+            SliderFrame->SetFocus();
         }
         if(event.GetId() == ID_VideoFadeIn)
         {
@@ -2697,11 +2715,11 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_VideoFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->VideoFadeIn.From = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->VideoFadeIn.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeInEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->VideoFadeIn.To = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->VideoFadeIn.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeInReset)
         {
@@ -2720,11 +2738,11 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_VideoFadeOutStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->VideoFadeOut.From = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->VideoFadeOut.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeOutEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->VideoFadeOut.To = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->VideoFadeOut.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeOutReset)
         {
@@ -2743,11 +2761,11 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_AudioFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->AudioFadeIn.From = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->AudioFadeIn.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_AudioFadeInEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->AudioFadeIn.To = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->AudioFadeIn.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_AudioFadeInReset)
         {
@@ -2766,11 +2784,11 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_AudioFadeOutStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->AudioFadeOut.From = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->AudioFadeOut.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_AudioFadeOutEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->AudioFadeOut.To = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->AudioFadeOut.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_AudioFadeOutReset)
         {
