@@ -515,13 +515,6 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                             if(/*InputFiles[f]->VideoStreams[v]->EncodingSettings.Trellis || */InputFiles[f]->VideoStreams[v]->EncodingSettings.GMC || InputFiles[f]->VideoStreams[v]->EncodingSettings.QPEL)
                             {
                                 Command.Append(wxString::Format(wxT(" -flags:v:%i "), vid_count));
-                                // FIXME: deprecated, use mpegvideo private options instead
-                                /*
-                                if(InputFiles[f]->VideoStreams[v]->EncodingSettings.Trellis)
-                                {
-                                    Command.Append(wxT("+cbp"));
-                                }
-                                */
                                 if(InputFiles[f]->VideoStreams[v]->EncodingSettings.GMC)
                                 {
                                     Command.Append(wxT("+gmc"));

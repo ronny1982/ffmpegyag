@@ -100,6 +100,7 @@ class AVConvGUIFrame: public wxFrame
         void OnMenuPresetsClick(wxCommandEvent& event);
         void OnListCtrlSegmentsRClick(wxMouseEvent& event);
         void OnMenuSegmentFiltersClick(wxCommandEvent& event);
+        void OnSliderFrameKeyPress(wxKeyEvent& event);
 
         //(*Identifiers(AVConvGUIFrame)
         static const long ID_STATICTEXT8;
@@ -246,6 +247,7 @@ class AVConvGUIFrame: public wxFrame
         wxMenu* MenuPresets;
         wxMenu* MenuSegmentFilters;
 
+        bool IsPlaying;
         bool AbortEncoding;
         EncodingTaskArray EncodingTasks;
         // the list of currently highlighted tasks

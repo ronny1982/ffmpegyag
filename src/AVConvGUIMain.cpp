@@ -516,8 +516,8 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1->SetSizeHints(this);
     MenuPresets = new wxMenu();
     MenuSegmentFilters = new wxMenu();
-    MenuSegmentFilters->Append(ID_GotoSegmentStart, _("Goto Start {"));
-    MenuSegmentFilters->Append(ID_GotoSegmentEnd, _("} Goto End"));
+    MenuSegmentFilters->Append(ID_GotoSegmentStart, _("[< to Start"));
+    MenuSegmentFilters->Append(ID_GotoSegmentEnd, _(">] to End"));
     MenuSegmentFilters->AppendSeparator();
     MenuSegmentFilters->Append(-1, _("Video Filters"))->Enable(false);
     MenuSegmentFilters->AppendSeparator();
@@ -597,6 +597,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(wxEVT_SIZE,(wxObjectEventFunction)&AVConvGUIFrame::OnResize);
     //*)
     GLCanvasPreview->Connect(wxEVT_SIZE,(wxObjectEventFunction)&AVConvGUIFrame::OnGLCanvasPreviewResize,0,this);
+    SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyPress, NULL, this);
     MenuPresets->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuPresetsClick, NULL, this);
     Connect(wxEVT_RIGHT_DOWN,(wxObjectEventFunction)&AVConvGUIFrame::OnMainWindowRClick);
     MenuSegmentFilters->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
@@ -1553,6 +1554,35 @@ void AVConvGUIFrame::OnListCtrlSegmentsItemSelect(wxListEvent& event)
 {
     UpdateSelectedSegmentIndices();
     RenderFrame();
+}
+
+void AVConvGUIFrame::OnSliderFrameKeyPress(wxKeyEvent& event)
+{
+    if(event.GetKeyCode() == WXK_SPACE)
+    {
+        if(IsPlaying)
+        {
+            IsPlaying = false;
+        }
+        else
+        {
+            IsPlaying = true;
+            while(IsPlaying && SliderFrame->GetValue() < SliderFrame->GetMax())
+            {
+                // set slider value is not triggering event
+                // TODO: check if in windows event is triggered
+                SliderFrame->SetValue(SliderFrame->GetValue()+1);
+                RenderFrame();
+                wxYield();
+            }
+            IsPlaying = false;
+        }
+    }
+    else
+    {
+        // handle default wxSlider events (left arrow, right arrow, pg-up, pg-down)
+        event.Skip(true);
+    }
 }
 
 void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
