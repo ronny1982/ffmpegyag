@@ -11,31 +11,25 @@ enum Pass
     SecondPass // Two-Pass seconf pass
 };
 
+struct Range
+{
+    int64_t From; // start time in milli seconds
+    int64_t To; // end time in milli seconds
+
+    public: int64_t GetDuration();
+};
+
 class FileSegment
 {
     public: FileSegment(wxFileName FileOut, int64_t StartTime, int64_t EndTime);
     public: virtual ~FileSegment();
 
     wxFileName OutputFile; // file where the segment will be stored
-    public: int64_t TimeFrom; // start time in milli seconds
-    public: int64_t TimeTo; // end time in milli seconds
-    // filter times are relative inside segments!
-    public: int64_t FilterVideoFadeInStart; // fade in start time in milli seconds (relative to segment start)
-    public: int64_t FilterVideoFadeInDuration; // fade in duration for video in milli seconds
-    public: int64_t FilterVideoFadeOutStart; // fade out start time in milli seconds (relative to segment start)
-    public: int64_t FilterVideoFadeOutDuration; // fade out duration for video in milli seconds
-    public: int64_t FilterAudioFadeInStart; // fade in start time in milli seconds (relative to segment start)
-    public: int64_t FilterAudioFadeInDuration; // fade in duration for audio in milli seconds
-    public: int64_t FilterAudioFadeOutStart; // fade out start time in milli seconds (relative to segment start)
-    public: int64_t FilterAudioFadeOutDuration; // fade out duration for audio in milli seconds
-
-    /*
-    public: int64_t GetTimeFrom();
-    public: void SetTimeFrom(int64_t StartTime);
-    public: int64_t GetTimeTo();
-    public: void SetTimeTo(int64_t EndTime);
-    */
-    public: int64_t GetDuration();
+    Range Time;
+    Range VideoFadeIn; // relative to segment time
+    Range VideoFadeOut; // relative to segment time
+    Range AudioFadeIn; // relative to segment time
+    Range AudioFadeOut; // relative to segment time
 };
 
 WX_DEFINE_ARRAY(FileSegment*, FileSegmentArray);

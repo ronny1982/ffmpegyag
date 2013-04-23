@@ -1235,8 +1235,8 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
             for(size_t i=0; i<EncodingTasks[TaskIndex]->OutputSegments.GetCount(); i++)
             {
                 ListCtrlSegments->InsertItem(i, wxEmptyString);
-                ListCtrlSegments->SetItem(i, 0, Libav::MilliToSMPTE(EncodingTasks[TaskIndex]->OutputSegments[i]->TimeFrom));
-                ListCtrlSegments->SetItem(i, 1, Libav::MilliToSMPTE(EncodingTasks[TaskIndex]->OutputSegments[i]->TimeTo));
+                ListCtrlSegments->SetItem(i, 0, Libav::MilliToSMPTE(EncodingTasks[TaskIndex]->OutputSegments[i]->Time.From));
+                ListCtrlSegments->SetItem(i, 1, Libav::MilliToSMPTE(EncodingTasks[TaskIndex]->OutputSegments[i]->Time.To));
             }
 
             ComboBoxFileFormat->SetValue(FormatFromSetting(EncodingTasks[TaskIndex]->OutputFormat, STR_DEFAULT));
@@ -1689,7 +1689,7 @@ void AVConvGUIFrame::RenderFrame()
                 if(SelectedSegmentIndices.GetCount() == 1)
                 {
                     FileSegment* Segment = EncodingTasks[SelectedTask]->OutputSegments[SelectedSegmentIndices[0]];
-                    if(Texture->Timecode < Segment->TimeFrom || (Texture->Timecode > Segment->TimeTo && Segment->TimeFrom < Segment->TimeTo))
+                    if(Texture->Timecode < Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
                     {
                         glColor3f(1.0, 0.0, 0.0);
                         glBegin(GL_LINES);
@@ -1701,17 +1701,17 @@ void AVConvGUIFrame::RenderFrame()
                     }
                     else
                     {
-                        int64_t time = Texture->Timecode - Segment->TimeFrom;
+                        int64_t time = Texture->Timecode - Segment->Time.From;
 
                         // fade in
-                        if(Segment->FilterVideoFadeInStart > 0 || Segment->FilterVideoFadeInDuration > 0)
+                        if(Segment->VideoFadeIn.From > 0 || Segment->VideoFadeIn.From < Segment->VideoFadeIn.To)
                         {
-                            if(time <= Segment->FilterVideoFadeInStart + Segment->FilterVideoFadeInDuration)
+                            if(time <= Segment->VideoFadeIn.To)
                             {
                                 float ratio = 0.0;
-                                if(time >= Segment->FilterVideoFadeInStart)
+                                if(time >= Segment->VideoFadeIn.From)
                                 {
-                                    ratio = (float)(time - Segment->FilterVideoFadeInStart) / (float)Segment->FilterVideoFadeInDuration;
+                                    ratio = (float)(time - Segment->VideoFadeIn.From) / (float)Segment->VideoFadeIn.GetDuration();
                                 }
                                 glEnable(GL_BLEND);
                                 glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
@@ -1727,14 +1727,14 @@ void AVConvGUIFrame::RenderFrame()
                         }
 
                         // fade out
-                        if(Segment->FilterVideoFadeOutStart > 0 || Segment->FilterVideoFadeOutDuration > 0)
+                        if(Segment->VideoFadeOut.From > 0 || Segment->VideoFadeOut.From < Segment->VideoFadeOut.To)
                         {
-                            if(time >= Segment->FilterVideoFadeOutStart)
+                            if(time >= Segment->VideoFadeOut.From)
                             {
                                 float ratio = 0.0;
-                                if(time <= Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration)
+                                if(time <= Segment->VideoFadeOut.To)
                                 {
-                                    ratio = (float)(Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration - time) / (float)Segment->FilterVideoFadeOutDuration;
+                                    ratio = (float)(Segment->VideoFadeOut.To - time) / (float)Segment->VideoFadeOut.GetDuration();
                                 }
                                 glEnable(GL_BLEND);
                                 glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
@@ -1938,11 +1938,11 @@ void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
             SelectedStreamIndex StreamIndex = SelectedVideoStreamIndices[0];
             int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrame((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
 
-            EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom = time;
+            EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->Time.From = time;
 
             ListCtrlSegments->SetItem(SegmentIndex, 0, Libav::MilliToSMPTE(time));
 
-            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom)
+            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->Time.To < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->Time.From)
             {
                 wxMessageBox(wxT("Segment: EndTime < StartTime\nEndTime will be ignored (using stream duration)!"));
             }
@@ -1964,11 +1964,11 @@ void AVConvGUIFrame::OnButtonSegmentToClick(wxCommandEvent& event)
             SelectedStreamIndex StreamIndex = SelectedVideoStreamIndices[0];
             int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrame((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
 
-            EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo = time;
+            EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->Time.To = time;
 
             ListCtrlSegments->SetItem(SegmentIndex, 1, Libav::MilliToSMPTE(time));
 
-            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom)
+            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->Time.To < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->Time.From)
             {
                 wxMessageBox(wxT("Segment: EndTime < StartTime\nEndTime will be ignored (using stream duration)!"));
             }
@@ -2680,75 +2680,75 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
     {
         SegmentIndex = SelectedSegmentIndices[0];
         FileSegment* Segment = EncodingTasks[SelectedTaskIndices[0]]->OutputSegments[SegmentIndex];
-        int64_t SegmentDuration = Segment->GetDuration();
+        int64_t SegmentDuration = Segment->Time.GetDuration();
         if(SegmentDuration <= 0)
         {
-            SegmentDuration = EncodingTasks[SelectedTaskIndices[0]]->GetMultiplexDuration(true, false, false, true) - Segment->TimeFrom;
+            SegmentDuration = EncodingTasks[SelectedTaskIndices[0]]->GetMultiplexDuration(true, false, false, true) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeIn)
         {
-            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nFrames before the start time are blacked out.\n\nExample:\nFade in from 5.0 over 2.5 seconds -> 5000:2500\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Video Fade-In"));
-            win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterVideoFadeInStart, (long)Segment->FilterVideoFadeInDuration));
+            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the end time.\nValues must be seperated by : and in milli seconds.\nFrames before the start time are blacked out.\n\nExample:\nFade in from 5.0 to 7.5 seconds -> 5000:7500\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Video Fade-In"));
+            win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->VideoFadeIn.From, (long)Segment->VideoFadeIn.To));
             if(win.ShowModal() == wxID_OK)
             {
-                win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->FilterVideoFadeInStart);
-                win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterVideoFadeInDuration);
+                win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->VideoFadeIn.From);
+                win.GetValue().AfterLast(':').ToLong((long*)&Segment->VideoFadeIn.To);
             }
         }
         if(event.GetId() == ID_VideoFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->FilterVideoFadeInStart = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom;
+            Segment->VideoFadeIn.From = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeInEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->FilterVideoFadeInDuration = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom - Segment->FilterVideoFadeInStart;
+            Segment->VideoFadeIn.To = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeInReset)
         {
-            Segment->FilterVideoFadeInStart = 0;
-            Segment->FilterVideoFadeInDuration = 0;
+            Segment->VideoFadeIn.From = 0;
+            Segment->VideoFadeIn.To = 0;
         }
         if(event.GetId() == ID_VideoFadeOut)
         {
-            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nFrames after the duration are blacked out.\n\nExample:\nFade out from 4773.8 over 2.7 seconds -> 4773800:2700\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Video Fade-Out"));
-            win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterVideoFadeOutStart, (long)Segment->FilterVideoFadeOutDuration));
+            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the end time.\nValues must be seperated by : and in milli seconds.\nFrames after the end time are blacked out.\n\nExample:\nFade out from 4773.8 to 4775.3 seconds -> 4773800:4775300\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Video Fade-Out"));
+            win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->VideoFadeOut.From, (long)Segment->VideoFadeOut.To));
             if(win.ShowModal() == wxID_OK)
             {
-                win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->FilterVideoFadeOutStart);
-                win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterVideoFadeOutDuration);
+                win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->VideoFadeOut.From);
+                win.GetValue().AfterLast(':').ToLong((long*)&Segment->VideoFadeOut.To);
             }
         }
         if(event.GetId() == ID_VideoFadeOutStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->FilterVideoFadeOutStart = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom;
+            Segment->VideoFadeOut.From = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeOutEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->FilterVideoFadeOutDuration = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom - Segment->FilterVideoFadeOutStart;
+            Segment->VideoFadeOut.To = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeOutReset)
         {
-            Segment->FilterVideoFadeOutStart = 0;
-            Segment->FilterVideoFadeOutDuration = 0;
+            Segment->VideoFadeOut.From = 0;
+            Segment->VideoFadeOut.To = 0;
         }
         if(event.GetId() == ID_AudioFadeIn)
         {
-            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nSound before the start time will be silenced.\n\nExample:\nFade in from 5.0 over 2.5 seconds -> 5000:2500\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-In"));
-            win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterAudioFadeInStart, (long)Segment->FilterAudioFadeInDuration));
+            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the end time.\nValues must be seperated by : and in milli seconds.\nSound before the start time will be silenced.\n\nExample:\nFade in from 5.0 to 7.5 seconds -> 5000:7500\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-In"));
+            win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->AudioFadeIn.From, (long)Segment->AudioFadeIn.To));
             if(win.ShowModal() == wxID_OK)
             {
-                win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->FilterAudioFadeInStart);
-                win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterAudioFadeInDuration);
+                win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->AudioFadeIn.From);
+                win.GetValue().AfterLast(':').ToLong((long*)&Segment->AudioFadeIn.To);
             }
         }
         if(event.GetId() == ID_AudioFadeOut)
         {
-            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the duration.\nValues must be seperated by : and in milli seconds.\nSound after the duration will be silenced.\n\nExample:\nFade out from 4773.8 over 2.7 seconds -> 4773800:2700\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-Out"));
-            win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->FilterAudioFadeOutStart, (long)Segment->FilterAudioFadeOutDuration));
+            wxTextEntryDialog win(NULL, wxT("Please enter the start time and the end time.\nValues must be seperated by : and in milli seconds.\nSound after the end time will be silenced.\n\nExample:\nFade out from 4773.8 to 4775.3 seconds -> 4773800:4775300\n\n") + wxString::Format(wxT("Segment Duration [ms]: %lu"), (long)SegmentDuration), wxT("Audio Fade-Out"));
+            win.SetValue(wxString::Format(wxT("%lu:%lu"), (long)Segment->AudioFadeOut.From, (long)Segment->AudioFadeOut.To));
             if(win.ShowModal() == wxID_OK)
             {
-                win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->FilterAudioFadeOutStart);
-                win.GetValue().AfterLast(':').ToLong((long*)&Segment->FilterAudioFadeOutDuration);
+                win.GetValue().BeforeFirst(':').ToLong((long*)&Segment->AudioFadeOut.From);
+                win.GetValue().AfterLast(':').ToLong((long*)&Segment->AudioFadeOut.To);
             }
         }
         Segment = NULL;
