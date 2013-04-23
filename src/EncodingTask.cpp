@@ -20,24 +20,29 @@ FileSegment::~FileSegment()
     //
 }
 
-// TODO: changing TimeFrom / TimeTo requires re-calculation of all filter times
-
+/*
 int64_t FileSegment::GetTimeFrom()
 {
     return TimeFrom;
 }
+
 void FileSegment::SetTimeFrom(int64_t StartTime)
 {
+    // TODO: changing TimeFrom / TimeTo requires re-calculation of filter times
     TimeFrom = StartTime;
 }
+
 int64_t FileSegment::GetTimeTo()
 {
     return TimeTo;
 }
+
 void FileSegment::SetTimeTo(int64_t EndTime)
 {
+    // TODO: changing TimeFrom / TimeTo requires re-calculation of filter times
     TimeTo = EndTime;
 }
+*/
 
 int64_t FileSegment::GetDuration()
 {
@@ -239,9 +244,9 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
     // trim 'fast seeking' based on keyframes
     // requires ffmpeg 0.9.1 for a pts<dts bugfix (usually when b-frames are present)
     //{
-        if(Segment->GetTimeFrom() > 15000)
+        if(Segment->TimeFrom > 15000)
         {
-            FastSearchOffset = Segment->GetTimeFrom() - 15000;
+            FastSearchOffset = Segment->TimeFrom - 15000;
             // on copy it will seek the closest keyframe before the given position
         }
 
@@ -429,7 +434,7 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                                     {
                                         AudioFilters.append(wxT(","));
                                     }
-                                    AudioFilters.append(wxT("afade=t=in:st=") + Libav::MilliToSeconds(Segment->GetTimeFrom() - FastSearchOffset + Segment->FilterAudioFadeInStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeInDuration) + wxT(":curve=qua"));
+                                    AudioFilters.append(wxT("afade=t=in:st=") + Libav::MilliToSeconds(Segment->TimeFrom - FastSearchOffset + Segment->FilterAudioFadeInStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeInDuration) + wxT(":curve=qua"));
                                     append = true;
                                 }
                                 if(Segment->FilterAudioFadeOutStart > 0 || Segment->FilterAudioFadeOutDuration > 0)
@@ -438,7 +443,7 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                                     {
                                         AudioFilters.append(wxT(","));
                                     }
-                                    AudioFilters.append(wxT("afade=t=out:st=") + Libav::MilliToSeconds(Segment->GetTimeFrom() - FastSearchOffset + Segment->FilterAudioFadeOutStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeOutDuration) + wxT(":curve=qua"));
+                                    AudioFilters.append(wxT("afade=t=out:st=") + Libav::MilliToSeconds(Segment->TimeFrom - FastSearchOffset + Segment->FilterAudioFadeOutStart) + wxT(":d=") + Libav::MilliToSeconds(Segment->FilterAudioFadeOutDuration) + wxT(":curve=qua"));
                                     append = true;
                                 }
 
@@ -588,8 +593,8 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                                     {
                                         VideoFilters.append(wxT(","));
                                     }
-                                    long FrameStart = InputFiles[f]->GetFrameFromTime(v, Segment->GetTimeFrom() - FastSearchOffset + Segment->FilterVideoFadeInStart);
-                                    long FrameEnd = InputFiles[f]->GetFrameFromTime(v, Segment->GetTimeFrom() - FastSearchOffset + Segment->FilterVideoFadeInStart + Segment->FilterVideoFadeInDuration);
+                                    long FrameStart = InputFiles[f]->GetFrameFromTime(v, Segment->TimeFrom - FastSearchOffset + Segment->FilterVideoFadeInStart);
+                                    long FrameEnd = InputFiles[f]->GetFrameFromTime(v, Segment->TimeFrom - FastSearchOffset + Segment->FilterVideoFadeInStart + Segment->FilterVideoFadeInDuration);
                                     VideoFilters.append(wxString::Format(wxT("fade=t=in:s=%lu:n=%lu"), FrameStart, FrameEnd - FrameStart));
                                     append = true;
                                 }
@@ -599,8 +604,8 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
                                     {
                                         VideoFilters.append(wxT(","));
                                     }
-                                    long FrameStart = InputFiles[f]->GetFrameFromTime(v, Segment->GetTimeFrom() - FastSearchOffset + Segment->FilterVideoFadeOutStart);
-                                    long FrameEnd = InputFiles[f]->GetFrameFromTime(v, Segment->GetTimeFrom() - FastSearchOffset + Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration);
+                                    long FrameStart = InputFiles[f]->GetFrameFromTime(v, Segment->TimeFrom - FastSearchOffset + Segment->FilterVideoFadeOutStart);
+                                    long FrameEnd = InputFiles[f]->GetFrameFromTime(v, Segment->TimeFrom - FastSearchOffset + Segment->FilterVideoFadeOutStart + Segment->FilterVideoFadeOutDuration);
                                     VideoFilters.append(wxString::Format(wxT("fade=t=out:s=%lu:n=%lu"), FrameStart, FrameEnd - FrameStart));
                                     append = true;
                                 }
@@ -636,17 +641,17 @@ wxString EncodingTask::GetCommandAVConv(FileSegment* Segment, Pass PassNumber)
 
     // trim 'accurate seeking' based on decoding each frame with given codec
     //{
-        if(Segment->GetTimeFrom() > 0)
+        if(Segment->TimeFrom > 0)
         {
             // accurate seek from the current fast seek position to the exact requested position
             // on copy it will seek the closest keyframe after the given position
-            Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->GetTimeFrom() - FastSearchOffset));
+            Command.Append(wxT(" -ss ") + Libav::MilliToSMPTE(Segment->TimeFrom - FastSearchOffset));
         }
-        if(Segment->GetTimeFrom() < Segment->GetTimeTo())
+        if(Segment->TimeFrom < Segment->TimeTo)
         {
             //Command.Append(wxT(" -to ") + Libav::MilliToSMPTE(Segment->TimeTo));
             // for backward compatibility of older ffmpeg versions that don't support -to
-            Command.Append(wxT(" -t ") + Libav::MilliToSMPTE(Segment->GetTimeTo() - Segment->GetTimeFrom()));
+            Command.Append(wxT(" -t ") + Libav::MilliToSMPTE(Segment->TimeTo - Segment->TimeFrom));
         }
     //}
 

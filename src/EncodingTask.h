@@ -33,8 +33,8 @@ class FileSegment
     public: virtual ~FileSegment();
 
     wxFileName OutputFile; // file where the segment will be stored
-    private: int64_t TimeFrom; // start time in milli seconds
-    private: int64_t TimeTo; // end time in milli seconds
+    public: int64_t TimeFrom; // start time in milli seconds
+    public: int64_t TimeTo; // end time in milli seconds
     public: int64_t FilterVideoFadeInStart; // fade in start time in milli seconds (relative to segment start)
     public: int64_t FilterVideoFadeInDuration; // fade in duration for video in milli seconds
     public: int64_t FilterVideoFadeOutStart; // fade out start time in milli seconds (relative to segment start)
@@ -44,10 +44,12 @@ class FileSegment
     public: int64_t FilterAudioFadeOutStart; // fade out start time in milli seconds (relative to segment start)
     public: int64_t FilterAudioFadeOutDuration; // fade out duration for audio in milli seconds
 
+    /*
     public: int64_t GetTimeFrom();
     public: void SetTimeFrom(int64_t StartTime);
     public: int64_t GetTimeTo();
     public: void SetTimeTo(int64_t EndTime);
+    */
     public: int64_t GetDuration();
 };
 

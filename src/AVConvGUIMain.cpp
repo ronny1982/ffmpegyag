@@ -1193,8 +1193,8 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
             for(size_t i=0; i<EncodingTasks[TaskIndex]->OutputSegments.GetCount(); i++)
             {
                 ListCtrlSegments->InsertItem(i, wxEmptyString);
-                ListCtrlSegments->SetItem(i, 0, Libav::MilliToSMPTE(EncodingTasks[TaskIndex]->OutputSegments[i]->GetTimeFrom()));
-                ListCtrlSegments->SetItem(i, 1, Libav::MilliToSMPTE(EncodingTasks[TaskIndex]->OutputSegments[i]->GetTimeTo()));
+                ListCtrlSegments->SetItem(i, 0, Libav::MilliToSMPTE(EncodingTasks[TaskIndex]->OutputSegments[i]->TimeFrom));
+                ListCtrlSegments->SetItem(i, 1, Libav::MilliToSMPTE(EncodingTasks[TaskIndex]->OutputSegments[i]->TimeTo));
             }
 
             ComboBoxFileFormat->SetValue(FormatFromSetting(EncodingTasks[TaskIndex]->OutputFormat, STR_DEFAULT));
@@ -1647,7 +1647,7 @@ void AVConvGUIFrame::RenderFrame()
                 if(SelectedSegmentIndices.GetCount() == 1)
                 {
                     FileSegment* Segment = EncodingTasks[SelectedTask]->OutputSegments[SelectedSegmentIndices[0]];
-                    if(Texture->Timecode < Segment->GetTimeFrom() || (Texture->Timecode > Segment->GetTimeTo() && Segment->GetTimeFrom() < Segment->GetTimeTo()))
+                    if(Texture->Timecode < Segment->TimeFrom || (Texture->Timecode > Segment->TimeTo && Segment->TimeFrom < Segment->TimeTo))
                     {
                         glColor3f(1.0, 0.0, 0.0);
                         glBegin(GL_LINES);
@@ -1659,7 +1659,7 @@ void AVConvGUIFrame::RenderFrame()
                     }
                     else
                     {
-                        int64_t time = Texture->Timecode - Segment->GetTimeFrom();
+                        int64_t time = Texture->Timecode - Segment->TimeFrom;
 
                         // fade in
                         if(Segment->FilterVideoFadeInStart > 0 && Segment->FilterVideoFadeInDuration > 0)
@@ -1896,12 +1896,11 @@ void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
             SelectedStreamIndex StreamIndex = SelectedVideoStreamIndices[0];
             int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrame((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
 
-            //EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom = time;
-            EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->SetTimeFrom(time);
+            EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom = time;
 
             ListCtrlSegments->SetItem(SegmentIndex, 0, Libav::MilliToSMPTE(time));
 
-            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->GetTimeTo() < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->GetTimeFrom())
+            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom)
             {
                 wxMessageBox(wxT("Segment: EndTime < StartTime\nEndTime will be ignored (using stream duration)!"));
             }
@@ -1923,12 +1922,11 @@ void AVConvGUIFrame::OnButtonSegmentToClick(wxCommandEvent& event)
             SelectedStreamIndex StreamIndex = SelectedVideoStreamIndices[0];
             int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrame((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
 
-            //EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo = time;
-            EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->SetTimeTo(time);
+            EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo = time;
 
             ListCtrlSegments->SetItem(SegmentIndex, 1, Libav::MilliToSMPTE(time));
 
-            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->GetTimeTo() < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->GetTimeFrom())
+            if(EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeTo < EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->TimeFrom)
             {
                 wxMessageBox(wxT("Segment: EndTime < StartTime\nEndTime will be ignored (using stream duration)!"));
             }
@@ -2643,7 +2641,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         int64_t SegmentDuration = Segment->GetDuration();
         if(SegmentDuration <= 0)
         {
-            SegmentDuration = EncodingTasks[SelectedTaskIndices[0]]->GetMultiplexDuration(true, false, false, true) - Segment->GetTimeFrom();
+            SegmentDuration = EncodingTasks[SelectedTaskIndices[0]]->GetMultiplexDuration(true, false, false, true) - Segment->TimeFrom;
         }
         if(event.GetId() == VideoFadeIn)
         {
@@ -2658,7 +2656,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == VideoFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->FilterVideoFadeInStart = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue());
+            Segment->FilterVideoFadeInStart = EncodingTasks[SelectedTaskIndices[0]]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->TimeFrom;
         }
         if(event.GetId() == VideoFadeInEnd)
         {
