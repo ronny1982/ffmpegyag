@@ -517,7 +517,7 @@ int64_t EncodingFileLoader::GetTimeFromFrame(long VideoStreamIndex, long FrameIn
     {
         if(FrameIndex < (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount())
         {
-            GetTimeFromTimestamp(VideoStreamIndex, VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp);
+            return GetTimeFromTimestamp(VideoStreamIndex, VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp);
         }
         else
         {
@@ -572,8 +572,7 @@ long EncodingFileLoader::GetFrameFromTimestamp(long VideoStreamIndex, int64_t Ti
 
 long EncodingFileLoader::GetFrameFromTime(long VideoStreamIndex, int64_t Time)
 {
-    int64_t timestamp = GetTimestampFromTime(VideoStreamIndex, Time);
-    return GetFrameFromTimestamp(VideoStreamIndex, timestamp);
+    return GetFrameFromTimestamp(VideoStreamIndex, GetTimestampFromTime(VideoStreamIndex, Time));
 }
 
 int64_t EncodingFileLoader::GetTimeFromTimestamp(long VideoStreamIndex, int64_t Timestamp)
@@ -589,7 +588,7 @@ int64_t EncodingFileLoader::GetTimestampFromTime(long VideoStreamIndex, int64_t 
 {
     if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
-        return Time * (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.den / (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.num / 1000 + VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp;
+        return Time * (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.den / (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.num / (int64_t)1000 + VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp;
     }
     return (int64_t)0;
 }
