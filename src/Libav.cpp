@@ -560,6 +560,7 @@ wxArrayString Libav::FormatSubtitleCodecs(wxString ContainerFormat)
     if(ContainerFormat.IsSameAs(wxT("matroska")))
     {
         codecs.Add(wxT("ass"));
+        codecs.Add(wxT("srt"));
     }
 
     if(ContainerFormat.IsSameAs(wxT("mp4")))
