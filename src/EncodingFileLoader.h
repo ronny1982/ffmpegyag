@@ -6,6 +6,7 @@
 #include "AudioFrame.h"
 #include "VideoFrameGOP.h"
 #include "EncodingMediaStreams.h"
+#include "StreamBuffer.h"
 
 class EncodingFileLoader
 {
@@ -45,8 +46,16 @@ class EncodingFileLoader
     private: int64_t GetTimestampFromTime(long VideoStreamIndex, int64_t Time);
     // returns the raw image data of the selected stream and frame number
     // do not delete VideoFrame*, this pointer is freed by GOPBuffer
-    public: VideoFrame* GetVideoFrameData(long VideoStreamIndex, long FrameIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat = PIX_FMT_RGB24);
-    public: AudioFrame* GetAudioFrameData(long AudioStreamIndex, long FrameIndex, int TargetChannels, int TargetSamplerate, SampleFormat TargetSampleFormat = AV_SAMPLE_FMT_S16);
+    public: VideoFrame* GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat = PIX_FMT_RGB24);
+    //public: AudioFrame* GetAudioFrameData(long AudioStreamIndex, long FrameIndex, int TargetChannels, int TargetSamplerate, SampleFormat TargetSampleFormat = AV_SAMPLE_FMT_S16);
+    // stream decoded audio/video frames into the fifo buffer
+    public: void StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock,
+                            long FrameIndex, long VideoStreamIndex, long AudioStreamIndex,
+                            StreamBuffer* VideoStreamBuffer, StreamBuffer* AudioStreamBuffer,
+                            int TargetWidth, int TargetHeight,
+                            int TargetChannels, int TargetSamplerate,
+                            PixelFormat TargetPixelFormat = PIX_FMT_RGB24,
+                            SampleFormat TargetSampleFormat = AV_SAMPLE_FMT_S16);
 };
 
 WX_DEFINE_ARRAY(EncodingFileLoader*, EncodingFileLoaderArray);

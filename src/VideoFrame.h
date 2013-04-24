@@ -9,9 +9,6 @@
 class VideoFrame
 {
     public: VideoFrame();
-    // copy constructor to clone pointer data instead of assigning pointers to the same data
-    // prevent deletion of data where multiple copies are pointing to the same data...
-    //public: VideoFrame(const VideoFrame&);
     // the pointer FrameData will be freed by this destructor, make sure not freeing it's content externally!
     public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, unsigned char* FrameData);
     public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, AVPictureType FrameType, unsigned char Red, unsigned char Green, unsigned char Blue);

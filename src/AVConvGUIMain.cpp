@@ -1710,7 +1710,7 @@ void AVConvGUIFrame::RenderFrame()
 
             EncodingFileLoader* efl = EncodingTasks[SelectedTask]->InputFiles[0];
             // BOTTLENECK
-            Texture = efl->GetVideoFrameData(SelectedStream, SelectedFrame, 512, 256); // width & height of texture must be of power 2
+            Texture = efl->GetVideoFrameData(SelectedFrame, SelectedStream, 512, 256); // width & height of texture must be of power 2
             if(Texture)
             {
                 // BOTTLENECK

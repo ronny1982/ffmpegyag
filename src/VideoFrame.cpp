@@ -17,21 +17,7 @@ VideoFrame::VideoFrame()
         Data[i] = (unsigned char)0;
     }
 }
-/*
-VideoFrame::VideoFrame(const VideoFrame& Frame)
-{
-    Timestamp = Frame.Timestamp;
-    Timecode = int64_t(0);
-    Width = Frame.Width;
-    Height = Frame.Height;
-    AVFormat = Frame.AVFormat;
-    AVType = Frame.AVType;
-    DataSize = Frame.DataSize;
-    // clone data in case the commited pointer will be deleted externally
-    Data = new unsigned char[DataSize];
-    memcpy(Data, Frame.Data, DataSize);
-}
-*/
+
 VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, unsigned char* FrameData)
 {
     Timestamp = FrameTimestamp;
@@ -43,9 +29,6 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     AVType = FrameType;
     DataSize = avpicture_get_size(AVFormat, Width, Height);
     Data = FrameData;
-    // clone data in case the commited pointer will be deleted externally
-    //Data = new unsigned char[DataSize];
-    //memcpy(Data, FrameData, DataSize);
 }
 
 VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, AVPictureType FrameType, unsigned char Red, unsigned char Green, unsigned char Blue)
