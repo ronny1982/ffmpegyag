@@ -283,6 +283,8 @@ private: void ShowSelectedIndices();
         private: void EnableDisableAVFormatControls();
         // render the videoframe of current selected file,stream,timestamp
         private: void RenderFrame();
+        //
+        private: void PlayAudio();
         // test if the settings are consistent
         private: bool VerifySettings();
 

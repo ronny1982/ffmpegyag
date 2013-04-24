@@ -1585,6 +1585,10 @@ void AVConvGUIFrame::OnSliderFrameKeyPress(wxKeyEvent& event)
     }
 }
 
+void AVConvGUIFrame::PlayAudio()
+{
+}
+
 void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 {
     RenderFrame();

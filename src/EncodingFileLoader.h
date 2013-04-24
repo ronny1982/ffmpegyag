@@ -3,6 +3,7 @@
 
 #include <wx/progdlg.h>
 
+#include "AudioFrame.h"
 #include "VideoFrameGOP.h"
 #include "EncodingMediaStreams.h"
 
@@ -45,6 +46,7 @@ class EncodingFileLoader
     // returns the raw image data of the selected stream and frame number
     // do not delete VideoFrame*, this pointer is freed by GOPBuffer
     public: VideoFrame* GetVideoFrameData(long VideoStreamIndex, long FrameIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat = PIX_FMT_RGB24);
+    public: AudioFrame* GetAudioFrameData(long AudioStreamIndex, long FrameIndex, int TargetChannels, int TargetSamplerate, SampleFormat TargetSampleFormat = AV_SAMPLE_FMT_S16);
 };
 
 WX_DEFINE_ARRAY(EncodingFileLoader*, EncodingFileLoaderArray);
