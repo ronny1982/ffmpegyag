@@ -1566,16 +1566,7 @@ void AVConvGUIFrame::OnSliderFrameKeyPress(wxKeyEvent& event)
         }
         else
         {
-            IsPlaying = true;
-            while(IsPlaying && SliderFrame->GetValue() < SliderFrame->GetMax())
-            {
-                // set slider value is not triggering event
-                // TODO: check if in windows event is triggered
-                SliderFrame->SetValue(SliderFrame->GetValue()+1);
-                RenderFrame();
-                wxYield();
-            }
-            IsPlaying = false;
+            PlayMedia();
         }
     }
     else
@@ -1584,11 +1575,73 @@ void AVConvGUIFrame::OnSliderFrameKeyPress(wxKeyEvent& event)
         event.Skip(true);
     }
 }
-/*
-void AVConvGUIFrame::PlayAudio(AudioFrame* Sound)
+
+void AVConvGUIFrame::PlayMedia()
 {
+    if(InitializeGL() && SelectedTaskIndices.GetCount() == 1)
+    {
+        long TaskIndex = SelectedTaskIndices[0];
+        long VideoStreamIndex = -1;
+        StreamBuffer* VideoFrameBuffer = NULL;
+        if(SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            VideoStreamIndex = SelectedVideoStreamIndices[0].StreamIndex;
+            VideoFrameBuffer = new StreamBuffer(FIFO, 500);
+        }
+        long AudioStreamIndex = -1;
+        StreamBuffer* AudioFrameBuffer = NULL;
+        if(SelectedAudioStreamIndices.GetCount() == 1)
+        {
+            AudioStreamIndex = SelectedAudioStreamIndices[0].StreamIndex;
+            AudioFrameBuffer = new StreamBuffer(FIFO, 500);
+        }
+
+        IsPlaying = true;
+
+        int64_t ReferenceClock = 0;
+
+        // spawn buffer streaming thread
+        bool StreamerIsRunning;
+        EncodingTasks[TaskIndex]->InputFiles[0]->StreamMedia(&IsPlaying, &StreamerIsRunning, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256, 2, 44100);
+
+printf("\n\nComplete\nVideoFrameBuffer: %lu\nAudioFrameBuffer: %lu\n", (long)VideoFrameBuffer->GetCount(), (long)0/*(long)AudioFrameBuffer->GetCount()*/);
+
+        // wait until buffer hold some data
+        //while()
+        //{
+            wxMilliSleep(50);
+        //}
+
+        // spawn PlayVideo thread
+        bool VideoIsPlaying;
+        PlayVideo(&IsPlaying, &VideoIsPlaying, VideoFrameBuffer, &ReferenceClock);
+
+        // spawn PlayAudio thread
+        bool AudioIsPlaying;
+//        PlayAudio(&IsPlaying, &AudioIsPlaying, AudioFrameBuffer, &ReferenceClock);
+
+        // start sync clock
+
+        IsPlaying = false;
+
+        // TODO: wait until all threads are done...
+
+        // TODO: this work-around can be removed if destructor of StreamBuffer has been fixed
+        while(VideoFrameBuffer && !VideoFrameBuffer->IsEmpty())
+        {
+            VideoFrame* buffer = (VideoFrame*)VideoFrameBuffer->Pull();
+            wxDELETE(buffer);
+        }
+        wxDELETE(VideoFrameBuffer);
+        while(AudioFrameBuffer && !AudioFrameBuffer->IsEmpty())
+        {
+            AudioFrame* buffer = (AudioFrame*)AudioFrameBuffer->Pull();
+            wxDELETE(buffer);
+        }
+        wxDELETE(AudioFrameBuffer);
+    }
 }
-*/
+
 void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 {
     RenderFrame();
@@ -1710,6 +1763,7 @@ void AVConvGUIFrame::RenderFrame()
 
             EncodingFileLoader* efl = EncodingTasks[SelectedTask]->InputFiles[0];
             // BOTTLENECK
+printf("Request Texture\n");
             Texture = efl->GetVideoFrameData(SelectedFrame, SelectedStream, 512, 256); // width & height of texture must be of power 2
             if(Texture)
             {
@@ -1842,19 +1896,42 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
     glFinish();
 }
 
-void PlayVideo(void* VideoFrameBuffer, int64_t* ReferenceTime)
+void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock)
 {
-    // while
-        // grab frame from buffer
-
-        // check if we got a frame (!= NULL) or buffer is empty
-        if(VideoFrameBuffer)
+    *IsPlaying = true;
+    while(*DoPlay)
+    {
+        if(!VideoFrameBuffer->IsEmpty())
         {
+            VideoFrame* Texture = (VideoFrame*)VideoFrameBuffer->Pull();
+printf("Pull Video Frame: %lu [%lu]\n", (long)Texture->Timecode, (long)VideoFrameBuffer->GetCount());
             // check if frame time < reference time -> drop frame
             //if(VideoFrameBuffer->Timecode < *ReferenceTime)
             //{
+                RenderFrame(Texture, RenderMapper, NULL);
             //}
+            wxDELETE(Texture);
         }
+else
+{
+    break;
+}
+    }
+    *IsPlaying = false;
+}
+
+void AVConvGUIFrame::PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock)
+{
+    *IsPlaying = true;
+    while(*DoPlay)
+    {
+        if(!AudioFrameBuffer->IsEmpty())
+        {
+            AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
+            wxDELETE(Pulse);
+        }
+    }
+    *IsPlaying = false;
 }
 
 void AVConvGUIFrame::OnGLCanvasPreviewResize(wxSizeEvent& event)

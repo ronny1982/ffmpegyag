@@ -657,7 +657,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
 
             AVPacket packet;
             av_init_packet(&packet);
-            int got_frame;
+            int got_frame = 1;
             int64_t FrameTimestamp = Timestamp-1;
 
             // read packets/frames from file
@@ -730,14 +730,36 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
     return GOPBuffer.GetVideoFrame(Timestamp);
 }
 
-void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoStreamBuffer, StreamBuffer* AudioStreamBuffer, int TargetWidth, int TargetHeight, int TargetChannels, int TargetSamplerate, PixelFormat TargetPixelFormat, SampleFormat TargetSampleFormat)
+// FIXME: this function messes up the current byte position which GetFrame() is based on
+void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int TargetWidth, int TargetHeight, int TargetChannels, int TargetSamplerate, PixelFormat TargetPixelFormat, SampleFormat TargetSampleFormat)
 {
     *IsStreaming = true;
 
-    int VideoStreamID = VideoStreams[VideoStreamIndex]->ID;
-    AVCodecContext* pVideoCodecCtx = pFormatCtx->streams[VideoStreamID]->codec;
-    int AudioStreamID = AudioStreams[AudioStreamIndex]->ID;
-    AVCodecContext* pAudioCodecCtx = pFormatCtx->streams[AudioStreamID]->codec;
+    int VideoStreamID = -1;
+    AVCodecContext* pVideoCodecCtx = NULL;
+    if(VideoStreamIndex > -1)
+    {
+        VideoStreamID = VideoStreams[VideoStreamIndex]->ID;
+        pVideoCodecCtx = pFormatCtx->streams[VideoStreamID]->codec;
+        if(pVideoCodecCtx->codec_type != AVMEDIA_TYPE_VIDEO)
+        {
+            VideoStreamID = -1;
+            pVideoCodecCtx = NULL;
+        }
+    }
+
+    int AudioStreamID = -1;
+    AVCodecContext* pAudioCodecCtx = NULL;
+    if(AudioStreamIndex > -1)
+    {
+        AudioStreams[AudioStreamIndex]->ID;
+        pAudioCodecCtx = pFormatCtx->streams[AudioStreamID]->codec;
+        if(pAudioCodecCtx->codec_type != AVMEDIA_TYPE_AUDIO)
+        {
+            AudioStreamID = -1;
+            pAudioCodecCtx = NULL;
+        }
+    }
 
     /*
     int64_t Timestamp;
@@ -754,17 +776,24 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
     long KeyframeIndex = SeekKeyFrameIndex(VideoStreamIndex, FrameIndex);
     SetStreamPosition(VideoStreamIndex, KeyframeIndex);
 
-    AVFrame *pFrameSource = avcodec_alloc_frame();
-    AVFrame *pFrameTarget = avcodec_alloc_frame();
-    if(pFrameTarget != NULL)
+    AVFrame *pVideoFrameSource = avcodec_alloc_frame();
+    AVFrame *pVideoFrameTarget = avcodec_alloc_frame();
+    AVFrame *pAudioFrameSource = avcodec_alloc_frame();
+    if(pVideoFrameTarget != NULL)
     {
+        unsigned char *Buffer = (unsigned char*)av_malloc(avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight));
+        SwsContext *pSwsCtx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height, pVideoCodecCtx->pix_fmt, TargetWidth, TargetHeight, TargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+
+        avpicture_fill((AVPicture*)pVideoFrameTarget, Buffer, TargetPixelFormat, TargetWidth, TargetHeight);
+
         AVPacket packet;
         av_init_packet(&packet);
-        int got_video_frame;
-        int got_audio_frame;
+        int got_video_frame = 0;
+        int got_audio_frame = 0;
 
         while(*DoStream)
         {
+//printf("Read Packet\n");
             // reached end of file?
             if(av_read_frame(pFormatCtx, &packet))
             {
@@ -776,6 +805,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                     packet.data = NULL;
                     packet.size = 0;
                     packet.stream_index = VideoStreamID;
+//printf("Flush Video Packet\n");
                 }
                 else if(got_audio_frame)
                 {
@@ -784,26 +814,90 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                     packet.data = NULL;
                     packet.size = 0;
                     packet.stream_index = AudioStreamID;
+//printf("Flush Audio Packet\n");
                 }
                 else
                 {
+//printf("Break Loop\n");
                     break; // leave loop
                 }
             }
 
             if(packet.stream_index == VideoStreamID)
             {
-                printf("Push Video Packet\n");
-            }
+                // avcodec_decode_video()
+                // > 0, packet decoded to frame
+                // = 0, not decoded (i.e. read from codec buffer)
+                // < 0, error
+                if(avcodec_decode_video2(pVideoCodecCtx, pVideoFrameSource, &got_video_frame, &packet) > -1)
+                {
+//printf("Got Video Frame: %i\n", got_video_frame);
+                    if(got_video_frame && GetTimeFromTimestamp(VideoStreamIndex, pVideoFrameSource->pts + packet.duration) >= *ReferenceClock)
+                    {
+                        // TODO: resample video frame
+//VideoFrame* tmp = new VideoFrame(0, 0, 0, 512, 256, AV_PICTURE_TYPE_I, 0, 0, 255);
+                        int64_t FrameTimestamp = pVideoFrameSource->pkt_pts;
+                        if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
+                        {
+                            FrameTimestamp = pVideoFrameSource->pkt_dts;
+                        }
 
+                        if(pSwsCtx != NULL)
+                        {
+                            sws_scale(pSwsCtx, pVideoFrameSource->data, pVideoFrameSource->linesize, 0, pVideoCodecCtx->height, pVideoFrameTarget->data, pVideoFrameTarget->linesize);
+                            // FIXME: when dragging the slider to video end, last packets have duration 0
+                            // when stepping frame by frame to video end, all durations are valid
+                            int64_t pkt_duration = GetTimeFromFrame(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrame(VideoStreamIndex, FrameIndex);
+                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestamp(VideoStreamIndex, FrameTimestamp), pkt_duration, TargetWidth, TargetHeight, TargetPixelFormat, pVideoFrameSource->pict_type, (unsigned char*)av_malloc(avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight)));
+                            memcpy(tex->Data, pVideoFrameTarget->data[0], tex->DataSize);
+                            VideoFrameBuffer->Push(tex);
+                        }
+                        // TODO: push video frame into buffer
+                        while(*DoStream && VideoFrameBuffer->IsFull())
+                        {
+                            wxMilliSleep(50);
+//printf("Buffer Overflow, waiting...\n");
+                        }
+//printf("Push Video Frame\n");
+                    }
+                }
+            }
+/*
             if(packet.stream_index == AudioStreamID)
             {
-                printf("Push Audio Packet\n");
+                // TODO: implement function to convert audio timestamps to milli seconds
+                if(*ReferenceClock)
+                {
+                    // avcodec_decode_audio()
+                    // > 0, packet decoded to frame
+                    // = 0, not decoded (i.e. read from codec buffer)
+                    // < 0, error
+                    if(avcodec_decode_audio4(pAudioCodecCtx, pAudioFrameSource, &got_audio_frame, &packet) > -1)
+                    {
+                        if(got_audio_frame)
+                        {
+                            // TODO: resample audio frame
+
+                            // TODO: push audio frame into buffer
+                            while(*DoStream && AudioFrameBuffer->IsFull())
+                            {
+                                wxMilliSleep(50);
+printf("Buffer Overflow...\n");
+                            }
+printf("Push Audio Frame\n");
+                        }
+                    }
+                }
             }
+*/
+            av_free_packet(&packet);
         }
+        sws_freeContext(pSwsCtx);
+        av_free(Buffer);
     }
-    av_free(pFrameTarget);
-    av_free(pFrameSource);
+    av_free(pAudioFrameSource);
+    av_free(pVideoFrameTarget);
+    av_free(pVideoFrameSource);
 
     pVideoCodecCtx = NULL;
     pAudioCodecCtx = NULL;

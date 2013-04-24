@@ -51,7 +51,7 @@ class EncodingFileLoader
     // stream decoded audio/video frames into the fifo buffer
     public: void StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock,
                             long FrameIndex, long VideoStreamIndex, long AudioStreamIndex,
-                            StreamBuffer* VideoStreamBuffer, StreamBuffer* AudioStreamBuffer,
+                            StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer,
                             int TargetWidth, int TargetHeight,
                             int TargetChannels, int TargetSamplerate,
                             PixelFormat TargetPixelFormat = PIX_FMT_RGB24,

@@ -5,6 +5,8 @@ AudioFrame::AudioFrame()
     Timestamp = int64_t(0);
     Timecode = int64_t(0);
     Duration = int64_t(0);
+    SampleRate = 0;
+    Channels = 0;
     DataSize = 0;
     Data = (unsigned char*)av_malloc(DataSize);
     // silence

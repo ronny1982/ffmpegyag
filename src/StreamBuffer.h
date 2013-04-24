@@ -28,6 +28,8 @@ class StreamBuffer
     public: void Push(void* Data);
     // detach data from the  queue -> data needs to be freed by recipient
     public: void* Pull();
+    // returns the current number of elements in the queue
+    public: size_t GetCount();
 };
 
 #endif // STREAMBUFFER_H

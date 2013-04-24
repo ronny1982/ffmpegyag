@@ -312,15 +312,17 @@ private: void ShowSelectedIndices();
         // thread for displaying videoframes from a buffer synchronized regarding a reference time
         // buffer: fifo queue
         // time: current timer in milli seconds
-        private: void PlayVideo(void* VideoFrameBuffer, int64_t* ReferenceClock);
+        private: void PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock);
         // close the render device
         private: void CloseGL();
         // initialize the audio device
         private: bool InitializeAlsa();
         //
-        private: void PlayAudio(void* VideoFrameBuffer, int64_t* ReferenceClock);
+        private: void PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock);
         // close the audio device
         private: void CloseAlsa();
+        //
+        private: void PlayMedia();
         // test if the settings are consistent
         private: bool VerifySettings();
 

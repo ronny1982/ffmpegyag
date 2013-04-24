@@ -16,8 +16,8 @@ StreamBuffer::~StreamBuffer()
 {
     if(!IsEmpty())
     {
-        // memory leak: buffer not pulled empty
-        // we cannot delete type void*
+        // FIXME: we cannot delete type void*
+        // memory leak: when buffer not pulled empty
         //WX_CLEAR_ARRAY(Queue);
         Queue.Clear();
     }
@@ -67,4 +67,9 @@ void* StreamBuffer::Pull()
     }
     // buffer underrun
     return Data;
+}
+
+size_t StreamBuffer::GetCount()
+{
+    return Queue.GetCount();
 }
