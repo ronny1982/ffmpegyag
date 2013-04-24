@@ -1584,17 +1584,17 @@ void AVConvGUIFrame::OnSliderFrameKeyPress(wxKeyEvent& event)
         event.Skip(true);
     }
 }
-
-void AVConvGUIFrame::PlayAudio()
+/*
+void AVConvGUIFrame::PlayAudio(AudioFrame* Sound)
 {
 }
-
+*/
 void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 {
     RenderFrame();
 }
 
-void AVConvGUIFrame::RenderFrame()
+bool AVConvGUIFrame::InitializeGL()
 {
     // check if control is on display
     if(GLCanvasPreview->GetContext())
@@ -1602,211 +1602,259 @@ void AVConvGUIFrame::RenderFrame()
         int GlPanelWidth;// = GLCanvasPreview->GetSize().x;
         int GlPanelHeight;// = GLCanvasPreview->GetSize().y;
         GLCanvasPreview->GetClientSize(&GlPanelWidth, &GlPanelHeight);
-        wxColour bc = GLCanvasPreview->GetBackgroundColour();
 
         // BOTTLENECK
         GLCanvasPreview->SetCurrent();
 
-        glClearColor(float(bc.Red())/255.0f, float(bc.Green())/255.0f, float(bc.Blue())/255.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, GlPanelWidth, GlPanelHeight);
+
+        wxColour bc = GLCanvasPreview->GetBackgroundColour();
+        glClearColor(float(bc.Red())/255.0f, float(bc.Green())/255.0f, float(bc.Blue())/255.0f, 0.0f);
+
+        // update the rendering mapper (video_texture -> gl_panel) depending on current task, videostream, aspectratio, framesize, crop,...
+        wxDELETE(RenderMapper);
+        RenderMapper = NULL;
+        RenderMapper = new TextureGLPanelMap();
 
         if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)
         {
             long SelectedTask = SelectedTaskIndices[0];
             long SelectedStream = SelectedVideoStreamIndices[0].StreamIndex;
+            VideoStream* vStream = EncodingTasks[SelectedTask]->InputFiles[0]->VideoStreams[SelectedStream];
+
+            int VideoWidth = vStream->Width;
+            int VideoHeight = vStream->Height;
+            int VideoCropTop = SpinCtrlTop->GetValue();
+            int VideoCropBottom = SpinCtrlBottom->GetValue();
+            int VideoCropLeft = SpinCtrlLeft->GetValue();
+            int VideoCropRight = SpinCtrlRight->GetValue();
+
+            int EncodingWidth;
+            int EncodingHeight;
+            if(!vStream->EncodingSettings.AspectRatio.IsEmpty())
+            {
+                double ar;
+                if(vStream->EncodingSettings.AspectRatio.Find(wxT(":")) > -1)
+                {
+                    double ar_num;
+                    double ar_den;
+                    vStream->EncodingSettings.AspectRatio.BeforeFirst(':').ToDouble(&ar_num);
+                    vStream->EncodingSettings.AspectRatio.AfterLast(':').ToDouble(&ar_den);
+
+                    ar = ar_num / ar_den;
+                }
+                else
+                {
+                    vStream->EncodingSettings.AspectRatio.ToDouble(&ar);
+                }
+                EncodingHeight = 720;
+                EncodingWidth = (int)(EncodingHeight * ar);
+            }
+            else if(!vStream->EncodingSettings.FrameSize.IsEmpty())
+            {
+                EncodingWidth = wxAtoi(vStream->EncodingSettings.FrameSize.BeforeFirst('x'));
+                EncodingHeight = wxAtoi(vStream->EncodingSettings.FrameSize.AfterLast('x'));
+            }
+            else
+            {
+                EncodingWidth = VideoWidth-VideoCropLeft-VideoCropRight;
+                EncodingHeight = VideoHeight-VideoCropTop-VideoCropBottom;
+            }
+
+            RenderMapper->GlPanelTop = double(EncodingHeight) / double(GlPanelHeight);
+            RenderMapper->GlPanelRight = double(EncodingWidth) / double(GlPanelWidth);
+            if(RenderMapper->GlPanelRight > RenderMapper->GlPanelTop)
+            {
+                // scale height with width-ratio
+                RenderMapper->GlPanelTop = RenderMapper->GlPanelTop / RenderMapper->GlPanelRight;
+                RenderMapper->GlPanelRight = 1.0;
+            }
+            else
+            {
+                // scale width with height-ratio
+                RenderMapper->GlPanelRight = RenderMapper->GlPanelRight / RenderMapper->GlPanelTop;
+                RenderMapper->GlPanelTop = 1.0;
+            }
+            RenderMapper->GlPanelBottom = -RenderMapper->GlPanelTop;
+            RenderMapper->GlPanelLeft = -RenderMapper->GlPanelRight;
+
+            // calculate texture mapping area depending on crop
+            // values are in uv representation (+0 to +1)
+            RenderMapper->TextureTop = double(VideoCropTop) / double(VideoHeight);
+            RenderMapper->TextureBottom = double(VideoHeight-VideoCropBottom) / double(VideoHeight);
+            RenderMapper->TextureLeft = double(VideoCropLeft) / double(VideoWidth);
+            RenderMapper->TextureRight = double(VideoWidth-VideoCropRight) / double(VideoWidth);
+        }
+        return true;
+    }
+    return false;
+}
+
+void AVConvGUIFrame::RenderFrame()
+{
+    if(InitializeGL())
+    {
+        FileSegment* Segment = NULL;
+        VideoFrame* Texture = NULL;
+        if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            long SelectedTask = SelectedTaskIndices[0];
+            long SelectedStream = SelectedVideoStreamIndices[0].StreamIndex;
             long SelectedFrame = (long)SliderFrame->GetValue();
+
+            if(SelectedSegmentIndices.GetCount() == 1)
+            {
+                long SelctedSegment = SelectedSegmentIndices[0];
+                Segment = EncodingTasks[SelectedTask]->OutputSegments[SelctedSegment];
+            }
+
             EncodingFileLoader* efl = EncodingTasks[SelectedTask]->InputFiles[0];
-
             // BOTTLENECK
-            VideoFrame* Texture = efl->GetVideoFrameData(SelectedStream, SelectedFrame, 512, 256); // width & height of texture must be of power 2
-
-            if(Texture != NULL)
+            Texture = efl->GetVideoFrameData(SelectedStream, SelectedFrame, 512, 256); // width & height of texture must be of power 2
+            if(Texture)
             {
                 // BOTTLENECK
                 TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" [") + Texture->GetPicType() + wxT("]"));
-
-                int VideoWidth = efl->VideoStreams[SelectedStream]->Width;
-                int VideoHeight = efl->VideoStreams[SelectedStream]->Height;
-                int VideoCropTop = SpinCtrlTop->GetValue();
-                int VideoCropBottom = SpinCtrlBottom->GetValue();
-                int VideoCropLeft = SpinCtrlLeft->GetValue();
-                int VideoCropRight = SpinCtrlRight->GetValue();
-
-                // calculate gl-panel mapping area depending on output video-aspect-ratio & crop
-                int EncodingWidth;
-                int EncodingHeight;
-                if(!efl->VideoStreams[SelectedStream]->EncodingSettings.AspectRatio.IsEmpty())
-                {
-                    double ar;
-                    if(efl->VideoStreams[SelectedStream]->EncodingSettings.AspectRatio.Find(wxT(":")) > -1)
-                    {
-                        double ar_num;
-                        double ar_den;
-                        efl->VideoStreams[SelectedStream]->EncodingSettings.AspectRatio.BeforeFirst(':').ToDouble(&ar_num);
-                        efl->VideoStreams[SelectedStream]->EncodingSettings.AspectRatio.AfterLast(':').ToDouble(&ar_den);
-
-                        ar = ar_num / ar_den;
-                    }
-                    else
-                    {
-                        efl->VideoStreams[SelectedStream]->EncodingSettings.AspectRatio.ToDouble(&ar);
-                    }
-                    EncodingHeight = 720;
-                    EncodingWidth = (int)(EncodingHeight * ar);
-                }
-                else if(!efl->VideoStreams[SelectedStream]->EncodingSettings.FrameSize.IsEmpty())
-                {
-                    EncodingWidth = wxAtoi(efl->VideoStreams[SelectedStream]->EncodingSettings.FrameSize.BeforeFirst('x'));
-                    EncodingHeight = wxAtoi(efl->VideoStreams[SelectedStream]->EncodingSettings.FrameSize.AfterLast('x'));
-                }
-                else
-                {
-                    EncodingWidth = VideoWidth-VideoCropLeft-VideoCropRight;
-                    EncodingHeight = VideoHeight-VideoCropTop-VideoCropBottom;
-                }
-                // values are in uv representation (-1 to +1)
-                double GlPanelTop = double(EncodingHeight) / double(GlPanelHeight);
-                double GlPanelRight = double(EncodingWidth) / double(GlPanelWidth);
-                if(GlPanelRight > GlPanelTop)
-                {
-                    // scale height with width-ratio
-                    GlPanelTop = GlPanelTop / GlPanelRight;
-                    GlPanelRight = 1.0;
-                }
-                else
-                {
-                    // scale width with height-ratio
-                    GlPanelRight = GlPanelRight / GlPanelTop;
-                    GlPanelTop = 1.0;
-                }
-                double GlPanelBottom = -GlPanelTop;
-                double GlPanelLeft = -GlPanelRight;
-
-                // calculate texture mapping area depending on crop
-                // values are in uv representation (+0 to +1)
-                double TextureTop = double(VideoCropTop) / double(VideoHeight);
-                double TextureBottom = double(VideoHeight-VideoCropBottom) / double(VideoHeight);
-                double TextureLeft = double(VideoCropLeft) / double(VideoWidth);
-                double TextureRight = double(VideoWidth-VideoCropRight) / double(VideoWidth);
-
-                GLuint TexturePointer;
-
-                glGenTextures(1, &TexturePointer);
-                glBindTexture(GL_TEXTURE_2D, TexturePointer);
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-                //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-                //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-                glTexImage2D(GL_TEXTURE_2D, 0, Texture->GetGLFormat(), Texture->Width, Texture->Height, 0, Texture->GetGLFormat(), GL_UNSIGNED_BYTE, Texture->Data);
-
-                glEnable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, TexturePointer);
-
-                glBegin(GL_QUADS);
-                    // top left
-                    glTexCoord2d(TextureLeft, TextureTop);
-                    glVertex2d(GlPanelLeft, GlPanelTop);
-                    // top right
-                    glTexCoord2d(TextureRight, TextureTop);
-                    glVertex2d(GlPanelRight, GlPanelTop);
-                    // bottom right
-                    glTexCoord2d(TextureRight, TextureBottom);
-                    glVertex2d(GlPanelRight, GlPanelBottom);
-                    // bottom left
-                    glTexCoord2d(TextureLeft, TextureBottom);
-                    glVertex2d(GlPanelLeft, GlPanelBottom);
-                glEnd();
-
-                glDisable(GL_TEXTURE_2D);
-                // this will not free memory of Texture->Data
-                glDeleteTextures(1, &TexturePointer);
-
-                if(SelectedSegmentIndices.GetCount() == 1)
-                {
-                    FileSegment* Segment = EncodingTasks[SelectedTask]->OutputSegments[SelectedSegmentIndices[0]];
-                    if(Texture->Timecode < Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
-                    {
-                        glColor3f(1.0, 0.0, 0.0);
-                        glBegin(GL_LINES);
-                            glVertex2d(GlPanelLeft, GlPanelTop);
-                            glVertex2d(GlPanelRight, GlPanelBottom);
-                            glVertex2d(GlPanelRight, GlPanelTop);
-                            glVertex2d(GlPanelLeft, GlPanelBottom);
-                        glEnd();
-                    }
-                    else
-                    {
-                        int64_t time = Texture->Timecode - Segment->Time.From;
-
-                        // fade in
-                        if(Segment->VideoFadeIn.From > 0 || Segment->VideoFadeIn.From < Segment->VideoFadeIn.To)
-                        {
-                            if(time <= Segment->VideoFadeIn.To)
-                            {
-                                float ratio = 0.0;
-                                if(time >= Segment->VideoFadeIn.From)
-                                {
-                                    ratio = (float)(time - Segment->VideoFadeIn.From) / (float)Segment->VideoFadeIn.GetDuration();
-                                }
-                                glEnable(GL_BLEND);
-                                glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-                                glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
-                                glBegin(GL_QUADS);
-                                    glVertex2d(GlPanelLeft, GlPanelTop); // top left
-                                    glVertex2d(GlPanelRight, GlPanelTop); // top right
-                                    glVertex2d(GlPanelRight, GlPanelBottom); // bottom right
-                                    glVertex2d(GlPanelLeft, GlPanelBottom); // bottom left
-                                glEnd();
-                                glDisable(GL_BLEND);
-                            }
-                        }
-
-                        // fade out
-                        if(Segment->VideoFadeOut.From > 0 || Segment->VideoFadeOut.From < Segment->VideoFadeOut.To)
-                        {
-                            if(time >= Segment->VideoFadeOut.From)
-                            {
-                                float ratio = 0.0;
-                                if(time <= Segment->VideoFadeOut.To)
-                                {
-                                    ratio = (float)(Segment->VideoFadeOut.To - time) / (float)Segment->VideoFadeOut.GetDuration();
-                                }
-                                glEnable(GL_BLEND);
-                                glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-                                glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
-                                glBegin(GL_QUADS);
-                                    glVertex2d(GlPanelLeft, GlPanelTop); // top left
-                                    glVertex2d(GlPanelRight, GlPanelTop); // top right
-                                    glVertex2d(GlPanelRight, GlPanelBottom); // bottom right
-                                    glVertex2d(GlPanelLeft, GlPanelBottom); // bottom left
-                                glEnd();
-                                glDisable(GL_BLEND);
-                            }
-                        }
-                    }
-                    Segment = NULL;
-                }
             }
             else
             {
                 TextCtrlTime->SetValue(Libav::MilliToSMPTE(efl->GetTimeFromFrame(SelectedStream, SelectedFrame)) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" []"));
             }
-
-            // dereference pointer (free is done by GOPBuffer)
-            Texture = NULL;
             efl = NULL;
         }
 
-        // glFlush(); // will automatically be called by wxGLCanvas->SwapBuffers()
+        RenderFrame(Texture, RenderMapper, Segment);
 
-        // BOTTLENECK
-        GLCanvasPreview->SwapBuffers();
-        glFinish();
+        Texture = NULL; // dereference pointer (free is done by GOPBuffer)
+        Segment = NULL;
     }
+}
+
+void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper, FileSegment* Segment)
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    if(Texture && Mapper)
+    {
+        GLuint TexturePointer;
+        glGenTextures(1, &TexturePointer);
+        glBindTexture(GL_TEXTURE_2D, TexturePointer);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+        //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, Texture->GetGLFormat(), Texture->Width, Texture->Height, 0, Texture->GetGLFormat(), GL_UNSIGNED_BYTE, Texture->Data);
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, TexturePointer);
+
+        glBegin(GL_QUADS);
+            // top left
+            glTexCoord2d(Mapper->TextureLeft, Mapper->TextureTop);
+            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop);
+            // top right
+            glTexCoord2d(Mapper->TextureRight, Mapper->TextureTop);
+            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelTop);
+            // bottom right
+            glTexCoord2d(Mapper->TextureRight, Mapper->TextureBottom);
+            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom);
+            // bottom left
+            glTexCoord2d(Mapper->TextureLeft, Mapper->TextureBottom);
+            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelBottom);
+        glEnd();
+
+        glDisable(GL_TEXTURE_2D);
+        // this will not free memory of Texture->Data
+        glDeleteTextures(1, &TexturePointer);
+
+        if(Segment)
+        {
+            if(Texture->Timecode < Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            {
+                glColor3f(1.0, 0.0, 0.0);
+                glBegin(GL_LINES);
+                    glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop);
+                    glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom);
+                    glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelTop);
+                    glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelBottom);
+                glEnd();
+            }
+            else
+            {
+                int64_t time = Texture->Timecode - Segment->Time.From;
+
+                // fade in
+                if(Segment->VideoFadeIn.From > 0 || Segment->VideoFadeIn.From < Segment->VideoFadeIn.To)
+                {
+                    if(time <= Segment->VideoFadeIn.To)
+                    {
+                        float ratio = 0.0;
+                        if(time >= Segment->VideoFadeIn.From)
+                        {
+                            ratio = (float)(time - Segment->VideoFadeIn.From) / (float)Segment->VideoFadeIn.GetDuration();
+                        }
+                        glEnable(GL_BLEND);
+                        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+                        glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
+                        glBegin(GL_QUADS);
+                            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop); // top left
+                            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelTop); // top right
+                            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom); // bottom right
+                            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelBottom); // bottom left
+                        glEnd();
+                        glDisable(GL_BLEND);
+                    }
+                }
+
+                // fade out
+                if(Segment->VideoFadeOut.From > 0 || Segment->VideoFadeOut.From < Segment->VideoFadeOut.To)
+                {
+                    if(time >= Segment->VideoFadeOut.From)
+                    {
+                        float ratio = 0.0;
+                        if(time <= Segment->VideoFadeOut.To)
+                        {
+                            ratio = (float)(Segment->VideoFadeOut.To - time) / (float)Segment->VideoFadeOut.GetDuration();
+                        }
+                        glEnable(GL_BLEND);
+                        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+                        glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
+                        glBegin(GL_QUADS);
+                            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop); // top left
+                            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelTop); // top right
+                            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom); // bottom right
+                            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelBottom); // bottom left
+                        glEnd();
+                        glDisable(GL_BLEND);
+                    }
+                }
+            }
+        }
+    }
+
+    // glFlush(); // will automatically be called by wxGLCanvas->SwapBuffers()
+
+    // BOTTLENECK
+    GLCanvasPreview->SwapBuffers();
+    glFinish();
+}
+
+void PlayVideo(void* VideoFrameBuffer, int64_t* ReferenceTime)
+{
+    // while
+        // grab frame from buffer
+
+        // check if we got a frame (!= NULL) or buffer is empty
+        if(VideoFrameBuffer)
+        {
+            // check if frame time < reference time -> drop frame
+            //if(VideoFrameBuffer->Timecode < *ReferenceTime)
+            //{
+            //}
+        }
 }
 
 void AVConvGUIFrame::OnGLCanvasPreviewResize(wxSizeEvent& event)

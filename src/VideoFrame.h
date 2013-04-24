@@ -13,12 +13,13 @@ class VideoFrame
     // prevent deletion of data where multiple copies are pointing to the same data...
     //public: VideoFrame(const VideoFrame&);
     // the pointer FrameData will be freed by this destructor, make sure not freeing it's content externally!
-    public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, unsigned char* FrameData);
-    public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int FrameWidth, int FrameHeight, AVPictureType FrameType, unsigned char Red, unsigned char Green, unsigned char Blue);
+    public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, unsigned char* FrameData);
+    public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, AVPictureType FrameType, unsigned char Red, unsigned char Green, unsigned char Blue);
     public: virtual ~VideoFrame();
 
     public: int64_t Timestamp;
     public: int64_t Timecode; // in milliseconds
+    public: int64_t Duration; // in milliseconds
     public: int Width;
     public: int Height;
     public: PixelFormat AVFormat;

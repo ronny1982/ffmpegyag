@@ -4,6 +4,7 @@ VideoFrame::VideoFrame()
 {
     Timestamp = int64_t(0);
     Timecode = int64_t(0);
+    Duration = int64_t(0);
     Width = 32;
     Height = 32;
     AVFormat = PIX_FMT_RGB24;
@@ -31,10 +32,11 @@ VideoFrame::VideoFrame(const VideoFrame& Frame)
     memcpy(Data, Frame.Data, DataSize);
 }
 */
-VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, unsigned char* FrameData)
+VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, unsigned char* FrameData)
 {
     Timestamp = FrameTimestamp;
     Timecode = FrameTimecode;
+    Duration = FrameDuration;
     Width = FrameWidth;
     Height = FrameHeight;
     AVFormat = FrameFormat;
@@ -46,10 +48,11 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int FrameW
     //memcpy(Data, FrameData, DataSize);
 }
 
-VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int FrameWidth, int FrameHeight, AVPictureType FrameType, unsigned char Red, unsigned char Green, unsigned char Blue)
+VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, AVPictureType FrameType, unsigned char Red, unsigned char Green, unsigned char Blue)
 {
     Timestamp = FrameTimestamp;
     Timecode = FrameTimecode;
+    Duration = FrameDuration;
     Width = FrameWidth;
     Height = FrameHeight;
     AVFormat = PIX_FMT_RGB24;

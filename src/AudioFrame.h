@@ -18,6 +18,7 @@ class AudioFrame
 
     public: int64_t Timestamp;
     public: int64_t Timecode; // in milliseconds
+    public: int64_t Duration; // in milliseconds
     // samplerate
     // channels
     SampleFormat AVFormat;

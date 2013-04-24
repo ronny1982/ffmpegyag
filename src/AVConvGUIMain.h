@@ -37,6 +37,19 @@
 #define STR_DEFAULT wxT("default")
 #define STR_NO_CHANGE wxT("no change")
 
+struct TextureGLPanelMap
+{
+    double TextureTop;
+    double TextureBottom;
+    double TextureLeft;
+    double TextureRight;
+
+    double GlPanelTop;
+    double GlPanelBottom;
+    double GlPanelLeft;
+    double GlPanelRight;
+};
+
 struct SelectedStreamIndex
 {
     // index of the input file
@@ -249,6 +262,7 @@ class AVConvGUIFrame: public wxFrame
 
         bool IsPlaying;
         bool AbortEncoding;
+        TextureGLPanelMap* RenderMapper;
         EncodingTaskArray EncodingTasks;
         // the list of currently highlighted tasks
         wxArrayLong SelectedTaskIndices;
@@ -281,10 +295,32 @@ class AVConvGUIFrame: public wxFrame
 private: void ShowSelectedIndices();
         // enable disable controls depending on the selected format
         private: void EnableDisableAVFormatControls();
-        // render the videoframe of current selected file,stream,timestamp
+        // initialize the render device
+// TODO: callback this function when following changed:
+// + glpanel size
+// + selected task
+// + selected video stream
+// + crop
+// + aspect-ratio
+// + frame-size
+// ...
+        private: bool InitializeGL();
+        // initiaize the render device & render the videoframe of current selected file,stream,timestamp
         private: void RenderFrame();
+        // draws a frame on the initialized render device
+        private: void RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper, FileSegment* Segment);
+        // thread for displaying videoframes from a buffer synchronized regarding a reference time
+        // buffer: fifo queue
+        // time: current timer in milli seconds
+        private: void PlayVideo(void* VideoFrameBuffer, int64_t* ReferenceTime);
+        // close the render device
+        private: void CloseGL();
+        // initialize the audio device
+        private: bool InitializeAlsa();
         //
-        private: void PlayAudio();
+        private: void PlayAudio(void* VideoFrameBuffer, int64_t* ReferenceTime);
+        // close the audio device
+        private: void CloseAlsa();
         // test if the settings are consistent
         private: bool VerifySettings();
 
