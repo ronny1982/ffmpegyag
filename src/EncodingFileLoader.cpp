@@ -949,7 +949,8 @@ return;
                         // TODO: resample audio frame
                         //pAudioFrameSource->channels;
                         //pAudioFrameSource->sample_rate;
-AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 20, 44100, 2, 300);
+                        //pAudioFrameSource->pkt_duration;
+AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, 44100, 2, pAudioFrameSource->nb_samples, 300);
                         // TODO: push audio frame into buffer
                         while(*DoStream && AudioFrameBuffer->IsFull())
                         {

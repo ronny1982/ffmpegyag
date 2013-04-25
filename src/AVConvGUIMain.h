@@ -21,7 +21,7 @@
 //*)
 
 //#include <wx/dcclient.h>
-#include <wx/textfile.h>
+//#include <wx/textfile.h>
 #include <wx/txtstrm.h>
 #include <wx/process.h>
 #include <wx/timer.h>

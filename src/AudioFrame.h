@@ -10,8 +10,8 @@ class AudioFrame
 {
     public: AudioFrame();
     // the pointer FrameData will be freed by this destructor, make sure not freeing it's content externally!
-    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, size_t FrameDataSize, unsigned char* FrameData);
-    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, int Frequency);
+    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, int FrameSampleCount, unsigned char* FrameData);
+    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, int FrameSampleCount, int Frequency);
     public: virtual ~AudioFrame();
 
     public: int64_t Timestamp;
@@ -20,11 +20,12 @@ class AudioFrame
     public: int SampleRate;
     public: int Channels;
     SampleFormat AVFormat;
-
+    public: int SampleCount;
     public: size_t DataSize;
     public: unsigned char* Data;
 
     public: snd_pcm_format_t GetPCMFormat();
+    private: int AVFormatByteSize();
 };
 
 WX_DEFINE_ARRAY(AudioFrame*, AudioFrameArray);

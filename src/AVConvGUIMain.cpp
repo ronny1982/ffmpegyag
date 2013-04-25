@@ -1938,6 +1938,47 @@ else
 
 bool AVConvGUIFrame::InitializeAlsa()
 {
+    snd_pcm_format_t format = SND_PCM_FORMAT_S16_LE;
+    unsigned int samplerate = 44100;
+    unsigned int channels = 2;
+    size_t frames = 1024;
+
+    short* buf = (short*)malloc(2*channels*frames);
+
+    // create (stereo) signal
+    for(size_t i=0; i<channels*frames; i+=channels)
+    {
+        // left channel
+        buf[i] = 40*(i%80);
+        // right channel
+        buf[i+1] = 20*(i%160);
+    }
+
+    snd_pcm_t* playback_handle;
+    snd_pcm_hw_params_t* hw_params;
+
+    if(snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0) >= 0)
+    {
+        snd_pcm_hw_params_malloc(&hw_params);
+        snd_pcm_hw_params_any(playback_handle, hw_params);
+        snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
+        snd_pcm_hw_params_set_format(playback_handle, hw_params, format);
+        snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &samplerate, 0);
+        snd_pcm_hw_params_set_channels(playback_handle, hw_params, channels);
+        snd_pcm_hw_params(playback_handle, hw_params);
+        snd_pcm_hw_params_free(hw_params);
+        snd_pcm_prepare(playback_handle);
+
+        for(int i=0; i<5; ++i)
+        {
+            snd_pcm_writei(playback_handle, buf, frames);
+        }
+
+        snd_pcm_drain(playback_handle);
+        snd_pcm_close(playback_handle);
+    }
+    free(buf);
+    buf = NULL;
     return true;
 }
 

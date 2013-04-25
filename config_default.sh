@@ -35,4 +35,5 @@ LDLIBS="
     -lavformat
     -lavcodec
     -lswscale
+    -lasound
     "
