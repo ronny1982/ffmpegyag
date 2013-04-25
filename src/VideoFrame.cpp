@@ -18,7 +18,7 @@ VideoFrame::VideoFrame()
     }
 }
 
-VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, unsigned char* FrameData)
+VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, size_t FrameDataSize, unsigned char* FrameData)
 {
     Timestamp = FrameTimestamp;
     Timecode = FrameTimecode;
@@ -27,7 +27,7 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Height = FrameHeight;
     AVFormat = FrameFormat;
     AVType = FrameType;
-    DataSize = avpicture_get_size(AVFormat, Width, Height);
+    DataSize = FrameDataSize;
     Data = FrameData;
 }
 
@@ -42,7 +42,6 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     AVType = FrameType;
     DataSize = avpicture_get_size(AVFormat, Width, Height);
     Data = (unsigned char*)av_malloc(DataSize);
-    // black frame
     for(size_t i=0; i<DataSize; i+=3)
     {
         Data[i+0] = Red;

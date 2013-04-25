@@ -1001,7 +1001,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
                     EncTask->OutputFile = SourceFile;
                     EncTask->OutputFormat = ComboBoxFileFormat->GetValue();
                     EncTask->OutputFile.SetExt(Libav::FormatExtensionMap[EncTask->OutputFormat]);
-
+//printf("A\n");
                     for(size_t v=0; v<InputFile->VideoStreams.GetCount(); v++)
                     {
                         vStream = InputFile->VideoStreams[v];
@@ -1059,7 +1059,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
 
                         vStream = NULL;
                     }
-
+//printf("B\n");
                     for(size_t a=0; a<InputFile->AudioStreams.GetCount(); a++)
                     {
                         aStream = InputFile->AudioStreams[a];
@@ -1091,7 +1091,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
 
                         aStream = NULL;
                     }
-
+//printf("C\n");
                     for(size_t s=0; s<InputFile->SubtitleStreams.GetCount(); s++)
                     {
                         sStream = InputFile->SubtitleStreams[s];
@@ -1122,7 +1122,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
                     EncTask->InputFiles.Add(InputFile);
                     EncodingTasks.Add(EncTask);
                     EncTask = NULL;
-
+//printf("D\n");
                     if(!HadSelectedTasks)
                     {
                         ListCtrlTasks->SetItemState(InsertIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
@@ -1578,48 +1578,60 @@ void AVConvGUIFrame::OnSliderFrameKeyPress(wxKeyEvent& event)
 
 void AVConvGUIFrame::PlayMedia()
 {
-    if(InitializeGL() && SelectedTaskIndices.GetCount() == 1)
+    if(SelectedTaskIndices.GetCount() == 1)
     {
         long TaskIndex = SelectedTaskIndices[0];
         long VideoStreamIndex = -1;
         StreamBuffer* VideoFrameBuffer = NULL;
         if(SelectedVideoStreamIndices.GetCount() == 1)
         {
-            VideoStreamIndex = SelectedVideoStreamIndices[0].StreamIndex;
-            VideoFrameBuffer = new StreamBuffer(FIFO, 500);
+            if(InitializeGL())
+            {
+                VideoStreamIndex = SelectedVideoStreamIndices[0].StreamIndex;
+                VideoFrameBuffer = new StreamBuffer(FIFO, 50);
+            }
         }
         long AudioStreamIndex = -1;
         StreamBuffer* AudioFrameBuffer = NULL;
         if(SelectedAudioStreamIndices.GetCount() == 1)
         {
-            AudioStreamIndex = SelectedAudioStreamIndices[0].StreamIndex;
-            AudioFrameBuffer = new StreamBuffer(FIFO, 500);
+            if(InitializeAlsa())
+            {
+                AudioStreamIndex = SelectedAudioStreamIndices[0].StreamIndex;
+                AudioFrameBuffer = new StreamBuffer(FIFO, 100);
+            }
         }
 
         IsPlaying = true;
 
-        int64_t ReferenceClock = 0;
-
+        int64_t ReferenceClock = EncodingTasks[TaskIndex]->InputFiles[0]->GetTimeFromFrameV(VideoStreamIndex, (long)SliderFrame->GetValue());
+printf("Buffering...\nStarTime: %lu\n", (long)ReferenceClock);
         // spawn buffer streaming thread
         bool StreamerIsRunning;
         EncodingTasks[TaskIndex]->InputFiles[0]->StreamMedia(&IsPlaying, &StreamerIsRunning, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256, 2, 44100);
-
-printf("\n\nComplete\nVideoFrameBuffer: %lu\nAudioFrameBuffer: %lu\n", (long)VideoFrameBuffer->GetCount(), (long)0/*(long)AudioFrameBuffer->GetCount()*/);
-
+printf("\nComplete\n\n");
         // wait until buffer hold some data
-        //while()
-        //{
+        while(StreamerIsRunning && ((VideoFrameBuffer && VideoFrameBuffer->GetCount() < 4) || (AudioFrameBuffer && AudioFrameBuffer->GetCount() < 8)))
+        {
             wxMilliSleep(50);
-        //}
+        }
 
         // spawn PlayVideo thread
-        bool VideoIsPlaying;
-        PlayVideo(&IsPlaying, &VideoIsPlaying, VideoFrameBuffer, &ReferenceClock);
-
+        bool VideoIsPlaying = false;
+        if(VideoFrameBuffer)
+        {
+printf("VideoFrameBuffer: %lu\nPlaying...\n", (long)VideoFrameBuffer->GetCount());
+            PlayVideo(&IsPlaying, &VideoIsPlaying, VideoFrameBuffer, &ReferenceClock);
+        }
+printf("\nComplete\n\n");
         // spawn PlayAudio thread
-        bool AudioIsPlaying;
-//        PlayAudio(&IsPlaying, &AudioIsPlaying, AudioFrameBuffer, &ReferenceClock);
-
+        bool AudioIsPlaying = false;
+        if(AudioFrameBuffer)
+        {
+printf("AudioFrameBuffer: %lu\nPlaying...\n", (long)AudioFrameBuffer->GetCount());
+            PlayAudio(&IsPlaying, &AudioIsPlaying, AudioFrameBuffer, &ReferenceClock);
+        }
+printf("\nComplete\n\n");
         // start sync clock
 
         IsPlaying = false;
@@ -1763,7 +1775,6 @@ void AVConvGUIFrame::RenderFrame()
 
             EncodingFileLoader* efl = EncodingTasks[SelectedTask]->InputFiles[0];
             // BOTTLENECK
-printf("Request Texture\n");
             Texture = efl->GetVideoFrameData(SelectedFrame, SelectedStream, 512, 256); // width & height of texture must be of power 2
             if(Texture)
             {
@@ -1772,7 +1783,7 @@ printf("Request Texture\n");
             }
             else
             {
-                TextCtrlTime->SetValue(Libav::MilliToSMPTE(efl->GetTimeFromFrame(SelectedStream, SelectedFrame)) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" []"));
+                TextCtrlTime->SetValue(Libav::MilliToSMPTE(efl->GetTimeFromFrameV(SelectedStream, SelectedFrame)) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" []"));
             }
             efl = NULL;
         }
@@ -1904,13 +1915,18 @@ void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* Vide
         if(!VideoFrameBuffer->IsEmpty())
         {
             VideoFrame* Texture = (VideoFrame*)VideoFrameBuffer->Pull();
-printf("Pull Video Frame: %lu [%lu]\n", (long)Texture->Timecode, (long)VideoFrameBuffer->GetCount());
+//printf("   Pull Video Frame: %lu\n", (long)Texture->Timecode);
             // check if frame time < reference time -> drop frame
             //if(VideoFrameBuffer->Timecode < *ReferenceTime)
             //{
+                TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + wxT("00:00:00.000")/*Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration)*/ + wxT(" [") + Texture->GetPicType() + wxT("]"));
+// TODO: get the correct frame depending on timestamp
+SliderFrame->SetValue(/*GetFrameFromTimestamp()*/SliderFrame->GetValue()+1); // TODO: check if this triggers render frame on windows
+                wxYield();
                 RenderFrame(Texture, RenderMapper, NULL);
             //}
             wxDELETE(Texture);
+//wxMilliSleep(50);
         }
 else
 {
@@ -1918,6 +1934,11 @@ else
 }
     }
     *IsPlaying = false;
+}
+
+bool AVConvGUIFrame::InitializeAlsa()
+{
+    return true;
 }
 
 void AVConvGUIFrame::PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock)
@@ -1928,8 +1949,13 @@ void AVConvGUIFrame::PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* Audi
         if(!AudioFrameBuffer->IsEmpty())
         {
             AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
+//printf("   Pull Audio Frame: %lu\n", (long)Pulse->Timecode);
             wxDELETE(Pulse);
         }
+else
+{
+    break;
+}
     }
     *IsPlaying = false;
 }
@@ -2043,7 +2069,7 @@ void AVConvGUIFrame::OnButtonSegmentAddClick(wxCommandEvent& event)
     {
         long TaskIndex = SelectedTaskIndices[0];
         SelectedStreamIndex StreamIndex = SelectedVideoStreamIndices[0];
-        int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrame((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
+        int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrameV((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
         long SegmentIndex = EncodingTasks[TaskIndex]->OutputSegments.GetCount();
 
         EncodingTasks[TaskIndex]->OutputSegments.Add(new FileSegment(EncodingTasks[TaskIndex]->OutputFile, time, time));
@@ -2100,7 +2126,7 @@ void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
         {
             long TaskIndex = SelectedTaskIndices[0];
             SelectedStreamIndex StreamIndex = SelectedVideoStreamIndices[0];
-            int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrame((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
+            int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrameV((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
 
             EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->Time.From = time;
 
@@ -2127,7 +2153,7 @@ void AVConvGUIFrame::OnButtonSegmentToClick(wxCommandEvent& event)
         {
             long TaskIndex = SelectedTaskIndices[0];
             SelectedStreamIndex StreamIndex = SelectedVideoStreamIndices[0];
-            int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrame((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
+            int64_t time = EncodingTasks[TaskIndex]->InputFiles[StreamIndex.FileIndex]->GetTimeFromFrameV((int)StreamIndex.StreamIndex, (long)SliderFrame->GetValue());
 
             EncodingTasks[TaskIndex]->OutputSegments[SegmentIndex]->Time.To = time;
 
@@ -2854,12 +2880,12 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_GotoSegmentStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            SliderFrame->SetValue((int)EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetFrameFromTime((int)SelectedVideoStreamIndices[0].StreamIndex, Segment->Time.From));
+            SliderFrame->SetValue((int)EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetFrameFromTimeV((int)SelectedVideoStreamIndices[0].StreamIndex, Segment->Time.From));
             SliderFrame->SetFocus();
         }
         if(event.GetId() == ID_GotoSegmentEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            SliderFrame->SetValue((int)EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetFrameFromTime((int)SelectedVideoStreamIndices[0].StreamIndex, Segment->Time.To));
+            SliderFrame->SetValue((int)EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetFrameFromTimeV((int)SelectedVideoStreamIndices[0].StreamIndex, Segment->Time.To));
             SliderFrame->SetFocus();
         }
         if(event.GetId() == ID_VideoFadeIn)
@@ -2874,11 +2900,11 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_VideoFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->VideoFadeIn.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->VideoFadeIn.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrameV((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeInEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->VideoFadeIn.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->VideoFadeIn.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrameV((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeInReset)
         {
@@ -2897,11 +2923,11 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_VideoFadeOutStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->VideoFadeOut.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->VideoFadeOut.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrameV((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeOutEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->VideoFadeOut.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->VideoFadeOut.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrameV((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_VideoFadeOutReset)
         {
@@ -2920,11 +2946,11 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_AudioFadeInStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->AudioFadeIn.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->AudioFadeIn.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrameV((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_AudioFadeInEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->AudioFadeIn.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->AudioFadeIn.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrameV((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_AudioFadeInReset)
         {
@@ -2943,11 +2969,11 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
         }
         if(event.GetId() == ID_AudioFadeOutStart && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->AudioFadeOut.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->AudioFadeOut.From = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrameV((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_AudioFadeOutEnd && SelectedVideoStreamIndices.GetCount() == 1)
         {
-            Segment->AudioFadeOut.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrame((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
+            Segment->AudioFadeOut.To = EncodingTasks[TaskIndex]->InputFiles[SelectedVideoStreamIndices[0].FileIndex]->GetTimeFromFrameV((int)SelectedVideoStreamIndices[0].StreamIndex, (long)SliderFrame->GetValue()) - Segment->Time.From;
         }
         if(event.GetId() == ID_AudioFadeOutReset)
         {

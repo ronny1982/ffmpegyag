@@ -26,7 +26,7 @@ MediaStream::MediaStream(unsigned int StreamID, bool EnableStream)
 
 MediaStream::~MediaStream()
 {
-    //
+    WX_CLEAR_ARRAY(IndexEntries);
 }
 
 VideoStream::VideoStream(unsigned int StreamID, bool EnableStream)
@@ -37,7 +37,7 @@ VideoStream::VideoStream(unsigned int StreamID, bool EnableStream)
 
 VideoStream::~VideoStream()
 {
-    WX_CLEAR_ARRAY(IndexEntries);
+    //
 }
 
 AudioStream::AudioStream(unsigned int StreamID, bool EnableStream)

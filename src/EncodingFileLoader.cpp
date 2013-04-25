@@ -31,7 +31,7 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
 
                 // set progressbar maximum to duration in seconds (at least 1 so maximum is > 0 to prevent instant closing of dialog)
                 int progress_max = wxMax(1, (int)((int64_t)pFormatCtx->duration/(int64_t)AV_TIME_BASE));
-                wxProgressDialog* ProgressDialog = new wxProgressDialog(wxT("Building Index..."), File.GetFullPath(), progress_max, NULL, wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_SMOOTH | wxPD_CAN_ABORT);
+                wxProgressDialog* ProgressDialog = new wxProgressDialog(wxT("Building Index..."), File.GetFullName()/*File.GetFullPath()*/, progress_max, NULL, wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_SMOOTH/* | wxPD_CAN_ABORT*/);
 
                 AVStream* stream;
 
@@ -54,19 +54,21 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         {
                             avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             VideoStreams.Add(new VideoStream(i, false));
-                            VideoStreams[VideoStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 security frames
+                            VideoStreams[VideoStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
 
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_AUDIO)
                         {
                             avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             AudioStreams.Add(new AudioStream(i, false));
+                            AudioStreams[AudioStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
 
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_SUBTITLE)
                         {
                             avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             SubtitleStreams.Add(new SubtitleStream(i, false));
+                            SubtitleStreams[SubtitleStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
                     }
 
@@ -84,21 +86,24 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         stream = pFormatCtx->streams[packet.stream_index];
                         StreamSize[packet.stream_index] += packet.size;
 
-                        // only process video packets
-                        if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO/* || (stream->codec->codec_type & AVMEDIA_TYPE_AUDIO) || (stream->codec->codec_type & AVMEDIA_TYPE_SUBTITLE)*/)
+                        if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO || (stream->codec->codec_type & AVMEDIA_TYPE_AUDIO) || (stream->codec->codec_type & AVMEDIA_TYPE_SUBTITLE))
                         {
                             if(packet.pts == (int64_t)AV_NOPTS_VALUE)
                             {
                                 packet.pts = packet.dts;
                             }
 
-                            if(vpkt_count%100 == 0)
+                            if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO)
                             {
-                                // set progressbar to packet time in seconds
-                                if(!ProgressDialog->Update((int)(((int64_t)packet.pts - (int64_t)stream->start_time) * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den)))
+                                if(vpkt_count%100 == 0)
                                 {
-                                    break;
+                                    // set progressbar to packet time in seconds
+                                    if(!ProgressDialog->Update((int)(((int64_t)packet.pts - (int64_t)stream->start_time) * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den)))
+                                    {
+                                        break;
+                                    }
                                 }
+                                vpkt_count++;
                             }
 
                             // add this packet to the corresponding video stream
@@ -111,7 +116,25 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                                 }
                             }
 
-                            vpkt_count++;
+                            // add this packet to the corresponding audio stream
+                            for(size_t i=0; i<AudioStreams.GetCount(); i++)
+                            {
+                                if(packet.stream_index == (int)AudioStreams[i]->ID)
+                                {
+                                    AudioStreams[i]->IndexEntries.Add(new IndexEntry(packet.pts, packet.pos, (packet.flags == AV_PKT_FLAG_KEY)));
+                                    break;
+                                }
+                            }
+
+                            // add this packet to the corresponding subtitle stream
+                            for(size_t i=0; i<SubtitleStreams.GetCount(); i++)
+                            {
+                                if(packet.stream_index == (int)SubtitleStreams[i]->ID)
+                                {
+                                    SubtitleStreams[i]->IndexEntries.Add(new IndexEntry(packet.pts, packet.pos, (packet.flags == AV_PKT_FLAG_KEY)));
+                                    break;
+                                }
+                            }
                         }
                         av_free_packet(&packet);
                     }
@@ -121,6 +144,7 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                     {
                         VideoStreams[v]->IndexEntries.Sort(CompareIndexEntry);
                     }
+                    // TODO: sort audio & subtitle indices ???
                 //}
 
                 AVDictionaryEntry* MetaInfo;
@@ -142,18 +166,27 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         {
                             vStream->StartTime = (int64_t)1000 * vStream->IndexEntries[0]->Timestamp * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
                         }
+                        else if(stream->nb_index_entries > 0)
+                        {
+                            vStream->StartTime = (int64_t)1000 * stream->index_entries[0].timestamp * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
+                        }
                         else
                         {
                             vStream->StartTime = stream->start_time;
                         }
                         if(vStream->FrameCount > 0)
                         {
-                            // length of last frame is considered
+                            // NOTE: length of last frame is considered
                             vStream->Duration = (int64_t)1000 * (vStream->IndexEntries[vStream->FrameCount-1]->Timestamp - vStream->IndexEntries[0]->Timestamp) * (int64_t)stream->time_base.num * ((int64_t)vStream->IndexEntries.GetCount()+1) / ((int64_t)stream->time_base.den * (int64_t)vStream->IndexEntries.GetCount());
                         }
                         else if(stream->duration > 0)
                         {
                             vStream->Duration = (int64_t)1000 * stream->duration * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
+                        }
+                        else if(stream->nb_index_entries > 0)
+                        {
+                            // TODO: consider length of last frame
+                            vStream->Duration = (int64_t)1000 * (stream->index_entries[stream->nb_index_entries-1].timestamp - stream->index_entries[0].timestamp) * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
                         }
                         else
                         {
@@ -204,7 +237,7 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         }
                         else
                         {
-                            vStream->FrameRate = av_q2d((AVRational){vStream->FrameCount*1000, (int)vStream->Duration});
+                            vStream->FrameRate = av_q2d((AVRational){(int)vStream->FrameCount*1000, (int)vStream->Duration});
                         }
                         vStream->Width = stream->codec->width;
                         vStream->Height = stream->codec->height;
@@ -225,8 +258,13 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         aStream = AudioStreams[a];
 
                         aStream->Size = StreamSize[AudioStreams[a]->ID];
+                        aStream->FrameCount = aStream->IndexEntries.GetCount(); // pFormatCtx->streams[i]->nb_frames;
 
-                        if(stream->nb_index_entries > 0)
+                        if(aStream->FrameCount > 0)
+                        {
+                            aStream->StartTime = (int64_t)1000 * aStream->IndexEntries[0]->Timestamp * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
+                        }
+                        else if(stream->nb_index_entries > 0)
                         {
                             aStream->StartTime = (int64_t)1000 * stream->index_entries[0].timestamp * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
                         }
@@ -234,14 +272,24 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         {
                             aStream->StartTime = stream->start_time;
                         }
-                        if(stream->duration > 0)
+                        if(aStream->FrameCount > 0)
+                        {
+                            // NOTE: length of last frame is considered
+                            aStream->Duration = (int64_t)1000 * (aStream->IndexEntries[aStream->FrameCount-1]->Timestamp - aStream->IndexEntries[0]->Timestamp) * (int64_t)stream->time_base.num * ((int64_t)aStream->IndexEntries.GetCount()+1) / ((int64_t)stream->time_base.den * (int64_t)aStream->IndexEntries.GetCount());
+                        }
+                        else if(stream->duration > 0)
                         {
                             aStream->Duration = (int64_t)1000 * stream->duration * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
                         }
                         else if(stream->nb_index_entries > 0)
                         {
-                            // NOTE: length of last frame is not considered
+                            // TODO: consider length of last frame
                             aStream->Duration = (int64_t)1000 * (stream->index_entries[stream->nb_index_entries-1].timestamp - stream->index_entries[0].timestamp) * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
+                        }
+                        else
+                        {
+                            // use format duration
+                            aStream->Duration = (int64_t)1000 * pFormatCtx->duration / AV_TIME_BASE;
                         }
                         if(stream->codec->bit_rate > 0)
                         {
@@ -295,8 +343,13 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         sStream = SubtitleStreams[s];
 
                         sStream->Size = StreamSize[SubtitleStreams[s]->ID];
+                        sStream->FrameCount = sStream->IndexEntries.GetCount(); // pFormatCtx->streams[i]->nb_frames;
 
-                        if(stream->nb_index_entries > 0)
+                        if(sStream->FrameCount > 0)
+                        {
+                            sStream->StartTime = (int64_t)1000 * sStream->IndexEntries[0]->Timestamp * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
+                        }
+                        else if(stream->nb_index_entries > 0)
                         {
                             sStream->StartTime = (int64_t)1000 * stream->index_entries[0].timestamp * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
                         }
@@ -304,14 +357,24 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         {
                             sStream->StartTime = stream->start_time;
                         }
-                        if(stream->duration > 0)
+                        if(sStream->FrameCount > 0)
+                        {
+                            // NOTE: length of last frame is considered
+                            sStream->Duration = (int64_t)1000 * (sStream->IndexEntries[sStream->FrameCount-1]->Timestamp - sStream->IndexEntries[0]->Timestamp) * (int64_t)stream->time_base.num * ((int64_t)sStream->IndexEntries.GetCount()+1) / ((int64_t)stream->time_base.den * (int64_t)sStream->IndexEntries.GetCount());
+                        }
+                        else if(stream->duration > 0)
                         {
                             sStream->Duration = (int64_t)1000 * stream->duration * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
                         }
                         else if(stream->nb_index_entries > 0)
                         {
-                            // NOTE: length of last frame is not considered
+                            // TODO: consider length of last frame
                             sStream->Duration = (int64_t)1000 * (stream->index_entries[stream->nb_index_entries-1].timestamp - stream->index_entries[0].timestamp) * (int64_t)stream->time_base.num / (int64_t)stream->time_base.den;
+                        }
+                        else
+                        {
+                            // use format duration
+                            sStream->Duration = (int64_t)1000 * pFormatCtx->duration / AV_TIME_BASE;
                         }
                         if(stream->codec->bit_rate > 0)
                         {
@@ -424,14 +487,14 @@ int64_t EncodingFileLoader::GetStreamEstimatedFrameCount(unsigned int StreamInde
                 }
             }
 
-            if(stream->codec->codec_type & AVMEDIA_TYPE_SUBTITLE)
+            if(stream->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
             {
                 // assuming 0.5 subtitles / second
                 EstimationFrameRate.num = 1;
                 EstimationFrameRate.den = 2;
             }
 
-            return (int64_t)(((int64_t)EstimationDuration * (int64_t)EstimationTimeBase.num * (int64_t)EstimationFrameRate.num ) / ((int64_t)EstimationTimeBase.den * (int64_t)EstimationFrameRate.den));
+            return (int64_t)EstimationDuration * (int64_t)EstimationTimeBase.num * (int64_t)EstimationFrameRate.num / (int64_t)EstimationTimeBase.den / (int64_t)EstimationFrameRate.den;
         }
     }
     return (int64_t)0;
@@ -511,13 +574,13 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long KeyFrameI
     return false;
 }
 
-int64_t EncodingFileLoader::GetTimeFromFrame(long VideoStreamIndex, long FrameIndex)
+int64_t EncodingFileLoader::GetTimeFromFrameV(long VideoStreamIndex, long FrameIndex)
 {
     if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
         if(FrameIndex < (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount())
         {
-            return GetTimeFromTimestamp(VideoStreamIndex, VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp);
+            return GetTimeFromTimestampV(VideoStreamIndex, VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp);
         }
         else
         {
@@ -527,7 +590,7 @@ int64_t EncodingFileLoader::GetTimeFromFrame(long VideoStreamIndex, long FrameIn
     return (int64_t)0;
 }
 
-long EncodingFileLoader::GetFrameFromTimestamp(long VideoStreamIndex, int64_t Timestamp)
+long EncodingFileLoader::GetFrameFromTimestampV(long VideoStreamIndex, int64_t Timestamp)
 {
     long result = 0;
 
@@ -570,12 +633,12 @@ long EncodingFileLoader::GetFrameFromTimestamp(long VideoStreamIndex, int64_t Ti
     return result;
 }
 
-long EncodingFileLoader::GetFrameFromTime(long VideoStreamIndex, int64_t Time)
+long EncodingFileLoader::GetFrameFromTimeV(long VideoStreamIndex, int64_t Time)
 {
-    return GetFrameFromTimestamp(VideoStreamIndex, GetTimestampFromTime(VideoStreamIndex, Time));
+    return GetFrameFromTimestampV(VideoStreamIndex, GetTimestampFromTimeV(VideoStreamIndex, Time));
 }
 
-int64_t EncodingFileLoader::GetTimeFromTimestamp(long VideoStreamIndex, int64_t Timestamp)
+int64_t EncodingFileLoader::GetTimeFromTimestampV(long VideoStreamIndex, int64_t Timestamp)
 {
     if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
@@ -584,7 +647,16 @@ int64_t EncodingFileLoader::GetTimeFromTimestamp(long VideoStreamIndex, int64_t 
     return (int64_t)0;
 }
 
-int64_t EncodingFileLoader::GetTimestampFromTime(long VideoStreamIndex, int64_t Time)
+int64_t EncodingFileLoader::GetTimeFromTimestampA(long AudioStreamIndex, int64_t Timestamp)
+{
+    if(pFormatCtx && AudioStreamIndex < (long)AudioStreams.GetCount())
+    {
+        return (int64_t)1000 * (Timestamp - AudioStreams[AudioStreamIndex]->IndexEntries[0]->Timestamp) * (int64_t)pFormatCtx->streams[AudioStreams[AudioStreamIndex]->ID]->time_base.num / (int64_t)pFormatCtx->streams[AudioStreams[AudioStreamIndex]->ID]->time_base.den;
+    }
+    return (int64_t)0;
+}
+
+int64_t EncodingFileLoader::GetTimestampFromTimeV(long VideoStreamIndex, int64_t Time)
 {
     if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
@@ -609,7 +681,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
     }
     else
     {
-        Timestamp = GetTimestampFromTime(VideoStreamIndex, VideoStreams[VideoStreamIndex]->Duration) + 1; // +1 to prevent rounding errors of integer timestamps (1,2,3,4,...)
+        Timestamp = GetTimestampFromTimeV(VideoStreamIndex, VideoStreams[VideoStreamIndex]->Duration) + 1; // +1 to prevent rounding errors of integer timestamps (1,2,3,4,...)
     }
 
     long KeyframeIndex = SeekKeyFrameIndex(VideoStreamIndex, FrameIndex);
@@ -621,13 +693,11 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
     }
     else
     {
-        //return new VideoFrame(Timestamp, GetTimestampTime(VideoStreamIndex, Timestamp), TargetWidth, TargetHeight, AV_PICTURE_TYPE_I, 128, 0, 0);
         return NULL;
     }
 
     if(Timestamp < KeyframeTimestamp)
     {
-        //return new VideoFrame(Timestamp, GetTimestampTime(VideoStreamIndex, Timestamp), TargetWidth, TargetHeight, AV_PICTURE_TYPE_I, 0, 128, 0);
         return NULL;
     }
 
@@ -636,21 +706,21 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
         FlushBuffer();
         if(!SetStreamPosition(VideoStreamIndex, KeyframeIndex))
         {
-            //return new VideoFrame(Timestamp, GetTimestampTime(VideoStreamIndex, Timestamp), TargetWidth, TargetHeight, AV_PICTURE_TYPE_I, 0, 0, 128);
             return NULL;
         }
         GOPBuffer.SetID(KeyframeIndex);
     }
 
+    // add frames to gop until timestamp is processed
     if(GOPBuffer.GetLastTimestamp() < Timestamp)
     {
-        // add frames to gop until timestamp is processed
         AVFrame *pFrameSource = avcodec_alloc_frame();
         AVFrame *pFrameTarget = avcodec_alloc_frame();
 
         if(pFrameTarget != NULL)
         {
-            unsigned char *Buffer = (unsigned char*)av_malloc(avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight));
+            int PictureSize = avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight);
+            unsigned char *Buffer = (unsigned char*)av_malloc(PictureSize);
             SwsContext *pSwsCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, TargetWidth, TargetHeight, TargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
 
             avpicture_fill((AVPicture*)pFrameTarget, Buffer, TargetPixelFormat, TargetWidth, TargetHeight);
@@ -706,8 +776,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
                                     sws_scale(pSwsCtx, pFrameSource->data, pFrameSource->linesize, 0, pCodecCtx->height, pFrameTarget->data, pFrameTarget->linesize);
                                     // FIXME: when dragging the slider to video end, last packets have duration 0
                                     // when stepping frame by frame to video end, all durations are valid
-                                    int64_t pkt_duration = GetTimeFromFrame(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrame(VideoStreamIndex, FrameIndex);
-                                    VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestamp(VideoStreamIndex, FrameTimestamp), pkt_duration, TargetWidth, TargetHeight, TargetPixelFormat, pFrameSource->pict_type, (unsigned char*)av_malloc(avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight)));
+                                    VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), GetTimeFromFrameV(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrameV(VideoStreamIndex, FrameIndex), TargetWidth, TargetHeight, TargetPixelFormat, pFrameSource->pict_type, PictureSize, (unsigned char*)av_malloc(PictureSize));
                                     memcpy(tex->Data, pFrameTarget->data[0], tex->DataSize);
                                     GOPBuffer.AddVideoFrame(tex);
                                     tex = NULL;
@@ -730,7 +799,6 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
     return GOPBuffer.GetVideoFrame(Timestamp);
 }
 
-// FIXME: this function messes up the current byte position which GetFrame() is based on
 void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int TargetWidth, int TargetHeight, int TargetChannels, int TargetSamplerate, PixelFormat TargetPixelFormat, SampleFormat TargetSampleFormat)
 {
     *IsStreaming = true;
@@ -752,7 +820,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
     AVCodecContext* pAudioCodecCtx = NULL;
     if(AudioStreamIndex > -1)
     {
-        AudioStreams[AudioStreamIndex]->ID;
+        AudioStreamID = AudioStreams[AudioStreamIndex]->ID;
         pAudioCodecCtx = pFormatCtx->streams[AudioStreamID]->codec;
         if(pAudioCodecCtx->codec_type != AVMEDIA_TYPE_AUDIO)
         {
@@ -761,39 +829,32 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
         }
     }
 
-    /*
-    int64_t Timestamp;
-    if(FrameIndex < (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount())
-    {
-        Timestamp = VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp;
-    }
-    else
-    {
-        Timestamp = GetTimestampFromTime(VideoStreamIndex, VideoStreams[VideoStreamIndex]->Duration) + 1; // +1 to prevent rounding errors of integer timestamps (1,2,3,4,...)
-    }
-    */
-
-    long KeyframeIndex = SeekKeyFrameIndex(VideoStreamIndex, FrameIndex);
-    SetStreamPosition(VideoStreamIndex, KeyframeIndex);
-
     AVFrame *pVideoFrameSource = avcodec_alloc_frame();
     AVFrame *pVideoFrameTarget = avcodec_alloc_frame();
     AVFrame *pAudioFrameSource = avcodec_alloc_frame();
     if(pVideoFrameTarget != NULL)
     {
-        unsigned char *Buffer = (unsigned char*)av_malloc(avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight));
+        int PictureSize = avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight);
+        unsigned char *VideoBuffer = (unsigned char*)av_malloc(PictureSize);
         SwsContext *pSwsCtx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height, pVideoCodecCtx->pix_fmt, TargetWidth, TargetHeight, TargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+        avpicture_fill((AVPicture*)pVideoFrameTarget, VideoBuffer, TargetPixelFormat, TargetWidth, TargetHeight);
 
-        avpicture_fill((AVPicture*)pVideoFrameTarget, Buffer, TargetPixelFormat, TargetWidth, TargetHeight);
+        //unsigned char* AudioBuffer;
+        //SwrContext* pSwrCtx;
 
         AVPacket packet;
         av_init_packet(&packet);
         int got_video_frame = 0;
         int got_audio_frame = 0;
 
+        int64_t FrameTimestamp = 0;
+
+        SetStreamPosition(VideoStreamIndex, SeekKeyFrameIndex(VideoStreamIndex, FrameIndex));
+        // NOTE: flush buffers after search, also reset GOPBuffer to indicate that file position has changed
+        FlushBuffer();
         while(*DoStream)
         {
-//printf("Read Packet\n");
+//printf("Read Packet...\n");
             // reached end of file?
             if(av_read_frame(pFormatCtx, &packet))
             {
@@ -805,7 +866,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                     packet.data = NULL;
                     packet.size = 0;
                     packet.stream_index = VideoStreamID;
-//printf("Flush Video Packet\n");
+//printf("   Flush Video Packet\n");
                 }
                 else if(got_audio_frame)
                 {
@@ -814,29 +875,31 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                     packet.data = NULL;
                     packet.size = 0;
                     packet.stream_index = AudioStreamID;
-//printf("Flush Audio Packet\n");
+//printf("   Flush Audio Packet\n");
                 }
                 else
                 {
-//printf("Break Loop\n");
+//printf("   EOF->Break Loop\n");
                     break; // leave loop
                 }
             }
 
             if(packet.stream_index == VideoStreamID)
             {
+//printf("   Process Video Packet: pts=%lu, dts=%lu\n", (long)packet.pts, (long)packet.dts);
                 // avcodec_decode_video()
                 // > 0, packet decoded to frame
                 // = 0, not decoded (i.e. read from codec buffer)
                 // < 0, error
                 if(avcodec_decode_video2(pVideoCodecCtx, pVideoFrameSource, &got_video_frame, &packet) > -1)
                 {
-//printf("Got Video Frame: %i\n", got_video_frame);
-                    if(got_video_frame && GetTimeFromTimestamp(VideoStreamIndex, pVideoFrameSource->pts + packet.duration) >= *ReferenceClock)
+//printf("   Got Video Frame: %i\n", got_video_frame);
+                    if(got_video_frame && GetTimeFromTimestampV(VideoStreamIndex, pVideoFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
                     {
-                        // TODO: resample video frame
-//VideoFrame* tmp = new VideoFrame(0, 0, 0, 512, 256, AV_PICTURE_TYPE_I, 0, 0, 255);
-                        int64_t FrameTimestamp = pVideoFrameSource->pkt_pts;
+                        // NOTE: FrameTimestamp >= Timestamp should always be true,
+                        // because *ReferenceClock should be >= StartTimestamp
+
+                        FrameTimestamp = pVideoFrameSource->pkt_pts;
                         if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
                         {
                             FrameTimestamp = pVideoFrameSource->pkt_dts;
@@ -845,55 +908,68 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                         if(pSwsCtx != NULL)
                         {
                             sws_scale(pSwsCtx, pVideoFrameSource->data, pVideoFrameSource->linesize, 0, pVideoCodecCtx->height, pVideoFrameTarget->data, pVideoFrameTarget->linesize);
-                            // FIXME: when dragging the slider to video end, last packets have duration 0
-                            // when stepping frame by frame to video end, all durations are valid
-                            int64_t pkt_duration = GetTimeFromFrame(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrame(VideoStreamIndex, FrameIndex);
-                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestamp(VideoStreamIndex, FrameTimestamp), pkt_duration, TargetWidth, TargetHeight, TargetPixelFormat, pVideoFrameSource->pict_type, (unsigned char*)av_malloc(avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight)));
+                            // FIXME: get correct frame duration...
+                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 0, TargetWidth, TargetHeight, TargetPixelFormat, pVideoFrameSource->pict_type, PictureSize, (unsigned char*)av_malloc(PictureSize));
                             memcpy(tex->Data, pVideoFrameTarget->data[0], tex->DataSize);
-                            VideoFrameBuffer->Push(tex);
-                        }
-                        // TODO: push video frame into buffer
-                        while(*DoStream && VideoFrameBuffer->IsFull())
-                        {
-                            wxMilliSleep(50);
-//printf("Buffer Overflow, waiting...\n");
-                        }
-//printf("Push Video Frame\n");
-                    }
-                }
-            }
-/*
-            if(packet.stream_index == AudioStreamID)
-            {
-                // TODO: implement function to convert audio timestamps to milli seconds
-                if(*ReferenceClock)
-                {
-                    // avcodec_decode_audio()
-                    // > 0, packet decoded to frame
-                    // = 0, not decoded (i.e. read from codec buffer)
-                    // < 0, error
-                    if(avcodec_decode_audio4(pAudioCodecCtx, pAudioFrameSource, &got_audio_frame, &packet) > -1)
-                    {
-                        if(got_audio_frame)
-                        {
-                            // TODO: resample audio frame
-
-                            // TODO: push audio frame into buffer
-                            while(*DoStream && AudioFrameBuffer->IsFull())
+                            // TODO: push video frame into buffer
+                            while(*DoStream && VideoFrameBuffer->IsFull())
                             {
                                 wxMilliSleep(50);
-printf("Buffer Overflow...\n");
+*IsStreaming = false;
+return;
+//printf("Buffer Overflow, waiting...\n");
                             }
-printf("Push Audio Frame\n");
+//printf("   Push Video Frame: %lu\n", (long)FrameTimestamp);
+                            VideoFrameBuffer->Push(tex);
                         }
                     }
                 }
             }
-*/
+
+            if(packet.stream_index == AudioStreamID)
+            {
+//printf("   Process Audio Packet: pts=%lu, dts=%lu\n", (long)packet.pts, (long)packet.dts);
+                // avcodec_decode_audio()
+                // > 0, packet decoded to frame
+                // = 0, not decoded (i.e. read from codec buffer)
+                // < 0, error
+                if(avcodec_decode_audio4(pAudioCodecCtx, pAudioFrameSource, &got_audio_frame, &packet) > -1)
+                {
+//printf("   Got Audio Frame: %i\n", got_audio_frame);
+                    // TODO: expand TimeFromTimestamp to work for audio files to
+                    // requires to build an audio index when loading file...
+                    if(got_audio_frame && GetTimeFromTimestampA(AudioStreamIndex, pAudioFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
+                    {
+                        FrameTimestamp = pAudioFrameSource->pkt_pts;
+                        if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
+                        {
+                            FrameTimestamp = pAudioFrameSource->pkt_dts;
+                        }
+
+                        // TODO: resample audio frame
+                        //pAudioFrameSource->channels;
+                        //pAudioFrameSource->sample_rate;
+AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 20, 44100, 2, 300);
+                        // TODO: push audio frame into buffer
+                        while(*DoStream && AudioFrameBuffer->IsFull())
+                        {
+                            wxMilliSleep(50);
+*IsStreaming = false;
+return;
+//printf("Buffer Overflow, waiting...\n");
+                        }
+                        AudioFrameBuffer->Push(snd);
+//printf("   Push Audio Frame: %lu\n", (long)FrameTimestamp);
+                    }
+                }
+            }
+
             av_free_packet(&packet);
         }
+        //swr_freeContext(pSwrCtx);
         sws_freeContext(pSwsCtx);
-        av_free(Buffer);
+        //av_free(AudioBuffer);
+        av_free(VideoBuffer);
     }
     av_free(pAudioFrameSource);
     av_free(pVideoFrameTarget);

@@ -12,8 +12,8 @@ class VideoFrameGOP
     private: int ID;
     private: VideoFrameArray VideoFrames;
 
-	// get the number of frames in gop
-	public: size_t GetCount();
+    // get the number of frames in gop
+    public: size_t GetCount();
     // clear all data (including id)
     public: void Flush();
     // returns the identifier for this gop (usually keyframe-index or keyframe-timestamp)

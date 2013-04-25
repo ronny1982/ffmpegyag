@@ -25,6 +25,8 @@ class MediaStream
     public: virtual ~MediaStream();
 
     public: unsigned int ID;
+    public: size_t FrameCount;
+    public: IndexEntryArray IndexEntries;
     public: bool Enabled; // set to true if this stream should be included into the output file
     public: int64_t Size; // byte
     public: int64_t StartTime; // milli seconds
@@ -40,8 +42,6 @@ class VideoStream : public MediaStream
     public: VideoStream(unsigned int StreamID, bool EnableStream);
     public: virtual ~VideoStream();
 
-    public: int FrameCount; // acronym for IndexEntryCount, points to the same data
-    public: IndexEntryArray IndexEntries; // acronym for IndexEntries, points to the same data
     public: double FrameRate;
     public: int Width;
     public: int Height;

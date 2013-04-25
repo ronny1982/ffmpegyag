@@ -10,7 +10,8 @@ class AudioFrame
 {
     public: AudioFrame();
     // the pointer FrameData will be freed by this destructor, make sure not freeing it's content externally!
-
+    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, size_t FrameDataSize, unsigned char* FrameData);
+    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, int Frequency);
     public: virtual ~AudioFrame();
 
     public: int64_t Timestamp;
