@@ -202,10 +202,11 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     wxFont StaticText18Font(14,wxDEFAULT,wxFONTSTYLE_NORMAL,wxBOLD,false,wxEmptyString,wxFONTENCODING_DEFAULT);
     StaticText18->SetFont(StaticText18Font);
     FlexGridSizer4->Add(StaticText18, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    // speed hack: disable doublebuffer
     int GLCanvasAttributes_1[] = {
         WX_GL_RGBA,
-        WX_GL_DOUBLEBUFFER,
-        WX_GL_DEPTH_SIZE,      16,
+//        WX_GL_DOUBLEBUFFER,
+        WX_GL_DEPTH_SIZE,      0,
         WX_GL_STENCIL_SIZE,    0,
         0, 0 };
     GLCanvasPreview = new wxGLCanvas(this, ID_GLCANVAS1, wxDefaultPosition, wxDefaultSize, 0, _T("ID_GLCANVAS1"), GLCanvasAttributes_1);
@@ -1588,7 +1589,7 @@ void AVConvGUIFrame::PlayMedia()
             if(InitializeGL())
             {
                 VideoStreamIndex = SelectedVideoStreamIndices[0].StreamIndex;
-                VideoFrameBuffer = new StreamBuffer(FIFO, 20);
+                VideoFrameBuffer = new StreamBuffer(FIFO, 30);
             }
         }
         long AudioStreamIndex = -1;
@@ -1598,18 +1599,18 @@ void AVConvGUIFrame::PlayMedia()
             if(InitializeAlsa())
             {
                 AudioStreamIndex = SelectedAudioStreamIndices[0].StreamIndex;
-                AudioFrameBuffer = new StreamBuffer(FIFO, 30);
+                AudioFrameBuffer = new StreamBuffer(FIFO, 50);
             }
         }
 
         IsPlaying = true;
 
         int64_t ReferenceClock = EncodingTasks[TaskIndex]->InputFiles[0]->GetTimeFromFrameV(VideoStreamIndex, (long)SliderFrame->GetValue());
-printf("Buffering...\nStarTime: %lu\n", (long)ReferenceClock);
+//printf("Buffering...\nStarTime: %lu\n", (long)ReferenceClock);
         // spawn buffer streaming thread
         bool StreamerIsRunning;
         EncodingTasks[TaskIndex]->InputFiles[0]->StreamMedia(&IsPlaying, &StreamerIsRunning, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256, 2, 48000);
-printf("\nComplete\n\n");
+//printf("\nComplete\n\n");
         // wait until buffer hold some data
         while(StreamerIsRunning && ((VideoFrameBuffer && VideoFrameBuffer->GetCount() < 4) || (AudioFrameBuffer && AudioFrameBuffer->GetCount() < 8)))
         {
@@ -1620,23 +1621,23 @@ printf("\nComplete\n\n");
         bool VideoIsPlaying = false;
         if(VideoFrameBuffer)
         {
-printf("VideoFrameBuffer: %lu\nPlaying...\n", (long)VideoFrameBuffer->GetCount());
+//printf("VideoFrameBuffer: %lu\nPlaying...\n", (long)VideoFrameBuffer->GetCount());
             PlayVideo(&IsPlaying, &VideoIsPlaying, VideoFrameBuffer, &ReferenceClock, true);
         }
-printf("\nComplete\n\n");
+//printf("\nComplete\n\n");
         // spawn PlayAudio thread
         bool AudioIsPlaying = false;
         if(AudioFrameBuffer)
         {
-printf("AudioFrameBuffer: %lu\nPlaying...\n", (long)AudioFrameBuffer->GetCount());
+//printf("AudioFrameBuffer: %lu\nPlaying...\n", (long)AudioFrameBuffer->GetCount());
             PlayAudio(&IsPlaying, &AudioIsPlaying, AudioFrameBuffer, &ReferenceClock, true);
         }
-printf("\nComplete\n\n");
+//printf("\nComplete\n\n");
 
         // start sync clock / wait until all threads are finished
         while(StreamerIsRunning || VideoIsPlaying || AudioIsPlaying)
         {
-printf("Clock Loop\n");
+//printf("Clock Loop\n");
             wxMilliSleep(250);
             wxYield();
         }
@@ -1925,11 +1926,10 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
         }
     }
 
-    // glFlush(); // will automatically be called by wxGLCanvas->SwapBuffers()
-
-    // BOTTLENECK
-    GLCanvasPreview->SwapBuffers();
-    glFinish();
+    // BOTTLENECK (when double buffering is enabled)
+    //GLCanvasPreview->SwapBuffers(); // makes glFlush / glFinish obsolete
+    // glFlush(); // submit all gl commands in buffer for execution and continue
+    glFinish(); // submit all gl commands in buffer for execution and wait until completed
 }
 
 void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock, bool IsClock)
@@ -1961,7 +1961,7 @@ void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* Vide
                     RenderFrame(Texture, RenderMapper, NULL);
                 }
             }
-
+// TODO: get the duration
 TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + wxT("00:00:00.000")/*Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration)*/ + wxT(" [") + Texture->GetPicType() + wxT("]"));
 // TODO: get the correct frame depending on timestamp
 SliderFrame->SetValue(/*GetFrameFromTimestamp()*/SliderFrame->GetValue()+1); // TODO: check if this triggers render frame on windows
@@ -2064,18 +2064,7 @@ else
 
 void AVConvGUIFrame::OnGLCanvasPreviewResize(wxSizeEvent& event)
 {
-    // NOTE: moved into RenderFrame() because it is a really fast operation
-    /*
-    // check if control is on display
-    if(GLCanvasPreview->GetContext())
-    {
-        int GlPanelWidth;// = GLCanvasPreview->GetSize().x;
-        int GlPanelHeight;// = GLCanvasPreview->GetSize().y;
-        GLCanvasPreview->GetClientSize(&GlPanelWidth, &GlPanelHeight);
-        GLCanvasPreview->SetCurrent();
-        glViewport(0, 0, GlPanelWidth, GlPanelHeight);
-    }
-    */
+    RenderFrame();
 }
 
 void AVConvGUIFrame::OnResize(wxSizeEvent& event)

@@ -956,7 +956,7 @@ return;
                         // FIXME: get correct frame duration...
                         AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, TargetSampleFormat, pAudioFrameSource->nb_samples);
                         snd->FillFrame(pVideoFrameTarget->data[0]);
-
+/*
 ///{ DEBUG
     wxTextFile txt(wxT("/home/ronny/Desktop/sound_out.txt"));
     if(txt.Exists())
@@ -977,7 +977,7 @@ return;
     txt.Write();
     txt.Close();
 ///}
-
+*/
 //                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, 1024, 300);
                         // TODO: push audio frame into buffer
                         while(*DoStream && AudioFrameBuffer->IsFull())
