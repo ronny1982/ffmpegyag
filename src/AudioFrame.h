@@ -27,7 +27,6 @@ class AudioFrame
     // copy all data from FrameData
     public: void FillFrame(unsigned char* FrameData);
     public: snd_pcm_format_t GetPCMFormat();
-    private: int AVFormatByteSize();
 };
 
 WX_DEFINE_ARRAY(AudioFrame*, AudioFrameArray);

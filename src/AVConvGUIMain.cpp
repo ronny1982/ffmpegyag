@@ -1588,7 +1588,7 @@ void AVConvGUIFrame::PlayMedia()
             if(InitializeGL())
             {
                 VideoStreamIndex = SelectedVideoStreamIndices[0].StreamIndex;
-                VideoFrameBuffer = new StreamBuffer(FIFO, 50);
+                VideoFrameBuffer = new StreamBuffer(FIFO, 20);
             }
         }
         long AudioStreamIndex = -1;
@@ -1598,7 +1598,7 @@ void AVConvGUIFrame::PlayMedia()
             if(InitializeAlsa())
             {
                 AudioStreamIndex = SelectedAudioStreamIndices[0].StreamIndex;
-                AudioFrameBuffer = new StreamBuffer(FIFO, 100);
+                AudioFrameBuffer = new StreamBuffer(FIFO, 30);
             }
         }
 
@@ -2024,7 +2024,28 @@ void AVConvGUIFrame::PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* Audi
                 // write time to ReferenceClock
                 *ReferenceClock = Pulse->Timecode;
                 // play sound always
+                //snd_pcm_writei(AlsaDevice, Pulse->Data, Pulse->SampleCount);
                 snd_pcm_writei(AlsaDevice, Pulse->Data, Pulse->SampleCount);
+// write values to textfile for debugging...
+/*
+wxTextFile txt(wxT("/home/ronny/Desktop/sound_out.txt"));
+if(txt.Exists())
+{
+    txt.Open();
+    txt.Clear();
+}
+else
+{
+    txt.Create();
+}
+short* tmp = (short*)Pulse->Data;
+for(int i=0; i<Pulse->SampleCount; i+=2)
+{
+    txt.AddLine(wxString::Format(wxT("%i\t%i"), (int)tmp[i], (int)tmp[i+1]));
+}
+txt.Write();
+txt.Close();
+*/
             }
             else
             {

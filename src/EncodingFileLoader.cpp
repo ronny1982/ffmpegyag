@@ -49,24 +49,21 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
 
                         // initialize codec context for each stream (if not done, decoding packets will crash!)
                         pCodecCtx = stream->codec;
-
+                        avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_VIDEO)
                         {
-                            avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             VideoStreams.Add(new VideoStream(i, false));
                             VideoStreams[VideoStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
 
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_AUDIO)
                         {
-                            avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             AudioStreams.Add(new AudioStream(i, false));
                             AudioStreams[AudioStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
 
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_SUBTITLE)
                         {
-                            avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             SubtitleStreams.Add(new SubtitleStream(i, false));
                             SubtitleStreams[SubtitleStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
@@ -715,6 +712,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
     if(GOPBuffer.GetLastTimestamp() < Timestamp)
     {
         AVFrame *pFrameSource = avcodec_alloc_frame();
+        // TODO: use AVPicture as target -> tutorial02.c
         AVFrame *pFrameTarget = avcodec_alloc_frame();
 
         if(pFrameTarget != NULL)
@@ -798,7 +796,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
 
     return GOPBuffer.GetVideoFrame(Timestamp);
 }
-
+#include <wx/textfile.h>
 void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int TargetWidth, int TargetHeight, int TargetChannels, int TargetSamplerate, PixelFormat TargetPixelFormat, SampleFormat TargetSampleFormat)
 {
     *IsStreaming = true;
@@ -830,6 +828,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
     }
 
     AVFrame *pVideoFrameSource = avcodec_alloc_frame();
+    // TODO: use AVPicture as target -> tutorial02.c
     AVFrame *pVideoFrameTarget = avcodec_alloc_frame();
     AVFrame *pAudioFrameSource = avcodec_alloc_frame();
     if(pVideoFrameTarget != NULL)
@@ -909,12 +908,12 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                         {
                             sws_scale(pSwsCtx, pVideoFrameSource->data, pVideoFrameSource->linesize, 0, pVideoCodecCtx->height, pVideoFrameTarget->data, pVideoFrameTarget->linesize);
                             // FIXME: get correct frame duration...
-                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 0, TargetWidth, TargetHeight, TargetPixelFormat, pVideoFrameSource->pict_type);
+                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 40, TargetWidth, TargetHeight, TargetPixelFormat, pVideoFrameSource->pict_type);
                             tex->FillFrame(pVideoFrameTarget->data[0]);
                             // TODO: push video frame into buffer
                             while(*DoStream && VideoFrameBuffer->IsFull())
                             {
-                                wxMilliSleep(50);
+                                wxMilliSleep(10);
 *IsStreaming = false;
 return;
 //printf("Buffer Overflow, waiting...\n");
@@ -947,17 +946,43 @@ return;
                         }
 
                         // TODO: resample audio frame
-                        //pAudioFrameSource->channels;
-                        //pAudioFrameSource->sample_rate;
-                        //pAudioFrameSource->pkt_duration;
+
+                        //pAudioCodecCtx->channels;
+                        //pAudioCodecCtx->sample_fmt;
+                        //pAudioCodecCtx->sample_rate;
+                        //pAudioFrameSource->nb_samples;
 
                         // FIXME: consider offset(start_time) related to the 'master' stream
-                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, TargetSampleFormat/*pAudioFrameSource->format*/, pAudioFrameSource->nb_samples);
+                        // FIXME: get correct frame duration...
+                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, TargetSampleFormat, pAudioFrameSource->nb_samples);
                         snd->FillFrame(pVideoFrameTarget->data[0]);
+
+///{ DEBUG
+    wxTextFile txt(wxT("/home/ronny/Desktop/sound_out.txt"));
+    if(txt.Exists())
+    {
+        txt.Open();
+        txt.AddLine(wxT("\n++++++++++++++++++++++++++++++++\n"));
+    }
+    else
+    {
+        txt.Create();
+    }
+    short* tmpSrc = (short*)pVideoFrameTarget->data[0];
+    short* tmpDst = (short*)snd->Data;
+    for(int i=0; i<TargetChannels*pAudioFrameSource->nb_samples; i+=TargetChannels)
+    {
+        txt.AddLine(wxString::Format(wxT("[%i, %i] - [%i, %i]"), (int)tmpSrc[i], (int)tmpSrc[i+1], (int)tmpDst[i], (int)tmpDst[i+1]));
+    }
+    txt.Write();
+    txt.Close();
+///}
+
+//                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, 1024, 300);
                         // TODO: push audio frame into buffer
                         while(*DoStream && AudioFrameBuffer->IsFull())
                         {
-                            wxMilliSleep(50);
+                            wxMilliSleep(10);
 *IsStreaming = false;
 return;
 //printf("Buffer Overflow, waiting...\n");

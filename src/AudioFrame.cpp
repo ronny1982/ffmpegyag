@@ -9,7 +9,7 @@ AudioFrame::AudioFrame()
     Channels = 0;
     AVFormat = AV_SAMPLE_FMT_S16;
     SampleCount = 0;
-    DataSize = AVFormatByteSize()*Channels*SampleCount;
+    DataSize = av_samples_get_buffer_size(NULL, Channels, SampleCount, AVFormat, 1);
     Data = (unsigned char*)av_malloc(DataSize);
     // silence
     for(size_t i=0; i<DataSize; i++)
@@ -27,7 +27,7 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Channels = FrameChannels;
     AVFormat = FrameFormat;
     SampleCount = FrameSampleCount;
-    DataSize = AVFormatByteSize()*Channels*SampleCount;
+    DataSize = av_samples_get_buffer_size(NULL, Channels, SampleCount, AVFormat, 1);
     Data = (unsigned char*)av_malloc(DataSize);
 }
 
@@ -40,7 +40,7 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Channels = FrameChannels;
     AVFormat = AV_SAMPLE_FMT_S16;
     SampleCount = FrameSampleCount;
-    DataSize = AVFormatByteSize()*Channels*SampleCount;
+    DataSize = av_samples_get_buffer_size(NULL, Channels, SampleCount, AVFormat, 1);
     Data = (unsigned char*)av_malloc(DataSize);
 
     int amp = 6000/SampleCount;
@@ -49,7 +49,7 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     {
         for(int c=0; c<Channels; ++c)
         {
-            tmp[i+c] = amp*SampleCount;
+            tmp[i+c] = amp*(i%SampleCount);
         }
     }
     tmp = NULL;
@@ -73,15 +73,5 @@ snd_pcm_format_t AudioFrame::GetPCMFormat()
         // TODO: add more formats
         case AV_SAMPLE_FMT_S16: return SND_PCM_FORMAT_S16_LE;
         default: return SND_PCM_FORMAT_UNKNOWN;
-    }
-}
-
-int AudioFrame::AVFormatByteSize()
-{
-    switch(AVFormat)
-    {
-        // TODO: add more formats
-        case AV_SAMPLE_FMT_S16: return 2;
-        default: return 0;
     }
 }

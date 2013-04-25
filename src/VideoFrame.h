@@ -24,6 +24,7 @@ class VideoFrame
     public: size_t DataSize;
     public: unsigned char* Data;
 
+    // copy all data from FrameData
     public: void FillFrame(unsigned char* FrameData);
     public: GLint GetGLFormat();
     public: wxString GetPicType();
