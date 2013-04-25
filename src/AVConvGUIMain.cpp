@@ -1608,7 +1608,7 @@ void AVConvGUIFrame::PlayMedia()
 printf("Buffering...\nStarTime: %lu\n", (long)ReferenceClock);
         // spawn buffer streaming thread
         bool StreamerIsRunning;
-        EncodingTasks[TaskIndex]->InputFiles[0]->StreamMedia(&IsPlaying, &StreamerIsRunning, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256, 2, 44100);
+        EncodingTasks[TaskIndex]->InputFiles[0]->StreamMedia(&IsPlaying, &StreamerIsRunning, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256, 2, 48000);
 printf("\nComplete\n\n");
         // wait until buffer hold some data
         while(StreamerIsRunning && ((VideoFrameBuffer && VideoFrameBuffer->GetCount() < 4) || (AudioFrameBuffer && AudioFrameBuffer->GetCount() < 8)))
@@ -1621,7 +1621,7 @@ printf("\nComplete\n\n");
         if(VideoFrameBuffer)
         {
 printf("VideoFrameBuffer: %lu\nPlaying...\n", (long)VideoFrameBuffer->GetCount());
-            PlayVideo(&IsPlaying, &VideoIsPlaying, VideoFrameBuffer, &ReferenceClock);
+            PlayVideo(&IsPlaying, &VideoIsPlaying, VideoFrameBuffer, &ReferenceClock, true);
         }
 printf("\nComplete\n\n");
         // spawn PlayAudio thread
@@ -1629,28 +1629,45 @@ printf("\nComplete\n\n");
         if(AudioFrameBuffer)
         {
 printf("AudioFrameBuffer: %lu\nPlaying...\n", (long)AudioFrameBuffer->GetCount());
-            PlayAudio(&IsPlaying, &AudioIsPlaying, AudioFrameBuffer, &ReferenceClock);
+            PlayAudio(&IsPlaying, &AudioIsPlaying, AudioFrameBuffer, &ReferenceClock, true);
         }
 printf("\nComplete\n\n");
-        // start sync clock
+
+        // start sync clock / wait until all threads are finished
+        while(StreamerIsRunning || VideoIsPlaying || AudioIsPlaying)
+        {
+printf("Clock Loop\n");
+            wxMilliSleep(250);
+            wxYield();
+        }
 
         IsPlaying = false;
 
         // TODO: wait until all threads are done...
 
-        // TODO: this work-around can be removed if destructor of StreamBuffer has been fixed
-        while(VideoFrameBuffer && !VideoFrameBuffer->IsEmpty())
+        if(VideoFrameBuffer)
         {
-            VideoFrame* buffer = (VideoFrame*)VideoFrameBuffer->Pull();
-            wxDELETE(buffer);
+            // TODO: this work-around can be removed if destructor of StreamBuffer has been fixed
+            while(!VideoFrameBuffer->IsEmpty())
+            {
+                VideoFrame* buffer = (VideoFrame*)VideoFrameBuffer->Pull();
+                wxDELETE(buffer);
+            }
+            wxDELETE(VideoFrameBuffer);
+            CloseGL();
         }
-        wxDELETE(VideoFrameBuffer);
-        while(AudioFrameBuffer && !AudioFrameBuffer->IsEmpty())
+
+        if(AudioFrameBuffer)
         {
-            AudioFrame* buffer = (AudioFrame*)AudioFrameBuffer->Pull();
-            wxDELETE(buffer);
+            // TODO: this work-around can be removed if destructor of StreamBuffer has been fixed
+            while(!AudioFrameBuffer->IsEmpty())
+            {
+                AudioFrame* buffer = (AudioFrame*)AudioFrameBuffer->Pull();
+                wxDELETE(buffer);
+            }
+            wxDELETE(AudioFrameBuffer);
+            CloseAlsa();
         }
-        wxDELETE(AudioFrameBuffer);
     }
 }
 
@@ -1753,6 +1770,14 @@ bool AVConvGUIFrame::InitializeGL()
         return true;
     }
     return false;
+}
+
+void AVConvGUIFrame::CloseGL()
+{
+    if(GLCanvasPreview->GetContext())
+    {
+        //printf("CloseGL()\n");
+    }
 }
 
 void AVConvGUIFrame::RenderFrame()
@@ -1907,7 +1932,7 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
     glFinish();
 }
 
-void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock)
+void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock, bool IsClock)
 {
     *IsPlaying = true;
     while(*DoPlay)
@@ -1916,17 +1941,33 @@ void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* Vide
         {
             VideoFrame* Texture = (VideoFrame*)VideoFrameBuffer->Pull();
 //printf("   Pull Video Frame: %lu\n", (long)Texture->Timecode);
-            // check if frame time < reference time -> drop frame
-            //if(VideoFrameBuffer->Timecode < *ReferenceTime)
-            //{
-                TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + wxT("00:00:00.000")/*Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration)*/ + wxT(" [") + Texture->GetPicType() + wxT("]"));
+            if(IsClock)
+            {
+                // write time to ReferenceClock
+                *ReferenceClock = Texture->Timecode;
+                // play video always
+                RenderFrame(Texture, RenderMapper, NULL);
+            }
+            else
+            {
+                // read time from ReferenceClock
+                // play video when timecode matches ReferenceClock
+                while(Texture->Timecode > *ReferenceClock)
+                {
+                    //wxMilliSleep(1);
+                }
+                if(Texture->Timecode <= *ReferenceClock && Texture->Timecode + Texture->Duration >= *ReferenceClock)
+                {
+                    RenderFrame(Texture, RenderMapper, NULL);
+                }
+            }
+
+TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + wxT("00:00:00.000")/*Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration)*/ + wxT(" [") + Texture->GetPicType() + wxT("]"));
 // TODO: get the correct frame depending on timestamp
 SliderFrame->SetValue(/*GetFrameFromTimestamp()*/SliderFrame->GetValue()+1); // TODO: check if this triggers render frame on windows
-                wxYield();
-                RenderFrame(Texture, RenderMapper, NULL);
-            //}
+            wxYield();
+
             wxDELETE(Texture);
-//wxMilliSleep(50);
         }
 else
 {
@@ -1939,50 +1980,37 @@ else
 bool AVConvGUIFrame::InitializeAlsa()
 {
     snd_pcm_format_t format = SND_PCM_FORMAT_S16_LE;
-    unsigned int samplerate = 44100;
+    unsigned int samplerate = 48000;
     unsigned int channels = 2;
-    size_t frames = 1024;
 
-    short* buf = (short*)malloc(2*channels*frames);
-
-    // create (stereo) signal
-    for(size_t i=0; i<channels*frames; i+=channels)
+    if(snd_pcm_open(&AlsaDevice, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0)
     {
-        // left channel
-        buf[i] = 40*(i%80);
-        // right channel
-        buf[i+1] = 20*(i%160);
+        return false;
     }
-
-    snd_pcm_t* playback_handle;
-    snd_pcm_hw_params_t* hw_params;
-
-    if(snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0) >= 0)
-    {
-        snd_pcm_hw_params_malloc(&hw_params);
-        snd_pcm_hw_params_any(playback_handle, hw_params);
-        snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
-        snd_pcm_hw_params_set_format(playback_handle, hw_params, format);
-        snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &samplerate, 0);
-        snd_pcm_hw_params_set_channels(playback_handle, hw_params, channels);
-        snd_pcm_hw_params(playback_handle, hw_params);
-        snd_pcm_hw_params_free(hw_params);
-        snd_pcm_prepare(playback_handle);
-
-        for(int i=0; i<5; ++i)
-        {
-            snd_pcm_writei(playback_handle, buf, frames);
-        }
-
-        snd_pcm_drain(playback_handle);
-        snd_pcm_close(playback_handle);
-    }
-    free(buf);
-    buf = NULL;
+    snd_pcm_hw_params_t* AlsaParameters;
+    snd_pcm_hw_params_malloc(&AlsaParameters);
+    snd_pcm_hw_params_any(AlsaDevice, AlsaParameters);
+    snd_pcm_hw_params_set_access(AlsaDevice, AlsaParameters, SND_PCM_ACCESS_RW_INTERLEAVED);
+    snd_pcm_hw_params_set_format(AlsaDevice, AlsaParameters, format);
+    snd_pcm_hw_params_set_rate_near(AlsaDevice, AlsaParameters, &samplerate, 0);
+    snd_pcm_hw_params_set_channels(AlsaDevice, AlsaParameters, channels);
+    snd_pcm_hw_params(AlsaDevice, AlsaParameters);
+    snd_pcm_hw_params_free(AlsaParameters);
+    snd_pcm_prepare(AlsaDevice);
     return true;
 }
 
-void AVConvGUIFrame::PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock)
+void AVConvGUIFrame::CloseAlsa()
+{
+    if(AlsaDevice)
+    {
+        snd_pcm_drain(AlsaDevice);
+        snd_pcm_close(AlsaDevice);
+        //AlsaDevice = NULL;
+    }
+}
+
+void AVConvGUIFrame::PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock, bool IsClock)
 {
     *IsPlaying = true;
     while(*DoPlay)
@@ -1991,6 +2019,18 @@ void AVConvGUIFrame::PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* Audi
         {
             AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
 //printf("   Pull Audio Frame: %lu\n", (long)Pulse->Timecode);
+            if(IsClock)
+            {
+                // write time to ReferenceClock
+                *ReferenceClock = Pulse->Timecode;
+                // play sound always
+                snd_pcm_writei(AlsaDevice, Pulse->Data, Pulse->SampleCount);
+            }
+            else
+            {
+                // read time from ReferenceClock
+                // play sound when timecode >= ReferenceClock
+            }
             wxDELETE(Pulse);
         }
 else

@@ -18,7 +18,7 @@ AudioFrame::AudioFrame()
     }
 }
 
-AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, int FrameSampleCount, unsigned char* FrameData)
+AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, int FrameSampleCount)
 {
     Timestamp = FrameTimestamp;
     Timecode = FrameTimecode;
@@ -28,7 +28,7 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     AVFormat = FrameFormat;
     SampleCount = FrameSampleCount;
     DataSize = AVFormatByteSize()*Channels*SampleCount;
-    Data = FrameData;
+    Data = (unsigned char*)av_malloc(DataSize);
 }
 
 AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, int FrameSampleCount, int Frequency)
@@ -43,14 +43,13 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     DataSize = AVFormatByteSize()*Channels*SampleCount;
     Data = (unsigned char*)av_malloc(DataSize);
 
-    int range = SampleRate/Frequency;
-    int amp = 6000/range;
+    int amp = 6000/SampleCount;
     short* tmp = (short*)Data;
     for(int i=0; i<SampleCount; i+=Channels)
     {
         for(int c=0; c<Channels; ++c)
         {
-            tmp[i+c] = amp*(i%range);
+            tmp[i+c] = amp*SampleCount;
         }
     }
     tmp = NULL;
@@ -60,6 +59,11 @@ AudioFrame::~AudioFrame()
 {
     av_free(Data);
     Data = NULL;
+}
+
+void AudioFrame::FillFrame(unsigned char* FrameData)
+{
+    memcpy(Data, FrameData, DataSize);
 }
 
 snd_pcm_format_t AudioFrame::GetPCMFormat()

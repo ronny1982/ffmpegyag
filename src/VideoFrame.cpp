@@ -18,7 +18,7 @@ VideoFrame::VideoFrame()
     }
 }
 
-VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType, size_t FrameDataSize, unsigned char* FrameData)
+VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType)
 {
     Timestamp = FrameTimestamp;
     Timecode = FrameTimecode;
@@ -27,8 +27,8 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Height = FrameHeight;
     AVFormat = FrameFormat;
     AVType = FrameType;
-    DataSize = FrameDataSize;
-    Data = FrameData;
+    DataSize = avpicture_get_size(AVFormat, Width, Height);
+    Data = (unsigned char*)av_malloc(DataSize);
 }
 
 VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, AVPictureType FrameType, unsigned char Red, unsigned char Green, unsigned char Blue)
@@ -42,6 +42,7 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     AVType = FrameType;
     DataSize = avpicture_get_size(AVFormat, Width, Height);
     Data = (unsigned char*)av_malloc(DataSize);
+
     for(size_t i=0; i<DataSize; i+=3)
     {
         Data[i+0] = Red;
@@ -55,6 +56,11 @@ VideoFrame::~VideoFrame()
     //wxDELETEA(Data);
     av_free(Data);
     Data = NULL;
+}
+
+void VideoFrame::FillFrame(unsigned char* FrameData)
+{
+    memcpy(Data, FrameData, DataSize);
 }
 
 GLint VideoFrame::GetGLFormat()

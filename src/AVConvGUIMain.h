@@ -260,6 +260,8 @@ class AVConvGUIFrame: public wxFrame
         wxMenu* MenuPresets;
         wxMenu* MenuSegmentFilters;
 
+        snd_pcm_t* AlsaDevice;
+
         bool IsPlaying;
         bool AbortEncoding;
         TextureGLPanelMap* RenderMapper;
@@ -312,13 +314,13 @@ private: void ShowSelectedIndices();
         // thread for displaying videoframes from a buffer synchronized regarding a reference time
         // buffer: fifo queue
         // time: current timer in milli seconds
-        private: void PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock);
+        private: void PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock, bool IsClock);
         // close the render device
         private: void CloseGL();
         // initialize the audio device
         private: bool InitializeAlsa();
         //
-        private: void PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock);
+        private: void PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock, bool IsClock);
         // close the audio device
         private: void CloseAlsa();
         //

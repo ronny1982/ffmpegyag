@@ -776,8 +776,8 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
                                     sws_scale(pSwsCtx, pFrameSource->data, pFrameSource->linesize, 0, pCodecCtx->height, pFrameTarget->data, pFrameTarget->linesize);
                                     // FIXME: when dragging the slider to video end, last packets have duration 0
                                     // when stepping frame by frame to video end, all durations are valid
-                                    VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), GetTimeFromFrameV(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrameV(VideoStreamIndex, FrameIndex), TargetWidth, TargetHeight, TargetPixelFormat, pFrameSource->pict_type, PictureSize, (unsigned char*)av_malloc(PictureSize));
-                                    memcpy(tex->Data, pFrameTarget->data[0], tex->DataSize);
+                                    VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), GetTimeFromFrameV(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrameV(VideoStreamIndex, FrameIndex), TargetWidth, TargetHeight, TargetPixelFormat, pFrameSource->pict_type);
+                                    tex->FillFrame(pFrameTarget->data[0]);
                                     GOPBuffer.AddVideoFrame(tex);
                                     tex = NULL;
                                 }
@@ -909,8 +909,8 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                         {
                             sws_scale(pSwsCtx, pVideoFrameSource->data, pVideoFrameSource->linesize, 0, pVideoCodecCtx->height, pVideoFrameTarget->data, pVideoFrameTarget->linesize);
                             // FIXME: get correct frame duration...
-                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 0, TargetWidth, TargetHeight, TargetPixelFormat, pVideoFrameSource->pict_type, PictureSize, (unsigned char*)av_malloc(PictureSize));
-                            memcpy(tex->Data, pVideoFrameTarget->data[0], tex->DataSize);
+                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 0, TargetWidth, TargetHeight, TargetPixelFormat, pVideoFrameSource->pict_type);
+                            tex->FillFrame(pVideoFrameTarget->data[0]);
                             // TODO: push video frame into buffer
                             while(*DoStream && VideoFrameBuffer->IsFull())
                             {
@@ -950,7 +950,10 @@ return;
                         //pAudioFrameSource->channels;
                         //pAudioFrameSource->sample_rate;
                         //pAudioFrameSource->pkt_duration;
-AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, 44100, 2, pAudioFrameSource->nb_samples, 300);
+
+                        // FIXME: consider offset(start_time) related to the 'master' stream
+                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, TargetSampleFormat/*pAudioFrameSource->format*/, pAudioFrameSource->nb_samples);
+                        snd->FillFrame(pVideoFrameTarget->data[0]);
                         // TODO: push audio frame into buffer
                         while(*DoStream && AudioFrameBuffer->IsFull())
                         {
