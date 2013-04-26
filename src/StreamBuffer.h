@@ -26,8 +26,11 @@ class StreamBuffer
     public: bool IsFull();
     // append data to the queue -> data will be freed by Pull() recipient
     public: void Push(void* Data);
-    // detach data from the  queue -> data needs to be freed by recipient
-    public: void* Pull();
+    // return pointer to the next data in queue
+    // if Detach = true: detach data from the queue -> data needs to be freed by recipient
+    // if Detach = false: keep data in queue -> data might be pulled and freed in the meantime by another recipient !!!
+    public: void* Pull(bool Detach = true);
+    // returns pointer to the data, without deteaching it
     // returns the current number of elements in the queue
     public: size_t GetCount();
 };

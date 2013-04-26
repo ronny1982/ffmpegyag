@@ -23,15 +23,12 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=6
+current_page=1
 FILE_NAME_0=10045;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.h;0;4
-FILE_NAME_1=86513;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
-FILE_NAME_2=2714;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.h;0;4
-FILE_NAME_3=44073;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.cpp;0;4
-FILE_NAME_4=967;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAudioFrame.h;0;4
-FILE_NAME_5=1938;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAudioFrame.cpp;0;4
-FILE_NAME_6=2310;C;0;16;0;1;0;%2Fhome%2Fronny%2FDesktop%2Fffmpeg-tutorial-master%2Ftutorial02a.c;0;4
-FILE_NAME_7=176;Sh;0;16;0;1;0;%2Fhome%2Fronny%2FDesktop%2Fffmpeg-tutorial-master%2Ftutorial02a.sh;0;4
+FILE_NAME_1=102663;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
+FILE_NAME_2=3335;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.h;0;4
+FILE_NAME_3=35506;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.cpp;0;4
+FILE_NAME_4=34119;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FLibav.cpp;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag

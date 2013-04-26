@@ -53,7 +53,7 @@ void StreamBuffer::Push(void* Data)
     // buffer overflow
 }
 
-void* StreamBuffer::Pull()
+void* StreamBuffer::Pull(bool Detach)
 {
     void* Data = NULL;
     if(!IsEmpty())
@@ -61,8 +61,11 @@ void* StreamBuffer::Pull()
         if(Type == FIFO)
         {
             Data = Queue[0];
-            Queue[0] = NULL;
-            Queue.RemoveAt(0);
+            if(Detach)
+            {
+                Queue[0] = NULL;
+                Queue.RemoveAt(0);
+            }
         }
     }
     // buffer underrun

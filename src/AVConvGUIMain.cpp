@@ -13,6 +13,11 @@
 WX_DEFINE_OBJARRAY(SelectedStreamIndexArray);
 
 //helper functions
+int64_t TimeSpecMilliDiff(struct timespec StartTime, struct timespec EndTime)
+{
+    return (int64_t)(1000*(EndTime.tv_sec - StartTime.tv_sec) + (EndTime.tv_nsec - StartTime.tv_nsec)/1000000);
+}
+
 enum wxbuildinfoformat {
     short_f, long_f };
 
@@ -598,7 +603,8 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(wxEVT_SIZE,(wxObjectEventFunction)&AVConvGUIFrame::OnResize);
     //*)
     GLCanvasPreview->Connect(wxEVT_SIZE,(wxObjectEventFunction)&AVConvGUIFrame::OnGLCanvasPreviewResize,0,this);
-    SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyPress, NULL, this);
+    SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
+    SliderFrame->Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyUp, NULL, this);
     MenuPresets->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuPresetsClick, NULL, this);
     Connect(wxEVT_RIGHT_DOWN,(wxObjectEventFunction)&AVConvGUIFrame::OnMainWindowRClick);
     MenuSegmentFilters->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
@@ -1537,7 +1543,7 @@ void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
 
     EnableDisableAVFormatControls();
 
-    RenderFrame();
+    RenderSingleFrame();
 }
 
 void AVConvGUIFrame::OnCheckBoxFileSegmentJoinClick(wxCommandEvent& event)
@@ -1554,127 +1560,35 @@ void AVConvGUIFrame::OnCheckBoxFileSegmentJoinClick(wxCommandEvent& event)
 void AVConvGUIFrame::OnListCtrlSegmentsItemSelect(wxListEvent& event)
 {
     UpdateSelectedSegmentIndices();
-    RenderFrame();
+    RenderSingleFrame();
 }
 
-void AVConvGUIFrame::OnSliderFrameKeyPress(wxKeyEvent& event)
+void AVConvGUIFrame::OnSliderFrameKeyDown(wxKeyEvent& event)
 {
-    if(event.GetKeyCode() == WXK_SPACE)
+    if(event.GetKeyCode() == WXK_SPACE && !IsPlaying)
     {
-        if(IsPlaying)
-        {
-            IsPlaying = false;
-        }
-        else
-        {
-            PlayMedia();
-        }
+        IsPlaying = true;
+        PlaybackMedia();
+        IsPlaying = false;
     }
     else
     {
-        // handle default wxSlider events (left arrow, right arrow, pg-up, pg-down)
+        // handle default wxSlider keydown events (left arrow, right arrow, pg-up, pg-down)
         event.Skip(true);
     }
 }
 
-void AVConvGUIFrame::PlayMedia()
+void AVConvGUIFrame::OnSliderFrameKeyUp(wxKeyEvent& event)
 {
-    if(SelectedTaskIndices.GetCount() == 1)
+    if(event.GetKeyCode() == WXK_SPACE && IsPlaying)
     {
-        long TaskIndex = SelectedTaskIndices[0];
-        long VideoStreamIndex = -1;
-        StreamBuffer* VideoFrameBuffer = NULL;
-        if(SelectedVideoStreamIndices.GetCount() == 1)
-        {
-            if(InitializeGL())
-            {
-                VideoStreamIndex = SelectedVideoStreamIndices[0].StreamIndex;
-                VideoFrameBuffer = new StreamBuffer(FIFO, 30);
-            }
-        }
-        long AudioStreamIndex = -1;
-        StreamBuffer* AudioFrameBuffer = NULL;
-        if(SelectedAudioStreamIndices.GetCount() == 1)
-        {
-            if(InitializeAlsa())
-            {
-                AudioStreamIndex = SelectedAudioStreamIndices[0].StreamIndex;
-                AudioFrameBuffer = new StreamBuffer(FIFO, 50);
-            }
-        }
-
-        IsPlaying = true;
-
-        int64_t ReferenceClock = EncodingTasks[TaskIndex]->InputFiles[0]->GetTimeFromFrameV(VideoStreamIndex, (long)SliderFrame->GetValue());
-//printf("Buffering...\nStarTime: %lu\n", (long)ReferenceClock);
-        // spawn buffer streaming thread
-        bool StreamerIsRunning;
-        EncodingTasks[TaskIndex]->InputFiles[0]->StreamMedia(&IsPlaying, &StreamerIsRunning, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256);
-//printf("\nComplete\n\n");
-        // wait until buffer hold some data
-        while(StreamerIsRunning && ((VideoFrameBuffer && VideoFrameBuffer->GetCount() < 4) || (AudioFrameBuffer && AudioFrameBuffer->GetCount() < 8)))
-        {
-            wxMilliSleep(50);
-        }
-
-        // spawn PlayVideo thread
-        bool VideoIsPlaying = false;
-        if(VideoFrameBuffer)
-        {
-//printf("VideoFrameBuffer: %lu\nPlaying...\n", (long)VideoFrameBuffer->GetCount());
-            PlayVideo(&IsPlaying, &VideoIsPlaying, VideoFrameBuffer, &ReferenceClock, true);
-        }
-//printf("\nComplete\n\n");
-        // spawn PlayAudio thread
-        bool AudioIsPlaying = false;
-        if(AudioFrameBuffer)
-        {
-//printf("AudioFrameBuffer: %lu\nPlaying...\n", (long)AudioFrameBuffer->GetCount());
-            PlayAudio(&IsPlaying, &AudioIsPlaying, AudioFrameBuffer, &ReferenceClock, true);
-        }
-//printf("\nComplete\n\n");
-
-        // start sync clock / wait until all threads are finished
-        while(StreamerIsRunning || VideoIsPlaying || AudioIsPlaying)
-        {
-//printf("Clock Loop\n");
-            wxMilliSleep(250);
-            wxYield();
-        }
-
         IsPlaying = false;
-
-        // TODO: wait until all threads are done...
-
-        if(VideoFrameBuffer)
-        {
-            // TODO: this work-around can be removed if destructor of StreamBuffer has been fixed
-            while(!VideoFrameBuffer->IsEmpty())
-            {
-                VideoFrame* buffer = (VideoFrame*)VideoFrameBuffer->Pull();
-                wxDELETE(buffer);
-            }
-            wxDELETE(VideoFrameBuffer);
-            CloseGL();
-        }
-
-        if(AudioFrameBuffer)
-        {
-            // TODO: this work-around can be removed if destructor of StreamBuffer has been fixed
-            while(!AudioFrameBuffer->IsEmpty())
-            {
-                AudioFrame* buffer = (AudioFrame*)AudioFrameBuffer->Pull();
-                wxDELETE(buffer);
-            }
-            wxDELETE(AudioFrameBuffer);
-            CloseAlsa();
-        }
     }
 }
 
 void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 {
-    RenderFrame();
+    RenderSingleFrame();
 }
 
 bool AVConvGUIFrame::InitializeGL()
@@ -1773,15 +1687,7 @@ bool AVConvGUIFrame::InitializeGL()
     return false;
 }
 
-void AVConvGUIFrame::CloseGL()
-{
-    if(GLCanvasPreview->GetContext())
-    {
-        //printf("CloseGL()\n");
-    }
-}
-
-void AVConvGUIFrame::RenderFrame()
+void AVConvGUIFrame::RenderSingleFrame()
 {
     if(InitializeGL())
     {
@@ -1863,7 +1769,7 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
 
         if(Segment)
         {
-            if(Texture->Timecode < Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            if(Texture->Timecode + Texture->Duration < Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
             {
                 glColor3f(1.0, 0.0, 0.0);
                 glBegin(GL_LINES);
@@ -1876,6 +1782,8 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
             else
             {
                 int64_t time = Texture->Timecode - Segment->Time.From;
+                // TODO: consider duration
+                int64_t duration = Texture->Duration;
 
                 // fade in
                 if(Segment->VideoFadeIn.From > 0 || Segment->VideoFadeIn.From < Segment->VideoFadeIn.To)
@@ -1932,49 +1840,12 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
     glFinish(); // submit all gl commands in buffer for execution and wait until completed
 }
 
-void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock, bool IsClock)
+void AVConvGUIFrame::CloseGL()
 {
-    *IsPlaying = true;
-    while(*DoPlay)
+    if(GLCanvasPreview->GetContext())
     {
-        if(!VideoFrameBuffer->IsEmpty())
-        {
-            VideoFrame* Texture = (VideoFrame*)VideoFrameBuffer->Pull();
-//printf("   Pull Video Frame: %lu\n", (long)Texture->Timecode);
-            if(IsClock)
-            {
-                // write time to ReferenceClock
-                *ReferenceClock = Texture->Timecode;
-                // play video always
-                RenderFrame(Texture, RenderMapper, NULL);
-            }
-            else
-            {
-                // read time from ReferenceClock
-                // play video when timecode matches ReferenceClock
-                while(Texture->Timecode > *ReferenceClock)
-                {
-                    //wxMilliSleep(1);
-                }
-                if(Texture->Timecode <= *ReferenceClock && Texture->Timecode + Texture->Duration >= *ReferenceClock)
-                {
-                    RenderFrame(Texture, RenderMapper, NULL);
-                }
-            }
-// TODO: get the duration
-TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + wxT("00:00:00.000")/*Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration)*/ + wxT(" [") + Texture->PicType + wxT("]"));
-// TODO: get the correct frame depending on timestamp
-SliderFrame->SetValue(/*GetFrameFromTimestamp()*/SliderFrame->GetValue()+1); // TODO: check if this triggers render frame on windows
-            wxYield();
-
-            wxDELETE(Texture);
-        }
-else
-{
-    break;
-}
+        //printf("CloseGL()\n");
     }
-    *IsPlaying = false;
 }
 
 bool AVConvGUIFrame::InitializeAlsa()
@@ -2004,71 +1875,206 @@ bool AVConvGUIFrame::InitializeAlsa()
     return false;
 }
 
+void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
+{
+    if(Pulse)
+    {
+        // do not modify Pulse, create copy of data
+        unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
+        memcpy(data, Pulse->Data, Pulse->DataSize);
+        if(Segment)
+        {
+            if(Pulse->Timecode + Pulse->Duration < Segment->Time.From || (Pulse->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            {
+                memset(data, 0, Pulse->DataSize);
+            }
+            else
+            {
+                int64_t time = Pulse->Timecode - Segment->Time.From;
+                // TODO: consider duration
+                int64_t duration = Pulse->Duration;
+
+                // fade in
+                if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
+                {
+                    /*
+                    if(time <= Segment->AudioFadeIn.To)
+                    {
+                        float ratio = 0.0;
+                        if(time >= Segment->VideoFadeIn.From)
+                        {
+                            ratio = (float)(time - Segment->AudioFadeIn.From) / (float)Segment->AudioFadeIn.GetDuration();
+                        }
+                    }
+                    */
+                }
+
+                // fade out
+                if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
+                {
+                    /*
+                    if(time >= Segment->VideoFadeOut.From)
+                    {
+                        float ratio = 0.0;
+                        if(time <= Segment->VideoFadeOut.To)
+                        {
+                            ratio = (float)(Segment->VideoFadeOut.To - time) / (float)Segment->VideoFadeOut.GetDuration();
+                        }
+                    }
+                    */
+                }
+            }
+        }
+        snd_pcm_writei(AlsaDevice, data, Pulse->SampleCount);
+    }
+}
+
 void AVConvGUIFrame::CloseAlsa()
 {
     if(AlsaDevice)
     {
-        snd_pcm_drain(AlsaDevice);
+        // stopping after all remaining frames in the buffer have finished playing
+        //snd_pcm_drain(AlsaDevice);
+        // immediately stops playback, dropping any frames still left in the buffer
+        snd_pcm_drop(AlsaDevice);
         snd_pcm_close(AlsaDevice);
         //AlsaDevice = NULL;
     }
 }
 
-void AVConvGUIFrame::PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock, bool IsClock)
+void AVConvGUIFrame::PlaybackMedia()
 {
-    *IsPlaying = true;
-    while(*DoPlay)
+    if(SelectedTaskIndices.GetCount() == 1)
     {
-        if(!AudioFrameBuffer->IsEmpty())
+        long TaskIndex = SelectedTaskIndices[0];
+        EncodingFileLoader* efl = EncodingTasks[TaskIndex]->InputFiles[0];
+        FileSegment* Segment = NULL;
+        if(SelectedSegmentIndices.GetCount() == 1)
         {
-            AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
-//printf("   Pull Audio Frame: %lu\n", (long)Pulse->Timecode);
-            if(IsClock)
-            {
-                // write time to ReferenceClock
-                *ReferenceClock = Pulse->Timecode;
-                // play sound always
-                //snd_pcm_writei(AlsaDevice, Pulse->Data, Pulse->SampleCount);
-                snd_pcm_writei(AlsaDevice, Pulse->Data, Pulse->SampleCount);
-// write values to textfile for debugging...
-/*
-wxTextFile txt(wxT("/home/ronny/Desktop/sound_out.txt"));
-if(txt.Exists())
-{
-    txt.Open();
-    txt.Clear();
-}
-else
-{
-    txt.Create();
-}
-short* tmp = (short*)Pulse->Data;
-for(int i=0; i<Pulse->SampleCount; i+=2)
-{
-    txt.AddLine(wxString::Format(wxT("%i\t%i"), (int)tmp[i], (int)tmp[i+1]));
-}
-txt.Write();
-txt.Close();
-*/
-            }
-            else
-            {
-                // read time from ReferenceClock
-                // play sound when timecode >= ReferenceClock
-            }
-            wxDELETE(Pulse);
+            Segment = EncodingTasks[TaskIndex]->OutputSegments[SelectedSegmentIndices[0]];
         }
-else
-{
-    break;
-}
+
+        long VideoStreamIndex = -1;
+        StreamBuffer* VideoFrameBuffer = NULL;
+        if(SelectedVideoStreamIndices.GetCount() == 1)
+        {
+            if(InitializeGL())
+            {
+                VideoStreamIndex = SelectedVideoStreamIndices[0].StreamIndex;
+                VideoFrameBuffer = new StreamBuffer(FIFO, 30);
+            }
+        }
+        long AudioStreamIndex = -1;
+        StreamBuffer* AudioFrameBuffer = NULL;
+        if(SelectedAudioStreamIndices.GetCount() == 1)
+        {
+            if(InitializeAlsa())
+            {
+                AudioStreamIndex = SelectedAudioStreamIndices[0].StreamIndex;
+                AudioFrameBuffer = new StreamBuffer(FIFO, 50);
+            }
+        }
+
+        struct timespec StartTime;
+        struct timespec ClockTime;
+        int64_t ReferenceStart = efl->GetTimeFromFrameV(VideoStreamIndex, (long)SliderFrame->GetValue());
+        int64_t ReferenceClock = ReferenceStart;
+
+        MediaStreamThread* thread = new MediaStreamThread(efl, &IsPlaying, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256);
+        thread->Create();
+        thread->Run();
+
+        clock_gettime(CLOCK_REALTIME, &StartTime);
+        while(IsPlaying/* && TODO: thread is running*/)
+        {
+            // update clock
+            clock_gettime(CLOCK_REALTIME, &ClockTime);
+            ReferenceClock = ReferenceStart + TimeSpecMilliDiff(StartTime, ClockTime);
+
+            if(AudioFrameBuffer)
+            {
+                // read at least one video & audio frame to the buffers
+                // break when reached end of file
+                if(!AudioFrameBuffer->IsEmpty())
+                {
+                    AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull(false);
+                    if(ReferenceClock >= Pulse->Timecode - 80) // preload audio frames 80ms
+                    {
+                        Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
+                        if(1)
+                        {
+                            RenderSound(Pulse, Segment);
+                        }
+                        wxDELETE(Pulse);
+                    }
+                    Pulse = NULL;
+                }
+            }
+
+            // update clock
+            clock_gettime(CLOCK_REALTIME, &ClockTime);
+            ReferenceClock = ReferenceStart + TimeSpecMilliDiff(StartTime, ClockTime);
+
+            if(VideoFrameBuffer)
+            {
+                if(!VideoFrameBuffer->IsEmpty())
+                {
+                    VideoFrame* Texture = (VideoFrame*)VideoFrameBuffer->Pull(false);
+                    if(ReferenceClock >= Texture->Timecode)
+                    {
+                        Texture = (VideoFrame*)VideoFrameBuffer->Pull();
+                        if(ReferenceClock <= Texture->Timecode + Texture->Duration)
+                        {
+                            RenderFrame(Texture, RenderMapper, Segment);
+                        }
+                        TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[VideoStreamIndex]->Duration) + wxT(" [") + Texture->PicType + wxT("]"));
+                        // TODO: check if this triggers render frame on windows
+                        SliderFrame->SetValue(efl->GetFrameFromTimestampV(VideoStreamIndex, Texture->Timestamp)/*SliderFrame->GetValue()+1*/);
+                        wxDELETE(Texture);
+                    }
+                    Texture = NULL;
+                }
+            }
+//printf("Buffers (A/V): %lu, %lu\n", (long)AudioFrameBuffer->GetCount(), (long)VideoFrameBuffer->GetCount());
+
+            // FIXME: when spamming space bar, recursive wxYield() error
+            wxYield();
+        }
+
+        // FIXME: do not delete buffers until thread is finished!
+
+        if(VideoFrameBuffer)
+        {
+            // TODO: this work-around can be removed if destructor of StreamBuffer has been fixed
+            while(!VideoFrameBuffer->IsEmpty())
+            {
+                VideoFrame* buffer = (VideoFrame*)VideoFrameBuffer->Pull();
+                wxDELETE(buffer);
+            }
+            wxDELETE(VideoFrameBuffer);
+            CloseGL();
+        }
+
+        if(AudioFrameBuffer)
+        {
+            // TODO: this work-around can be removed if destructor of StreamBuffer has been fixed
+            while(!AudioFrameBuffer->IsEmpty())
+            {
+                AudioFrame* buffer = (AudioFrame*)AudioFrameBuffer->Pull();
+                wxDELETE(buffer);
+            }
+            wxDELETE(AudioFrameBuffer);
+            CloseAlsa();
+        }
+
+        Segment = NULL;
+        efl = NULL;
     }
-    *IsPlaying = false;
 }
 
 void AVConvGUIFrame::OnGLCanvasPreviewResize(wxSizeEvent& event)
 {
-    RenderFrame();
+    RenderSingleFrame();
 }
 
 void AVConvGUIFrame::OnResize(wxSizeEvent& event)
@@ -2092,7 +2098,7 @@ void AVConvGUIFrame::OnResize(wxSizeEvent& event)
     ListCtrlSegments->Thaw();
     ListCtrlTasks->Thaw();
 
-    RenderFrame();
+    RenderSingleFrame();
 }
 
 void AVConvGUIFrame::OnSpinCtrlCropChange(wxSpinEvent& event)
@@ -2152,7 +2158,7 @@ void AVConvGUIFrame::OnSpinCtrlCropChange(wxSpinEvent& event)
 
     Layout();
 
-    RenderFrame();
+    RenderSingleFrame();
 
     //wxMessageBox(wxT("Crop Changed"));
 }
@@ -2234,7 +2240,7 @@ void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
         }
     }
     SliderFrame->SetFocus();
-    RenderFrame();
+    RenderSingleFrame();
     //wxMessageBox(wxT("Set Segment From"));
 }
 
@@ -2261,7 +2267,7 @@ void AVConvGUIFrame::OnButtonSegmentToClick(wxCommandEvent& event)
         }
     }
     SliderFrame->SetFocus();
-    RenderFrame();
+    RenderSingleFrame();
     //wxMessageBox(wxT("Set Segment To"));
 }
 
@@ -2494,7 +2500,7 @@ void AVConvGUIFrame::OnCheckListBoxVideoStreamsSelect(wxCommandEvent& event)
     }
 
     this->Layout();
-    RenderFrame();
+    RenderSingleFrame();
 }
 
 void AVConvGUIFrame::OnCheckListBoxVideoStreamsToggled(wxCommandEvent& event)
@@ -2570,7 +2576,7 @@ void AVConvGUIFrame::OnComboBoxVideoFrameSizeSelect(wxCommandEvent& event)
         }
     }
 
-    RenderFrame();
+    RenderSingleFrame();
 
     //wxMessageBox(wxT("Video FrameSize Changed"));
 }
@@ -2590,7 +2596,7 @@ void AVConvGUIFrame::OnComboBoxVideoAspectRatioSelect(wxCommandEvent& event)
         }
     }
 
-    RenderFrame();
+    RenderSingleFrame();
 
     //wxMessageBox(wxT("Video AspectRatio Changed"));
 }
@@ -3076,7 +3082,7 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
             Segment->AudioFadeOut.To = 0;
         }
         Segment = NULL;
-        RenderFrame();
+        RenderSingleFrame();
     }
 }
 

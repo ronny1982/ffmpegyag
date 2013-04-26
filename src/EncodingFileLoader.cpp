@@ -797,11 +797,9 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
 
     return GOPBuffer.GetVideoFrame(Timestamp);
 }
-#include <wx/textfile.h>
-void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat)
-{
-    *IsStreaming = true;
 
+void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, PixelFormat VideoTargetPixelFormat)
+{
     int VideoStreamID = -1;
     AVCodecContext* pVideoCodecCtx = NULL;
     if(VideoStreamIndex > -1)
@@ -834,10 +832,10 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
     AVFrame *pAudioFrameSource = avcodec_alloc_frame();
     if(pVideoFrameTarget != NULL)
     {
-        int PictureSize = avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight);
+        int PictureSize = avpicture_get_size(VideoTargetPixelFormat, VideoTargetWidth, VideoTargetHeight);
         unsigned char *VideoBuffer = (unsigned char*)av_malloc(PictureSize);
-        SwsContext *pSwsCtx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height, pVideoCodecCtx->pix_fmt, TargetWidth, TargetHeight, TargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
-        avpicture_fill((AVPicture*)pVideoFrameTarget, VideoBuffer, TargetPixelFormat, TargetWidth, TargetHeight);
+        SwsContext *pSwsCtx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height, pVideoCodecCtx->pix_fmt, VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+        avpicture_fill((AVPicture*)pVideoFrameTarget, VideoBuffer, VideoTargetPixelFormat, VideoTargetWidth, VideoTargetHeight);
 
         AVPacket packet;
         av_init_packet(&packet);
@@ -851,6 +849,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
         FlushBuffer();
         while(*DoStream)
         {
+//printf("   read packet\n");
             // reached end of file?
             if(av_read_frame(pFormatCtx, &packet))
             {
@@ -900,14 +899,11 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                         {
                             sws_scale(pSwsCtx, pVideoFrameSource->data, pVideoFrameSource->linesize, 0, pVideoCodecCtx->height, pVideoFrameTarget->data, pVideoFrameTarget->linesize);
                             // FIXME: get correct frame duration...
-                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 40, TargetWidth, TargetHeight, TargetPixelFormat, pVideoFrameSource->pict_type);
+                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 40, VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, pVideoFrameSource->pict_type);
                             tex->FillFrame(pVideoFrameTarget->data[0]);
-                            // TODO: push video frame into buffer
                             while(*DoStream && VideoFrameBuffer->IsFull())
                             {
                                 wxMilliSleep(10);
-*IsStreaming = false;
-return;
                             }
                             VideoFrameBuffer->Push(tex);
                         }
@@ -923,8 +919,6 @@ return;
                 // < 0, error
                 if(avcodec_decode_audio4(pAudioCodecCtx, pAudioFrameSource, &got_audio_frame, &packet) > -1)
                 {
-                    // TODO: expand TimeFromTimestamp to work for audio files to
-                    // requires to build an audio index when loading file...
                     if(got_audio_frame && GetTimeFromTimestampA(AudioStreamIndex, pAudioFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
                     {
                         FrameTimestamp = pAudioFrameSource->pkt_pts;
@@ -940,14 +934,11 @@ return;
                         while(*DoStream && AudioFrameBuffer->IsFull())
                         {
                             wxMilliSleep(10);
-*IsStreaming = false;
-return;
                         }
                         AudioFrameBuffer->Push(snd);
                     }
                 }
             }
-
             av_free_packet(&packet);
         }
         sws_freeContext(pSwsCtx);
@@ -959,6 +950,4 @@ return;
 
     pVideoCodecCtx = NULL;
     pAudioCodecCtx = NULL;
-
-    *IsStreaming = false;
 }

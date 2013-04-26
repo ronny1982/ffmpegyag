@@ -30,9 +30,12 @@
 #include <wx/mstream.h>
 #include <wx/icon.h>
 
+#include <sys/time.h>
+
 #include "resource.h"
 #include "EncodingTask.h"
 #include "AVConvSettings.h"
+#include "MediaStreamThread.h"
 
 #define STR_DEFAULT wxT("default")
 #define STR_NO_CHANGE wxT("no change")
@@ -113,7 +116,8 @@ class AVConvGUIFrame: public wxFrame
         void OnMenuPresetsClick(wxCommandEvent& event);
         void OnListCtrlSegmentsRClick(wxMouseEvent& event);
         void OnMenuSegmentFiltersClick(wxCommandEvent& event);
-        void OnSliderFrameKeyPress(wxKeyEvent& event);
+        void OnSliderFrameKeyDown(wxKeyEvent& event);
+        void OnSliderFrameKeyUp(wxKeyEvent& event);
 
         //(*Identifiers(AVConvGUIFrame)
         static const long ID_STATICTEXT8;
@@ -307,24 +311,20 @@ private: void ShowSelectedIndices();
 // + frame-size
 // ...
         private: bool InitializeGL();
-        // initiaize the render device & render the videoframe of current selected file,stream,timestamp
-        private: void RenderFrame();
+        // initiaize the render device & render a single videoframe of current selected file, stream, timestamp
+        private: void RenderSingleFrame();
         // draws a frame on the initialized render device
         private: void RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper, FileSegment* Segment);
-        // thread for displaying videoframes from a buffer synchronized regarding a reference time
-        // buffer: fifo queue
-        // time: current timer in milli seconds
-        private: void PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* VideoFrameBuffer, int64_t* ReferenceClock, bool IsClock);
         // close the render device
         private: void CloseGL();
         // initialize the audio device
         private: bool InitializeAlsa();
-        //
-        private: void PlayAudio(bool* DoPlay, bool* IsPlaying, StreamBuffer* AudioFrameBuffer, int64_t* ReferenceClock, bool IsClock);
+        // plays a frame on the initialized audio device
+        private: void RenderSound(AudioFrame* Pulse, FileSegment* Segment);
         // close the audio device
         private: void CloseAlsa();
         //
-        private: void PlayMedia();
+        private: void PlaybackMedia();
         // test if the settings are consistent
         private: bool VerifySettings();
 

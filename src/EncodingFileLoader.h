@@ -51,11 +51,11 @@ class EncodingFileLoader
     public: VideoFrame* GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat = PIX_FMT_RGB24);
     //public: AudioFrame* GetAudioFrameData(long AudioStreamIndex, long FrameIndex, int TargetChannels, int TargetSamplerate, SampleFormat TargetSampleFormat = AV_SAMPLE_FMT_S16);
     // stream decoded audio/video frames into the fifo buffer
-    public: void StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock,
+    public: void StreamMedia(bool* DoStream, int64_t* ReferenceClock,
                             long FrameIndex, long VideoStreamIndex, long AudioStreamIndex,
                             StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer,
-                            int TargetWidth, int TargetHeight,
-                            PixelFormat TargetPixelFormat = PIX_FMT_RGB24);
+                            int VideoTargetWidth, int VideoTargetHeight,
+                            PixelFormat VideoTargetPixelFormat = PIX_FMT_RGB24);
 };
 
 WX_DEFINE_ARRAY(EncodingFileLoader*, EncodingFileLoaderArray);
