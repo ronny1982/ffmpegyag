@@ -2035,13 +2035,18 @@ void AVConvGUIFrame::PlaybackMedia()
                     Texture = NULL;
                 }
             }
-//printf("Buffers (A/V): %lu, %lu\n", (long)AudioFrameBuffer->GetCount(), (long)VideoFrameBuffer->GetCount());
 
             // FIXME: when spamming space bar, recursive wxYield() error
             wxYield();
         }
 
-        // FIXME: do not delete buffers until thread is finished!
+        while(thread->IsRunning())
+        {
+            wxMilliSleep(5);
+        }
+        thread->Delete();
+        thread->Wait();
+        wxDELETE(thread);
 
         if(VideoFrameBuffer)
         {

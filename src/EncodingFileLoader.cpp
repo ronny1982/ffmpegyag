@@ -849,7 +849,6 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
         FlushBuffer();
         while(*DoStream)
         {
-//printf("   read packet\n");
             // reached end of file?
             if(av_read_frame(pFormatCtx, &packet))
             {
