@@ -955,7 +955,7 @@ return;
                         // FIXME: consider offset(start_time) related to the 'master' stream
                         // FIXME: get correct frame duration...
                         AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, TargetSampleFormat, pAudioFrameSource->nb_samples);
-                        snd->FillFrame(pVideoFrameTarget->data[0]);
+                        snd->FillFrame(pAudioFrameSource->data[0]);
 /*
 ///{ DEBUG
     wxTextFile txt(wxT("/home/ronny/Desktop/sound_out.txt"));
