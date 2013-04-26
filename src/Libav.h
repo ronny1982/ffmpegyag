@@ -10,6 +10,9 @@
 #include <wx/choicdlg.h>
 #include <wx/textdlg.h>
 
+#include <GL/gl.h>
+#include <alsa/asoundlib.h>
+
 #ifndef INT64_C
 #define INT64_C(c)  c ## L
 #endif
@@ -86,6 +89,12 @@ class Libav
     private: static CodecIDHashMap CodecMediaMap; // CodecID CODEC_ID_* -> AVMediaFlags AVMEDIA_FLAG_*
     // human readable pixel format associated with PIX_FMT_*
     public: static PixelFormatHashMap PixelDescriptionMap; // PixelFormat PIX_FMT_* -> wxString PixelDescription
+    // human readable picture type
+    public: static wxString GetPicType(AVPictureType PicType);
+    // convert AVPixelFormat to GL Format
+    public: static GLint GetGLFormat(PixelFormat PixFormat);
+    // convert AVSampleFormat to Alsa Format
+    public: static snd_pcm_format_t GetAlsaFormat(SampleFormat SplFormat);
 };
 
 #endif // LIBAV_H

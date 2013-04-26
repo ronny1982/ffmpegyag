@@ -1609,7 +1609,7 @@ void AVConvGUIFrame::PlayMedia()
 //printf("Buffering...\nStarTime: %lu\n", (long)ReferenceClock);
         // spawn buffer streaming thread
         bool StreamerIsRunning;
-        EncodingTasks[TaskIndex]->InputFiles[0]->StreamMedia(&IsPlaying, &StreamerIsRunning, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256, 2, 48000);
+        EncodingTasks[TaskIndex]->InputFiles[0]->StreamMedia(&IsPlaying, &StreamerIsRunning, &ReferenceClock, (long)SliderFrame->GetValue(), VideoStreamIndex, AudioStreamIndex, VideoFrameBuffer, AudioFrameBuffer, 512, 256);
 //printf("\nComplete\n\n");
         // wait until buffer hold some data
         while(StreamerIsRunning && ((VideoFrameBuffer && VideoFrameBuffer->GetCount() < 4) || (AudioFrameBuffer && AudioFrameBuffer->GetCount() < 8)))
@@ -1805,7 +1805,7 @@ void AVConvGUIFrame::RenderFrame()
             if(Texture)
             {
                 // BOTTLENECK
-                TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" [") + Texture->GetPicType() + wxT("]"));
+                TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" [") + Texture->PicType + wxT("]"));
             }
             else
             {
@@ -1837,7 +1837,7 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, Texture->GetGLFormat(), Texture->Width, Texture->Height, 0, Texture->GetGLFormat(), GL_UNSIGNED_BYTE, Texture->Data);
+        glTexImage2D(GL_TEXTURE_2D, 0, Texture->GLFormat, Texture->Width, Texture->Height, 0, Texture->GLFormat, GL_UNSIGNED_BYTE, Texture->Data);
 
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, TexturePointer);
@@ -1962,7 +1962,7 @@ void AVConvGUIFrame::PlayVideo(bool* DoPlay, bool* IsPlaying, StreamBuffer* Vide
                 }
             }
 // TODO: get the duration
-TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + wxT("00:00:00.000")/*Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration)*/ + wxT(" [") + Texture->GetPicType() + wxT("]"));
+TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + wxT("00:00:00.000")/*Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration)*/ + wxT(" [") + Texture->PicType + wxT("]"));
 // TODO: get the correct frame depending on timestamp
 SliderFrame->SetValue(/*GetFrameFromTimestamp()*/SliderFrame->GetValue()+1); // TODO: check if this triggers render frame on windows
             wxYield();
@@ -1979,25 +1979,29 @@ else
 
 bool AVConvGUIFrame::InitializeAlsa()
 {
-    snd_pcm_format_t format = SND_PCM_FORMAT_S16_LE;
-    unsigned int samplerate = 48000;
-    unsigned int channels = 2;
-
-    if(snd_pcm_open(&AlsaDevice, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0)
+    if(snd_pcm_open(&AlsaDevice, "default", SND_PCM_STREAM_PLAYBACK, 0) >= 0)
     {
-        return false;
+        if(SelectedTaskIndices.GetCount() == 1 && SelectedAudioStreamIndices.GetCount() == 1)
+        {
+            long SelectedTask = SelectedTaskIndices[0];
+            long SelectedStream = SelectedAudioStreamIndices[0].StreamIndex;
+            AudioStream* aStream = EncodingTasks[SelectedTask]->InputFiles[0]->AudioStreams[SelectedStream];
+
+            snd_pcm_hw_params_t* AlsaParameters;
+            snd_pcm_hw_params_malloc(&AlsaParameters);
+            snd_pcm_hw_params_any(AlsaDevice, AlsaParameters);
+            snd_pcm_hw_params_set_access(AlsaDevice, AlsaParameters, SND_PCM_ACCESS_RW_INTERLEAVED);
+            snd_pcm_hw_params_set_format(AlsaDevice, AlsaParameters, Libav::GetAlsaFormat(aStream->SampleFormat));
+            snd_pcm_hw_params_set_rate_near(AlsaDevice, AlsaParameters, (unsigned int*)&aStream->SampleRate, 0);
+            snd_pcm_hw_params_set_channels(AlsaDevice, AlsaParameters, aStream->ChannelCount);
+            snd_pcm_hw_params(AlsaDevice, AlsaParameters);
+            snd_pcm_hw_params_free(AlsaParameters);
+            snd_pcm_prepare(AlsaDevice);
+            aStream = NULL;
+            return true;
+        }
     }
-    snd_pcm_hw_params_t* AlsaParameters;
-    snd_pcm_hw_params_malloc(&AlsaParameters);
-    snd_pcm_hw_params_any(AlsaDevice, AlsaParameters);
-    snd_pcm_hw_params_set_access(AlsaDevice, AlsaParameters, SND_PCM_ACCESS_RW_INTERLEAVED);
-    snd_pcm_hw_params_set_format(AlsaDevice, AlsaParameters, format);
-    snd_pcm_hw_params_set_rate_near(AlsaDevice, AlsaParameters, &samplerate, 0);
-    snd_pcm_hw_params_set_channels(AlsaDevice, AlsaParameters, channels);
-    snd_pcm_hw_params(AlsaDevice, AlsaParameters);
-    snd_pcm_hw_params_free(AlsaParameters);
-    snd_pcm_prepare(AlsaDevice);
-    return true;
+    return false;
 }
 
 void AVConvGUIFrame::CloseAlsa()

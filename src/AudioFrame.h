@@ -1,7 +1,6 @@
 #ifndef AUDIOFRAME_H
 #define AUDIOFRAME_H
 
-#include <alsa/asoundlib.h>
 #include <wx/dynarray.h>
 
 #include "Libav.h"
@@ -19,14 +18,13 @@ class AudioFrame
     public: int64_t Duration; // in milliseconds
     public: int SampleRate;
     public: int Channels;
-    SampleFormat AVFormat;
+    snd_pcm_format_t AlsaFormat;
     public: int SampleCount;
     public: size_t DataSize;
     public: unsigned char* Data;
 
     // copy all data from FrameData
     public: void FillFrame(unsigned char* FrameData);
-    public: snd_pcm_format_t GetPCMFormat();
 };
 
 WX_DEFINE_ARRAY(AudioFrame*, AudioFrameArray);

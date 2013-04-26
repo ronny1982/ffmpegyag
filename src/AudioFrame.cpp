@@ -7,9 +7,9 @@ AudioFrame::AudioFrame()
     Duration = int64_t(0);
     SampleRate = 0;
     Channels = 0;
-    AVFormat = AV_SAMPLE_FMT_S16;
+    AlsaFormat = SND_PCM_FORMAT_S16_LE;
     SampleCount = 0;
-    DataSize = av_samples_get_buffer_size(NULL, Channels, SampleCount, AVFormat, 1);
+    DataSize = av_samples_get_buffer_size(NULL, Channels, SampleCount, AV_SAMPLE_FMT_S16, 1);
     Data = (unsigned char*)av_malloc(DataSize);
     // silence
     for(size_t i=0; i<DataSize; i++)
@@ -25,9 +25,9 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     SampleRate = FrameSampleRate;
     Channels = FrameChannels;
-    AVFormat = FrameFormat;
+    AlsaFormat = Libav::GetAlsaFormat(FrameFormat);
     SampleCount = FrameSampleCount;
-    DataSize = av_samples_get_buffer_size(NULL, Channels, SampleCount, AVFormat, 1);
+    DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, FrameFormat, 1);
     Data = (unsigned char*)av_malloc(DataSize);
 }
 
@@ -38,9 +38,9 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     SampleRate = FrameSampleRate;
     Channels = FrameChannels;
-    AVFormat = AV_SAMPLE_FMT_S16;
+    AlsaFormat = SND_PCM_FORMAT_S16_LE;
     SampleCount = FrameSampleCount;
-    DataSize = av_samples_get_buffer_size(NULL, Channels, SampleCount, AVFormat, 1);
+    DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, AV_SAMPLE_FMT_S16, 1);
     Data = (unsigned char*)av_malloc(DataSize);
 
     int amp = 6000/SampleCount;
@@ -64,14 +64,4 @@ AudioFrame::~AudioFrame()
 void AudioFrame::FillFrame(unsigned char* FrameData)
 {
     memcpy(Data, FrameData, DataSize);
-}
-
-snd_pcm_format_t AudioFrame::GetPCMFormat()
-{
-    switch(AVFormat)
-    {
-        // TODO: add more formats
-        case AV_SAMPLE_FMT_S16: return SND_PCM_FORMAT_S16_LE;
-        default: return SND_PCM_FORMAT_UNKNOWN;
-    }
 }

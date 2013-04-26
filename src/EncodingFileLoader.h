@@ -55,9 +55,7 @@ class EncodingFileLoader
                             long FrameIndex, long VideoStreamIndex, long AudioStreamIndex,
                             StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer,
                             int TargetWidth, int TargetHeight,
-                            int TargetChannels, int TargetSamplerate,
-                            PixelFormat TargetPixelFormat = PIX_FMT_RGB24,
-                            SampleFormat TargetSampleFormat = AV_SAMPLE_FMT_S16);
+                            PixelFormat TargetPixelFormat = PIX_FMT_RGB24);
 };
 
 WX_DEFINE_ARRAY(EncodingFileLoader*, EncodingFileLoaderArray);

@@ -600,3 +600,38 @@ wxArrayString Libav::FormatSubtitleCodecs(wxString ContainerFormat)
 
     return codecs;
 }
+
+wxString Libav::GetPicType(AVPictureType PicType)
+{
+    switch(PicType)
+    {
+        case AV_PICTURE_TYPE_I: return wxT("I");
+        case AV_PICTURE_TYPE_P: return wxT("P");
+        case AV_PICTURE_TYPE_B: return wxT("B");
+        case AV_PICTURE_TYPE_S: return wxT("S");
+        case AV_PICTURE_TYPE_SI: return wxT("i");
+        case AV_PICTURE_TYPE_SP: return wxT("p");
+        case AV_PICTURE_TYPE_BI: return wxT("b");
+        default: return wxT("?");
+    }
+}
+
+GLint Libav::GetGLFormat(PixelFormat PixFormat)
+{
+    // TODO: add more formats
+    switch(PixFormat)
+    {
+        case PIX_FMT_RGB24: return GL_RGB;
+        default: return 0;
+    }
+}
+
+snd_pcm_format_t Libav::GetAlsaFormat(SampleFormat SplFormat)
+{
+    // TODO: add more formats
+    switch(SplFormat)
+    {
+        case AV_SAMPLE_FMT_S16: return SND_PCM_FORMAT_S16_LE;
+        default: return SND_PCM_FORMAT_UNKNOWN;
+    }
+}

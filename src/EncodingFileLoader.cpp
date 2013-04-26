@@ -324,6 +324,7 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         }
                         aStream->SampleRate = stream->codec->sample_rate;
                         aStream->ChannelCount = stream->codec->channels;
+                        aStream->SampleFormat = stream->codec->sample_fmt;
 
                         aStream = NULL;
                     }
@@ -797,7 +798,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
     return GOPBuffer.GetVideoFrame(Timestamp);
 }
 #include <wx/textfile.h>
-void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int TargetWidth, int TargetHeight, int TargetChannels, int TargetSamplerate, PixelFormat TargetPixelFormat, SampleFormat TargetSampleFormat)
+void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat)
 {
     *IsStreaming = true;
 
@@ -838,9 +839,6 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
         SwsContext *pSwsCtx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height, pVideoCodecCtx->pix_fmt, TargetWidth, TargetHeight, TargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
         avpicture_fill((AVPicture*)pVideoFrameTarget, VideoBuffer, TargetPixelFormat, TargetWidth, TargetHeight);
 
-        //unsigned char* AudioBuffer;
-        //SwrContext* pSwrCtx;
-
         AVPacket packet;
         av_init_packet(&packet);
         int got_video_frame = 0;
@@ -853,7 +851,6 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
         FlushBuffer();
         while(*DoStream)
         {
-//printf("Read Packet...\n");
             // reached end of file?
             if(av_read_frame(pFormatCtx, &packet))
             {
@@ -865,7 +862,6 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                     packet.data = NULL;
                     packet.size = 0;
                     packet.stream_index = VideoStreamID;
-//printf("   Flush Video Packet\n");
                 }
                 else if(got_audio_frame)
                 {
@@ -874,25 +870,21 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                     packet.data = NULL;
                     packet.size = 0;
                     packet.stream_index = AudioStreamID;
-//printf("   Flush Audio Packet\n");
                 }
                 else
                 {
-//printf("   EOF->Break Loop\n");
                     break; // leave loop
                 }
             }
 
             if(packet.stream_index == VideoStreamID)
             {
-//printf("   Process Video Packet: pts=%lu, dts=%lu\n", (long)packet.pts, (long)packet.dts);
                 // avcodec_decode_video()
                 // > 0, packet decoded to frame
                 // = 0, not decoded (i.e. read from codec buffer)
                 // < 0, error
                 if(avcodec_decode_video2(pVideoCodecCtx, pVideoFrameSource, &got_video_frame, &packet) > -1)
                 {
-//printf("   Got Video Frame: %i\n", got_video_frame);
                     if(got_video_frame && GetTimeFromTimestampV(VideoStreamIndex, pVideoFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
                     {
                         // NOTE: FrameTimestamp >= Timestamp should always be true,
@@ -916,9 +908,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, bool* IsStreaming, int64_t*
                                 wxMilliSleep(10);
 *IsStreaming = false;
 return;
-//printf("Buffer Overflow, waiting...\n");
                             }
-//printf("   Push Video Frame: %lu\n", (long)FrameTimestamp);
                             VideoFrameBuffer->Push(tex);
                         }
                     }
@@ -927,14 +917,12 @@ return;
 
             if(packet.stream_index == AudioStreamID)
             {
-//printf("   Process Audio Packet: pts=%lu, dts=%lu\n", (long)packet.pts, (long)packet.dts);
                 // avcodec_decode_audio()
                 // > 0, packet decoded to frame
                 // = 0, not decoded (i.e. read from codec buffer)
                 // < 0, error
                 if(avcodec_decode_audio4(pAudioCodecCtx, pAudioFrameSource, &got_audio_frame, &packet) > -1)
                 {
-//printf("   Got Audio Frame: %i\n", got_audio_frame);
                     // TODO: expand TimeFromTimestamp to work for audio files to
                     // requires to build an audio index when loading file...
                     if(got_audio_frame && GetTimeFromTimestampA(AudioStreamIndex, pAudioFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
@@ -945,59 +933,24 @@ return;
                             FrameTimestamp = pAudioFrameSource->pkt_dts;
                         }
 
-                        // TODO: resample audio frame
-
-                        //pAudioCodecCtx->channels;
-                        //pAudioCodecCtx->sample_fmt;
-                        //pAudioCodecCtx->sample_rate;
-                        //pAudioFrameSource->nb_samples;
-
                         // FIXME: consider offset(start_time) related to the 'master' stream
                         // FIXME: get correct frame duration...
-                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, TargetSampleFormat, pAudioFrameSource->nb_samples);
+                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, pAudioFrameSource->nb_samples);
                         snd->FillFrame(pAudioFrameSource->data[0]);
-/*
-///{ DEBUG
-    wxTextFile txt(wxT("/home/ronny/Desktop/sound_out.txt"));
-    if(txt.Exists())
-    {
-        txt.Open();
-        txt.AddLine(wxT("\n++++++++++++++++++++++++++++++++\n"));
-    }
-    else
-    {
-        txt.Create();
-    }
-    short* tmpSrc = (short*)pVideoFrameTarget->data[0];
-    short* tmpDst = (short*)snd->Data;
-    for(int i=0; i<TargetChannels*pAudioFrameSource->nb_samples; i+=TargetChannels)
-    {
-        txt.AddLine(wxString::Format(wxT("[%i, %i] - [%i, %i]"), (int)tmpSrc[i], (int)tmpSrc[i+1], (int)tmpDst[i], (int)tmpDst[i+1]));
-    }
-    txt.Write();
-    txt.Close();
-///}
-*/
-//                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, TargetSamplerate, TargetChannels, 1024, 300);
-                        // TODO: push audio frame into buffer
                         while(*DoStream && AudioFrameBuffer->IsFull())
                         {
                             wxMilliSleep(10);
 *IsStreaming = false;
 return;
-//printf("Buffer Overflow, waiting...\n");
                         }
                         AudioFrameBuffer->Push(snd);
-//printf("   Push Audio Frame: %lu\n", (long)FrameTimestamp);
                     }
                 }
             }
 
             av_free_packet(&packet);
         }
-        //swr_freeContext(pSwrCtx);
         sws_freeContext(pSwsCtx);
-        //av_free(AudioBuffer);
         av_free(VideoBuffer);
     }
     av_free(pAudioFrameSource);

@@ -45,6 +45,7 @@ class VideoStream : public MediaStream
     public: double FrameRate;
     public: int Width;
     public: int Height;
+    //public: enum AVPixelFormat PixFormat;
     public: wxString Profile; // BitDepth, PixelFormat(YUV, RGB,...), Level
     public: VideoSettings EncodingSettings;
 };
@@ -58,6 +59,7 @@ class AudioStream : public MediaStream
 
     public: int SampleRate;
     public: int ChannelCount;
+    public: enum AVSampleFormat SampleFormat;
     public: AudioSettings EncodingSettings;
 };
 

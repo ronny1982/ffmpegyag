@@ -1,7 +1,6 @@
 #ifndef VIDEOFRAME_H
 #define VIDEOFRAME_H
 
-#include <GL/gl.h>
 #include <wx/dynarray.h>
 
 #include "Libav.h"
@@ -19,15 +18,13 @@ class VideoFrame
     public: int64_t Duration; // in milliseconds
     public: int Width;
     public: int Height;
-    public: PixelFormat AVFormat;
-    public: AVPictureType AVType;
+    public: GLint GLFormat;
+    public: wxString PicType;
     public: size_t DataSize;
     public: unsigned char* Data;
 
     // copy all data from FrameData
     public: void FillFrame(unsigned char* FrameData);
-    public: GLint GetGLFormat();
-    public: wxString GetPicType();
 };
 
 WX_DEFINE_ARRAY(VideoFrame*, VideoFrameArray);

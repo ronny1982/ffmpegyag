@@ -7,9 +7,9 @@ VideoFrame::VideoFrame()
     Duration = int64_t(0);
     Width = 32;
     Height = 32;
-    AVFormat = PIX_FMT_RGB24;
-    AVType = AV_PICTURE_TYPE_I;
-    DataSize = avpicture_get_size(AVFormat, Width, Height);
+    GLFormat = GL_RGB;
+    PicType = Libav::GetPicType(AV_PICTURE_TYPE_I);
+    DataSize = avpicture_get_size(PIX_FMT_RGB24, Width, Height);
     Data = (unsigned char*)av_malloc(DataSize);
     // black frame
     for(size_t i=0; i<DataSize; i++)
@@ -25,9 +25,9 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     Width = FrameWidth;
     Height = FrameHeight;
-    AVFormat = FrameFormat;
-    AVType = FrameType;
-    DataSize = avpicture_get_size(AVFormat, Width, Height);
+    GLFormat = Libav::GetGLFormat(FrameFormat);
+    PicType = Libav::GetPicType(FrameType);
+    DataSize = avpicture_get_size(FrameFormat, FrameWidth, FrameHeight);
     Data = (unsigned char*)av_malloc(DataSize);
 }
 
@@ -38,9 +38,9 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     Width = FrameWidth;
     Height = FrameHeight;
-    AVFormat = PIX_FMT_RGB24;
-    AVType = FrameType;
-    DataSize = avpicture_get_size(AVFormat, Width, Height);
+    GLFormat = GL_RGB;
+    PicType = Libav::GetPicType(FrameType);
+    DataSize = avpicture_get_size(PIX_FMT_RGB24, FrameWidth, FrameHeight);
     Data = (unsigned char*)av_malloc(DataSize);
 
     for(size_t i=0; i<DataSize; i+=3)
@@ -61,29 +61,4 @@ VideoFrame::~VideoFrame()
 void VideoFrame::FillFrame(unsigned char* FrameData)
 {
     memcpy(Data, FrameData, DataSize);
-}
-
-GLint VideoFrame::GetGLFormat()
-{
-    // TODO: add more formats
-    switch(AVFormat)
-    {
-        case PIX_FMT_RGB24: return GL_RGB;
-        default: return 0;
-    }
-}
-
-wxString VideoFrame::GetPicType()
-{
-    switch(AVType)
-    {
-        case AV_PICTURE_TYPE_I: return wxT("I");
-        case AV_PICTURE_TYPE_P: return wxT("P");
-        case AV_PICTURE_TYPE_B: return wxT("B");
-        case AV_PICTURE_TYPE_S: return wxT("S");
-        case AV_PICTURE_TYPE_SI: return wxT("i");
-        case AV_PICTURE_TYPE_SP: return wxT("p");
-        case AV_PICTURE_TYPE_BI: return wxT("b");
-        default: return wxT("?");
-    }
 }
