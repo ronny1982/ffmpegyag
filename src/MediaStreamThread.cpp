@@ -13,17 +13,17 @@ MediaStreamThread::MediaStreamThread(EncodingFileLoader* SourceMedia, bool* DoSt
     vWidth = VideoTargetWidth;
     vHeight = VideoTargetHeight;
     vPixelFormat = VideoTargetPixelFormat;
-    printf("thread initialized\n");
+    //printf("thread initialized\n");
 }
 
 MediaStreamThread::~MediaStreamThread()
 {
-    printf("thread destroyed\n");
+    //printf("thread destroyed\n");
 }
 
 wxThread::ExitCode MediaStreamThread::Entry()
 {
-    printf("thread started...\n");
+    //printf("thread started...\n");
     efl->StreamMedia(run, clock, vStartFrame, vStreamIndex, aStreamIndex, vFrameBuffer, aFrameBuffer, vWidth, vHeight, vPixelFormat);
     return (wxThread::ExitCode)0;
 }

@@ -222,6 +222,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     TextCtrlTime->Disable();
     FlexGridSizer4->Add(TextCtrlTime, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     SliderFrame = new wxSlider(this, ID_SLIDER1, 0, 0, 1, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_SLIDER1"));
+    SliderFrame->SetToolTip(_("Experimental, do not use!\nHold spacebar to play selected video/audio."));
     SliderFrame->Disable();
     FlexGridSizer4->Add(SliderFrame, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizerPreview->Add(FlexGridSizer4, 1, wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -1879,21 +1880,41 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
 {
     if(Pulse)
     {
-        // do not modify Pulse, create copy of data
+        // do not modify AudioFrame->Data, create copy of...
         unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
         memcpy(data, Pulse->Data, Pulse->DataSize);
         if(Segment)
         {
-            if(Pulse->Timecode + Pulse->Duration < Segment->Time.From || (Pulse->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            if(Pulse->Timecode < Segment->Time.From)
             {
-                memset(data, 0, Pulse->DataSize);
+                if(Pulse->Timecode + Pulse->Duration > Segment->Time.From && Pulse->Duration > 0)
+                {
+                    // calculate pivot and mute effected samples (requires interleaved pcm)
+                    // TODO: consider framesize(channels, sampleformat)
+                    size_t pivot = Pulse->DataSize * (Segment->Time.From - Pulse->Timecode) / Pulse->Duration;
+                    memset(data, 0, pivot);
+                }
+                else
+                {
+                    memset(data, 0, Pulse->DataSize);
+                }
             }
-            else
+            if(Pulse->Timecode + Pulse->Duration > Segment->Time.To && Segment->Time.From < Segment->Time.To)
             {
-                int64_t time = Pulse->Timecode - Segment->Time.From;
-                // TODO: consider duration
-                int64_t duration = Pulse->Duration;
-
+                if(Pulse->Timecode < Segment->Time.To && Pulse->Duration > 0)
+                {
+                    // calculate pivot and mute effected samples (requires interleaved pcm)
+                    // TODO: consider framesize(channels, sampleformat)
+                    size_t pivot = Pulse->DataSize * (Segment->Time.To - Pulse->Timecode) / Pulse->Duration;
+                    memset(data + pivot, 0, Pulse->DataSize - pivot);
+                }
+                else
+                {
+                    memset(data, 0, Pulse->DataSize);
+                }
+            }
+            if(Pulse->Timecode + Pulse->Duration > Segment->Time.From && Pulse->Timecode < Segment->Time.To)
+            {
                 // fade in
                 if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
                 {
@@ -2029,7 +2050,7 @@ void AVConvGUIFrame::PlaybackMedia()
                         }
                         TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[VideoStreamIndex]->Duration) + wxT(" [") + Texture->PicType + wxT("]"));
                         // TODO: check if this triggers render frame on windows
-                        SliderFrame->SetValue(efl->GetFrameFromTimestampV(VideoStreamIndex, Texture->Timestamp)/*SliderFrame->GetValue()+1*/);
+                        SliderFrame->SetValue(efl->GetFrameFromTimestampV(VideoStreamIndex, Texture->Timestamp));
                         wxDELETE(Texture);
                     }
                     Texture = NULL;
