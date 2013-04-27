@@ -429,7 +429,12 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
 
 EncodingFileLoader::~EncodingFileLoader()
 {
-    // FIXME: wait for destroy when locked=true
+    if(Locked)
+    {
+        // use unlock as indicator for all functions to break...
+        Locked = false;
+        wxMilliSleep(100);
+    }
 
     FlushBuffer();
     WX_CLEAR_ARRAY(VideoStreams);
@@ -747,7 +752,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
                 int64_t FrameTimestamp = Timestamp-1;
 
                 // read packets/frames from file
-                while(FrameTimestamp < Timestamp)
+                while(Locked && FrameTimestamp < Timestamp)
                 {
                     // reached end of file?
                     if(av_read_frame(pFormatCtx, &packet))
@@ -763,6 +768,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
                         }
                         else
                         {
+                            av_free_packet(&packet);
                             break; // leave loop
                         }
                     }
@@ -874,7 +880,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
             SetStreamPosition(VideoStreamIndex, SeekKeyFrameIndex(VideoStreamIndex, FrameIndex));
             // NOTE: flush buffers after search, also reset GOPBuffer to indicate that file position has changed
             FlushBuffer();
-            while(*DoStream)
+            while(Locked && *DoStream)
             {
                 // reached end of file?
                 if(av_read_frame(pFormatCtx, &packet))
@@ -898,6 +904,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                     }
                     else
                     {
+                        av_free_packet(&packet);
                         break; // leave loop
                     }
                 }

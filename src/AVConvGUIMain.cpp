@@ -1729,8 +1729,9 @@ void AVConvGUIFrame::RenderSingleFrame()
 
         Texture = NULL; // dereference pointer (free is done by GOPBuffer)
         Segment = NULL;
+
+        CloseGL();
     }
-    CloseGL();
 }
 
 void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper, FileSegment* Segment)
