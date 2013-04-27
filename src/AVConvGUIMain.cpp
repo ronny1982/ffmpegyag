@@ -17,6 +17,60 @@ int64_t TimeSpecMilliDiff(struct timespec StartTime, struct timespec EndTime)
 {
     return (int64_t)(1000*(EndTime.tv_sec - StartTime.tv_sec) + (EndTime.tv_nsec - StartTime.tv_nsec)/1000000);
 }
+/*
+enum IntersectionType
+{
+    IntersectsOutside,
+    IntersectsInside,
+    IntersectsFrom,
+    IntersectsTo,
+    IntersectsBoth,
+};
+*/
+// p1, p2 indices of the mutual overlap of s and f
+// [0...p1] -> memset 0
+// [p1...p2] -> mutual overlap
+// [p2...f_count] -> memset 0
+/*IntersectionType*/ void SegmentFrameIntersection(Range* s, Range* f, size_t* f_count, size_t* p1, size_t* p2)
+{
+    if(f->To < s->From || f->From > s->To)
+    {
+        *p1 = *f_count;
+        *p2 = 0;
+        return;// IntersectsOutside;
+    }
+
+    if(f->From >= s->From && f->To <= s->To)
+    {
+        *p1 = 0;
+        *p2 = *f_count;
+        return;// IntersectsInside;
+    }
+
+    if(f->From < s->From && f->To > s->From)
+    {
+        *p1 = *f_count * (s->From - f->From) / f->GetDuration();
+        if(f->To <= s->To)
+        {
+            *p2 = *f_count;
+            return;// IntersectsFrom;
+        }
+        *p2 = *f_count * (s->To - f->From) / f->GetDuration();
+        return;// IntersectsBoth;
+    }
+
+    if(f->From < s->To && f->To > s->To)
+    {
+        *p2 = *f_count * (s->To - f->From) / f->GetDuration();
+        if(f->From >= s->From)
+        {
+            *p1 = 0;
+            return;// IntersectsTo;
+        }
+        *p1 = *f_count * (s->From - f->From) / f->GetDuration();
+        return;// IntersectsBoth;
+    }
+}
 
 enum wxbuildinfoformat {
     short_f, long_f };
