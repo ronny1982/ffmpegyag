@@ -1575,6 +1575,7 @@ void AVConvGUIFrame::OnSliderFrameKeyDown(wxKeyEvent& event)
 {
     if(event.GetKeyCode() == WXK_SPACE && !IsPlaying)
     {
+        // FIXME: best is to lock other controls to prevent unwanted behaviour
         // disable all keydown events, until keyup was triggered
         SliderFrame->Disconnect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
         IsPlaying = true;
@@ -1592,6 +1593,7 @@ void AVConvGUIFrame::OnSliderFrameKeyUp(wxKeyEvent& event)
 {
     if(event.GetKeyCode() == WXK_SPACE && IsPlaying)
     {
+        // FIXME: enable controls if locked by keydown
         SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
         IsPlaying = false;
     }
@@ -2021,11 +2023,13 @@ void AVConvGUIFrame::PlaybackMedia()
         thread->Run();
 
         clock_gettime(CLOCK_REALTIME, &StartTime);
-        while(IsPlaying/* && thread->IsRunning()*/)
+        while(IsPlaying)
         {
+            // TODO: add this as event to SliderFrame::OnLostFocus()
             // lost focus
             if(SliderFrame->FindFocus() != SliderFrame)
             {
+                SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
                 IsPlaying = false;
                 break;
             }
@@ -2036,8 +2040,6 @@ void AVConvGUIFrame::PlaybackMedia()
 
             if(AudioFrameBuffer)
             {
-                // read at least one video & audio frame to the buffers
-                // break when reached end of file
                 if(!AudioFrameBuffer->IsEmpty())
                 {
                     AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull(false);
@@ -2051,6 +2053,15 @@ void AVConvGUIFrame::PlaybackMedia()
                         wxDELETE(Pulse);
                     }
                     Pulse = NULL;
+                }
+                else
+                {
+                    if(!thread->IsRunning())
+                    {
+                        SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
+                        IsPlaying = false;
+                        break;
+                    }
                 }
             }
 
@@ -2076,6 +2087,15 @@ void AVConvGUIFrame::PlaybackMedia()
                         wxDELETE(Texture);
                     }
                     Texture = NULL;
+                }
+                else
+                {
+                    if(!thread->IsRunning())
+                    {
+                        SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
+                        IsPlaying = false;
+                        break;
+                    }
                 }
             }
 
