@@ -631,7 +631,13 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
 
 AVConvGUIFrame::~AVConvGUIFrame()
 {
-    // FIXME: make sure all threads have been stopped (MediaStreaming!)
+    if(IsPlaying)
+    {
+        IsPlaying = false;
+        // TODO: improve the waitning behaviour
+        wxMilliSleep(250);
+    }
+
     WX_CLEAR_ARRAY(EncodingTasks);
     SelectedTaskIndices.Clear();
     //SelectedInputFilesIndex.Clear();
@@ -2012,8 +2018,18 @@ void AVConvGUIFrame::PlaybackMedia()
         thread->Run();
 
         clock_gettime(CLOCK_REALTIME, &StartTime);
-        while(IsPlaying/* && TODO: thread is running*/)
+        // FIXME: when reaching the end of clip and leaving the loop,
+        // while spacebar is still pressed
+        // the stream event will be triggered over and over again -> segmentation fault
+        while(IsPlaying/* && thread->IsRunning()*/)
         {
+            // lost focus
+            if(SliderFrame->FindFocus() != SliderFrame)
+            {
+                IsPlaying = false;
+                break;
+            }
+
             // update clock
             clock_gettime(CLOCK_REALTIME, &ClockTime);
             ReferenceClock = ReferenceStart + TimeSpecMilliDiff(StartTime, ClockTime);
@@ -2098,7 +2114,7 @@ void AVConvGUIFrame::PlaybackMedia()
             wxDELETE(AudioFrameBuffer);
             CloseAlsa();
         }
-
+printf("DONE\n");
         Segment = NULL;
         efl = NULL;
     }

@@ -433,6 +433,7 @@ EncodingFileLoader::~EncodingFileLoader()
     {
         // use unlock as indicator for all functions to break...
         Locked = false;
+        // TODO: improve the waitning behaviour
         wxMilliSleep(100);
     }
 
