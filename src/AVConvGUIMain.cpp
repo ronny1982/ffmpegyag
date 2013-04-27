@@ -1993,10 +1993,12 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
             SegmentFrameIntersection(&Segment->Time, &PulseTime, &Pulse->DataSize, &PivotFrom, &PivotTo);
             // mute sound before
             memset(data, 0, PivotFrom);
+printf("Mute: From: 0, Count: %lu\n", (long)PivotFrom);
             // keep overlap
             //memset(data + PivotFrom, 0, PivotTo - PivotFrom);
             // mute sound after
             memset(data + PivotTo, 0, Pulse->DataSize - PivotTo);
+printf("Mute: From: %lu, Count: %lu\n", PivotTo, (long)Pulse->DataSize - PivotTo);
 
             // fade in
             if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
