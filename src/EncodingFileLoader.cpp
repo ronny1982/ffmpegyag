@@ -429,6 +429,8 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
 
 EncodingFileLoader::~EncodingFileLoader()
 {
+    // FIXME: wait for destroy when locked=true
+
     FlushBuffer();
     WX_CLEAR_ARRAY(VideoStreams);
     WX_CLEAR_ARRAY(AudioStreams);
@@ -925,11 +927,19 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                                 // FIXME: get correct frame duration...
                                 VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 40, VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, pVideoFrameSource->pict_type);
                                 tex->FillFrame(pVideoFrameTarget->data[0]);
-                                while(*DoStream && VideoFrameBuffer->IsFull())
+                                while(*DoStream &&  VideoFrameBuffer && VideoFrameBuffer->IsFull())
                                 {
                                     wxMilliSleep(10);
                                 }
-                                VideoFrameBuffer->Push(tex);
+                                if(VideoFrameBuffer)
+                                {
+                                    VideoFrameBuffer->Push(tex);
+                                }
+                                else
+                                {
+                                    av_free_packet(&packet);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -955,11 +965,19 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                             // FIXME: get correct frame duration...
                             AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, pAudioFrameSource->nb_samples);
                             snd->FillFrame(pAudioFrameSource->data[0]);
-                            while(*DoStream && AudioFrameBuffer->IsFull())
+                            while(*DoStream && AudioFrameBuffer && AudioFrameBuffer->IsFull())
                             {
                                 wxMilliSleep(10);
                             }
-                            AudioFrameBuffer->Push(snd);
+                            if(AudioFrameBuffer)
+                            {
+                                AudioFrameBuffer->Push(snd);
+                            }
+                            else
+                            {
+                                av_free_packet(&packet);
+                                break;
+                            }
                         }
                     }
                 }
