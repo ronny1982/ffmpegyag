@@ -631,6 +631,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
 
 AVConvGUIFrame::~AVConvGUIFrame()
 {
+    // FIXME: make sure all threads have been stopped (MediaStreaming!)
     WX_CLEAR_ARRAY(EncodingTasks);
     SelectedTaskIndices.Clear();
     //SelectedInputFilesIndex.Clear();
@@ -1690,7 +1691,7 @@ bool AVConvGUIFrame::InitializeGL()
 
 void AVConvGUIFrame::RenderSingleFrame()
 {
-    if(InitializeGL())
+    if(!IsPlaying && InitializeGL())
     {
         FileSegment* Segment = NULL;
         VideoFrame* Texture = NULL;
@@ -1707,16 +1708,19 @@ void AVConvGUIFrame::RenderSingleFrame()
             }
 
             EncodingFileLoader* efl = EncodingTasks[SelectedTask]->InputFiles[0];
-            // BOTTLENECK
-            Texture = efl->GetVideoFrameData(SelectedFrame, SelectedStream, 512, 256); // width & height of texture must be of power 2
-            if(Texture)
+            if(!efl->IsLocked())
             {
                 // BOTTLENECK
-                TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" [") + Texture->PicType + wxT("]"));
-            }
-            else
-            {
-                TextCtrlTime->SetValue(Libav::MilliToSMPTE(efl->GetTimeFromFrameV(SelectedStream, SelectedFrame)) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" []"));
+                Texture = efl->GetVideoFrameData(SelectedFrame, SelectedStream, 512, 256); // width & height of texture must be of power 2
+                if(Texture)
+                {
+                    // BOTTLENECK
+                    TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" [") + Texture->PicType + wxT("]"));
+                }
+                else
+                {
+                    TextCtrlTime->SetValue(Libav::MilliToSMPTE(efl->GetTimeFromFrameV(SelectedStream, SelectedFrame)) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[SelectedStream]->Duration) + wxT(" []"));
+                }
             }
             efl = NULL;
         }
@@ -1726,6 +1730,7 @@ void AVConvGUIFrame::RenderSingleFrame()
         Texture = NULL; // dereference pointer (free is done by GOPBuffer)
         Segment = NULL;
     }
+    CloseGL();
 }
 
 void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper, FileSegment* Segment)
