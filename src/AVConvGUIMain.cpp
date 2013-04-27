@@ -33,7 +33,27 @@ enum IntersectionType
 // [p2...f_count] -> memset 0
 /*IntersectionType*/ void SegmentFrameIntersection(Range* s, Range* f, size_t* f_count, size_t* p1, size_t* p2)
 {
-    if(f->To < s->From || f->From > s->To)
+    if(f->To < s->From)
+    {
+        *p1 = *f_count;
+        *p2 = 0;
+        return;// IntersectsOutside;
+    }
+
+    // invalid segment interval
+    if(s->From >= s->To)
+    {
+        *p2 = *f_count;
+        if(f->From < s->From)
+        {
+            *p1 = *f_count * (s->From - f->From) / f->GetDuration();
+            return;// IntersectsInside;
+        }
+        *p1 = 0;
+        return; // IntersectionFrom
+    }
+
+    if(f->From > s->To)
     {
         *p1 = *f_count;
         *p2 = 0;
@@ -1956,65 +1976,40 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
         memcpy(data, Pulse->Data, Pulse->DataSize);
         if(Segment)
         {
-            if(Pulse->Timecode < Segment->Time.From)
-            {
-                if(Pulse->Timecode + Pulse->Duration > Segment->Time.From && Pulse->Duration > 0)
-                {
-                    // calculate pivot and mute effected samples (requires interleaved pcm)
-                    // TODO: consider framesize(channels, sampleformat)
-                    size_t pivot = Pulse->DataSize * (Segment->Time.From - Pulse->Timecode) / Pulse->Duration;
-                    memset(data, 0, pivot);
-                }
-                else
-                {
-                    memset(data, 0, Pulse->DataSize);
-                }
-            }
-            if(Pulse->Timecode + Pulse->Duration > Segment->Time.To && Segment->Time.From < Segment->Time.To)
-            {
-                if(Pulse->Timecode < Segment->Time.To && Pulse->Duration > 0)
-                {
-                    // calculate pivot and mute effected samples (requires interleaved pcm)
-                    // TODO: consider framesize(channels, sampleformat)
-                    size_t pivot = Pulse->DataSize * (Segment->Time.To - Pulse->Timecode) / Pulse->Duration;
-                    memset(data + pivot, 0, Pulse->DataSize - pivot);
-                }
-                else
-                {
-                    memset(data, 0, Pulse->DataSize);
-                }
-            }
-            if(Pulse->Timecode + Pulse->Duration > Segment->Time.From && Pulse->Timecode < Segment->Time.To)
-            {
-                // fade in
-                if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
-                {
-                    /*
-                    if(time <= Segment->AudioFadeIn.To)
-                    {
-                        float ratio = 0.0;
-                        if(time >= Segment->VideoFadeIn.From)
-                        {
-                            ratio = (float)(time - Segment->AudioFadeIn.From) / (float)Segment->AudioFadeIn.GetDuration();
-                        }
-                    }
-                    */
-                }
+            Range PulseTime;
+            PulseTime.From = Pulse->Timecode;
+            PulseTime.To = Pulse->Timecode + Pulse->Duration;
+            size_t PivotFrom;
+            size_t PivotTo;
 
-                // fade out
-                if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
-                {
-                    /*
-                    if(time >= Segment->VideoFadeOut.From)
-                    {
-                        float ratio = 0.0;
-                        if(time <= Segment->VideoFadeOut.To)
-                        {
-                            ratio = (float)(Segment->VideoFadeOut.To - time) / (float)Segment->VideoFadeOut.GetDuration();
-                        }
-                    }
-                    */
-                }
+// [0...p1] -> memset 0
+// [p1...p2] -> mutual overlap
+// [p2...f_count] -> memset 0
+
+            // segment range
+            // FIXME: what happens when segment time.from <= time.to ???
+            // should work when time.from == time.to -> pivot.from == pivot.to
+
+            SegmentFrameIntersection(&Segment->Time, &PulseTime, &Pulse->DataSize, &PivotFrom, &PivotTo);
+            // mute sound before
+            memset(data, 0, PivotFrom);
+            // keep overlap
+            //memset(data + PivotFrom, 0, PivotTo - PivotFrom);
+            // mute sound after
+            memset(data + PivotTo, 0, Pulse->DataSize - PivotTo);
+
+            // fade in
+            if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
+            {
+                SegmentFrameIntersection(&Segment->AudioFadeIn, &PulseTime, &Pulse->DataSize, &PivotFrom, &PivotTo);
+                // mute sound before
+                // re-calculate overlap
+                // keep sound after
+            }
+
+            // fade out
+            if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
+            {
             }
         }
         snd_pcm_writei(AlsaDevice, data, Pulse->SampleCount);
