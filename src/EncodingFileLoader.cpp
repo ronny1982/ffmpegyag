@@ -7,6 +7,8 @@ static int CompareIndexEntry(IndexEntry** First, IndexEntry** Second)
 
 EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
 {
+    Locked = true;
+
     File = InputFile;
 
     pFormatCtx = NULL;
@@ -422,6 +424,7 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
             }
         }
     }
+    Locked = false;
 }
 
 EncodingFileLoader::~EncodingFileLoader()
@@ -498,13 +501,18 @@ int64_t EncodingFileLoader::GetStreamEstimatedFrameCount(unsigned int StreamInde
     return (int64_t)0;
 }
 
-bool EncodingFileLoader::CanRead()
+bool EncodingFileLoader::IsOpen()
 {
     if(pFormatCtx != NULL)
     {
         return true;
     }
     return false;
+}
+
+bool EncodingFileLoader::IsLocked()
+{
+    return Locked;
 }
 
 void EncodingFileLoader::FlushBuffer()
@@ -665,84 +673,226 @@ int64_t EncodingFileLoader::GetTimestampFromTimeV(long VideoStreamIndex, int64_t
 
 VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat)
 {
-    // TODO: search for minor memory leak
-
-    // to improve performance there is no additional securitycheck for pFormatCtx, VideoStreamIndex & FrameIndex
-
-    int StreamID = VideoStreams[VideoStreamIndex]->ID;
-    AVCodecContext* pCodecCtx = pFormatCtx->streams[StreamID]->codec;
-
-    int64_t Timestamp;
-    if(FrameIndex < (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount())
+    if(!Locked)
     {
-        Timestamp = VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp;
-    }
-    else
-    {
-        Timestamp = GetTimestampFromTimeV(VideoStreamIndex, VideoStreams[VideoStreamIndex]->Duration) + 1; // +1 to prevent rounding errors of integer timestamps (1,2,3,4,...)
-    }
+        Locked = true;
 
-    long KeyframeIndex = SeekKeyFrameIndex(VideoStreamIndex, FrameIndex);
-    int64_t KeyframeTimestamp = -1;
+        // TODO: search for minor memory leak
 
-    if(KeyframeIndex > -1)
-    {
-        KeyframeTimestamp = VideoStreams[VideoStreamIndex]->IndexEntries[KeyframeIndex]->Timestamp;
-    }
-    else
-    {
-        return NULL;
-    }
+        // to improve performance there is no additional securitycheck for pFormatCtx, VideoStreamIndex & FrameIndex
 
-    if(Timestamp < KeyframeTimestamp)
-    {
-        return NULL;
-    }
+        int StreamID = VideoStreams[VideoStreamIndex]->ID;
+        AVCodecContext* pCodecCtx = pFormatCtx->streams[StreamID]->codec;
 
-    if(GOPBuffer.GetID() != KeyframeIndex)
-    {
-        FlushBuffer();
-        if(!SetStreamPosition(VideoStreamIndex, KeyframeIndex))
+        int64_t Timestamp;
+        if(FrameIndex < (long)VideoStreams[VideoStreamIndex]->IndexEntries.GetCount())
         {
+            Timestamp = VideoStreams[VideoStreamIndex]->IndexEntries[FrameIndex]->Timestamp;
+        }
+        else
+        {
+            Timestamp = GetTimestampFromTimeV(VideoStreamIndex, VideoStreams[VideoStreamIndex]->Duration) + 1; // +1 to prevent rounding errors of integer timestamps (1,2,3,4,...)
+        }
+
+        long KeyframeIndex = SeekKeyFrameIndex(VideoStreamIndex, FrameIndex);
+        int64_t KeyframeTimestamp = -1;
+
+        if(KeyframeIndex > -1)
+        {
+            KeyframeTimestamp = VideoStreams[VideoStreamIndex]->IndexEntries[KeyframeIndex]->Timestamp;
+        }
+        else
+        {
+            Locked = false;
             return NULL;
         }
-        GOPBuffer.SetID(KeyframeIndex);
-    }
 
-    // add frames to gop until timestamp is processed
-    if(GOPBuffer.GetLastTimestamp() < Timestamp)
-    {
-        AVFrame *pFrameSource = avcodec_alloc_frame();
-        // TODO: use AVPicture as target -> tutorial02.c
-        AVFrame *pFrameTarget = avcodec_alloc_frame();
-
-        if(pFrameTarget != NULL)
+        if(Timestamp < KeyframeTimestamp)
         {
-            int PictureSize = avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight);
-            unsigned char *Buffer = (unsigned char*)av_malloc(PictureSize);
-            SwsContext *pSwsCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, TargetWidth, TargetHeight, TargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+            Locked = false;
+            return NULL;
+        }
 
-            avpicture_fill((AVPicture*)pFrameTarget, Buffer, TargetPixelFormat, TargetWidth, TargetHeight);
+        if(GOPBuffer.GetID() != KeyframeIndex)
+        {
+            FlushBuffer();
+            if(!SetStreamPosition(VideoStreamIndex, KeyframeIndex))
+            {
+                Locked = false;
+                return NULL;
+            }
+            GOPBuffer.SetID(KeyframeIndex);
+        }
+
+        // add frames to gop until timestamp is processed
+        if(GOPBuffer.GetLastTimestamp() < Timestamp)
+        {
+            AVFrame *pFrameSource = avcodec_alloc_frame();
+            // TODO: use AVPicture as target -> tutorial02.c
+            AVFrame *pFrameTarget = avcodec_alloc_frame();
+
+            if(pFrameTarget != NULL)
+            {
+                int PictureSize = avpicture_get_size(TargetPixelFormat, TargetWidth, TargetHeight);
+                unsigned char *Buffer = (unsigned char*)av_malloc(PictureSize);
+                SwsContext *pSwsCtx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, TargetWidth, TargetHeight, TargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+
+                avpicture_fill((AVPicture*)pFrameTarget, Buffer, TargetPixelFormat, TargetWidth, TargetHeight);
+
+                AVPacket packet;
+                av_init_packet(&packet);
+                int got_frame = 1;
+                int64_t FrameTimestamp = Timestamp-1;
+
+                // read packets/frames from file
+                while(FrameTimestamp < Timestamp)
+                {
+                    // reached end of file?
+                    if(av_read_frame(pFormatCtx, &packet))
+                    {
+                        // codec buffer still hold frames?
+                        if(got_frame)
+                        {
+                            // prepare 'flush' packet to receive the
+                            // remaining frames from the codec buffer
+                            packet.data = NULL;
+                            packet.size = 0;
+                            packet.stream_index = StreamID;
+                        }
+                        else
+                        {
+                            break; // leave loop
+                        }
+                    }
+
+                    if(packet.stream_index == StreamID)
+                    {
+                        // avcodec_decode_video()
+                        // > 0, packet decoded to frame
+                        // = 0, not decoded (i.e. read from codec buffer)
+                        // < 0, error
+                        if(avcodec_decode_video2(pCodecCtx, pFrameSource, &got_frame, &packet) > -1)
+                        {
+                            if(got_frame)
+                            {
+                                // exclude b-frames that belongs to the previous gop, but where ordered after i-frame from this gop (higher dts but lower pts)
+                                // first frame in gop must be i-frame
+                                if(GOPBuffer.GetCount() > 0 || pFrameSource->pict_type == 1)
+                                {
+                                    FrameTimestamp = pFrameSource->pkt_pts;
+                                    if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
+                                    {
+                                        FrameTimestamp = pFrameSource->pkt_dts;
+                                    }
+
+                                    if(pSwsCtx != NULL)
+                                    {
+                                        sws_scale(pSwsCtx, pFrameSource->data, pFrameSource->linesize, 0, pCodecCtx->height, pFrameTarget->data, pFrameTarget->linesize);
+                                        // FIXME: when dragging the slider to video end, last packets have duration 0
+                                        // when stepping frame by frame to video end, all durations are valid
+                                        VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), GetTimeFromFrameV(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrameV(VideoStreamIndex, FrameIndex), TargetWidth, TargetHeight, TargetPixelFormat, pFrameSource->pict_type);
+                                        tex->FillFrame(pFrameTarget->data[0]);
+                                        GOPBuffer.AddVideoFrame(tex);
+                                        tex = NULL;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    av_free_packet(&packet);
+                }
+                sws_freeContext(pSwsCtx);
+                av_free(Buffer);
+            }
+            av_free(pFrameTarget);
+            av_free(pFrameSource);
+        }
+
+        pCodecCtx = NULL;
+
+        Locked = false;
+        return GOPBuffer.GetVideoFrame(Timestamp);
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, PixelFormat VideoTargetPixelFormat)
+{
+    if(!Locked)
+    {
+        Locked = true;
+
+        int VideoStreamID = -1;
+        AVCodecContext* pVideoCodecCtx = NULL;
+        if(VideoStreamIndex > -1)
+        {
+            VideoStreamID = VideoStreams[VideoStreamIndex]->ID;
+            pVideoCodecCtx = pFormatCtx->streams[VideoStreamID]->codec;
+            if(pVideoCodecCtx->codec_type != AVMEDIA_TYPE_VIDEO)
+            {
+                VideoStreamID = -1;
+                pVideoCodecCtx = NULL;
+            }
+        }
+
+        int AudioStreamID = -1;
+        AVCodecContext* pAudioCodecCtx = NULL;
+        if(AudioStreamIndex > -1)
+        {
+            AudioStreamID = AudioStreams[AudioStreamIndex]->ID;
+            pAudioCodecCtx = pFormatCtx->streams[AudioStreamID]->codec;
+            if(pAudioCodecCtx->codec_type != AVMEDIA_TYPE_AUDIO)
+            {
+                AudioStreamID = -1;
+                pAudioCodecCtx = NULL;
+            }
+        }
+
+        AVFrame *pVideoFrameSource = avcodec_alloc_frame();
+        // TODO: use AVPicture as target -> tutorial02.c
+        AVFrame *pVideoFrameTarget = avcodec_alloc_frame();
+        AVFrame *pAudioFrameSource = avcodec_alloc_frame();
+        if(pVideoFrameTarget != NULL)
+        {
+            int PictureSize = avpicture_get_size(VideoTargetPixelFormat, VideoTargetWidth, VideoTargetHeight);
+            unsigned char *VideoBuffer = (unsigned char*)av_malloc(PictureSize);
+            SwsContext *pSwsCtx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height, pVideoCodecCtx->pix_fmt, VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+            avpicture_fill((AVPicture*)pVideoFrameTarget, VideoBuffer, VideoTargetPixelFormat, VideoTargetWidth, VideoTargetHeight);
 
             AVPacket packet;
             av_init_packet(&packet);
-            int got_frame = 1;
-            int64_t FrameTimestamp = Timestamp-1;
+            int got_video_frame = 0;
+            int got_audio_frame = 0;
 
-            // read packets/frames from file
-            while(FrameTimestamp < Timestamp)
+            int64_t FrameTimestamp = 0;
+
+            SetStreamPosition(VideoStreamIndex, SeekKeyFrameIndex(VideoStreamIndex, FrameIndex));
+            // NOTE: flush buffers after search, also reset GOPBuffer to indicate that file position has changed
+            FlushBuffer();
+            while(*DoStream)
             {
                 // reached end of file?
                 if(av_read_frame(pFormatCtx, &packet))
                 {
                     // codec buffer still hold frames?
-                    if(got_frame)
+                    if(got_video_frame)
                     {
                         // prepare 'flush' packet to receive the
                         // remaining frames from the codec buffer
                         packet.data = NULL;
                         packet.size = 0;
-                        packet.stream_index = StreamID;
+                        packet.stream_index = VideoStreamID;
+                    }
+                    else if(got_audio_frame)
+                    {
+                        // prepare 'flush' packet to receive the
+                        // remaining frames from the codec buffer
+                        packet.data = NULL;
+                        packet.size = 0;
+                        packet.stream_index = AudioStreamID;
                     }
                     else
                     {
@@ -750,203 +900,81 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
                     }
                 }
 
-                if(packet.stream_index == StreamID)
+                if(packet.stream_index == VideoStreamID)
                 {
                     // avcodec_decode_video()
                     // > 0, packet decoded to frame
                     // = 0, not decoded (i.e. read from codec buffer)
                     // < 0, error
-                    if(avcodec_decode_video2(pCodecCtx, pFrameSource, &got_frame, &packet) > -1)
+                    if(avcodec_decode_video2(pVideoCodecCtx, pVideoFrameSource, &got_video_frame, &packet) > -1)
                     {
-                        if(got_frame)
+                        if(got_video_frame && GetTimeFromTimestampV(VideoStreamIndex, pVideoFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
                         {
-                            // exclude b-frames that belongs to the previous gop, but where ordered after i-frame from this gop (higher dts but lower pts)
-                            // first frame in gop must be i-frame
-                            if(GOPBuffer.GetCount() > 0 || pFrameSource->pict_type == 1)
-                            {
-                                FrameTimestamp = pFrameSource->pkt_pts;
-                                if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
-                                {
-                                    FrameTimestamp = pFrameSource->pkt_dts;
-                                }
+                            // NOTE: FrameTimestamp >= Timestamp should always be true,
+                            // because *ReferenceClock should be >= StartTimestamp
 
-                                if(pSwsCtx != NULL)
-                                {
-                                    sws_scale(pSwsCtx, pFrameSource->data, pFrameSource->linesize, 0, pCodecCtx->height, pFrameTarget->data, pFrameTarget->linesize);
-                                    // FIXME: when dragging the slider to video end, last packets have duration 0
-                                    // when stepping frame by frame to video end, all durations are valid
-                                    VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), GetTimeFromFrameV(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrameV(VideoStreamIndex, FrameIndex), TargetWidth, TargetHeight, TargetPixelFormat, pFrameSource->pict_type);
-                                    tex->FillFrame(pFrameTarget->data[0]);
-                                    GOPBuffer.AddVideoFrame(tex);
-                                    tex = NULL;
-                                }
+                            FrameTimestamp = pVideoFrameSource->pkt_pts;
+                            if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
+                            {
+                                FrameTimestamp = pVideoFrameSource->pkt_dts;
                             }
+
+                            if(pSwsCtx != NULL)
+                            {
+                                sws_scale(pSwsCtx, pVideoFrameSource->data, pVideoFrameSource->linesize, 0, pVideoCodecCtx->height, pVideoFrameTarget->data, pVideoFrameTarget->linesize);
+                                // FIXME: get correct frame duration...
+                                VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 40, VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, pVideoFrameSource->pict_type);
+                                tex->FillFrame(pVideoFrameTarget->data[0]);
+                                while(*DoStream && VideoFrameBuffer->IsFull())
+                                {
+                                    wxMilliSleep(10);
+                                }
+                                VideoFrameBuffer->Push(tex);
+                            }
+                        }
+                    }
+                }
+
+                if(packet.stream_index == AudioStreamID)
+                {
+                    // avcodec_decode_audio()
+                    // > 0, packet decoded to frame
+                    // = 0, not decoded (i.e. read from codec buffer)
+                    // < 0, error
+                    if(avcodec_decode_audio4(pAudioCodecCtx, pAudioFrameSource, &got_audio_frame, &packet) > -1)
+                    {
+                        if(got_audio_frame && GetTimeFromTimestampA(AudioStreamIndex, pAudioFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
+                        {
+                            FrameTimestamp = pAudioFrameSource->pkt_pts;
+                            if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
+                            {
+                                FrameTimestamp = pAudioFrameSource->pkt_dts;
+                            }
+
+                            // FIXME: consider offset(start_time) related to the 'master' stream
+                            // FIXME: get correct frame duration...
+                            AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, pAudioFrameSource->nb_samples);
+                            snd->FillFrame(pAudioFrameSource->data[0]);
+                            while(*DoStream && AudioFrameBuffer->IsFull())
+                            {
+                                wxMilliSleep(10);
+                            }
+                            AudioFrameBuffer->Push(snd);
                         }
                     }
                 }
                 av_free_packet(&packet);
             }
             sws_freeContext(pSwsCtx);
-            av_free(Buffer);
+            av_free(VideoBuffer);
         }
-        av_free(pFrameTarget);
-        av_free(pFrameSource);
+        av_free(pAudioFrameSource);
+        av_free(pVideoFrameTarget);
+        av_free(pVideoFrameSource);
+
+        pVideoCodecCtx = NULL;
+        pAudioCodecCtx = NULL;
+
+        Locked = false;
     }
-
-    pCodecCtx = NULL;
-
-    return GOPBuffer.GetVideoFrame(Timestamp);
-}
-
-void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, PixelFormat VideoTargetPixelFormat)
-{
-    int VideoStreamID = -1;
-    AVCodecContext* pVideoCodecCtx = NULL;
-    if(VideoStreamIndex > -1)
-    {
-        VideoStreamID = VideoStreams[VideoStreamIndex]->ID;
-        pVideoCodecCtx = pFormatCtx->streams[VideoStreamID]->codec;
-        if(pVideoCodecCtx->codec_type != AVMEDIA_TYPE_VIDEO)
-        {
-            VideoStreamID = -1;
-            pVideoCodecCtx = NULL;
-        }
-    }
-
-    int AudioStreamID = -1;
-    AVCodecContext* pAudioCodecCtx = NULL;
-    if(AudioStreamIndex > -1)
-    {
-        AudioStreamID = AudioStreams[AudioStreamIndex]->ID;
-        pAudioCodecCtx = pFormatCtx->streams[AudioStreamID]->codec;
-        if(pAudioCodecCtx->codec_type != AVMEDIA_TYPE_AUDIO)
-        {
-            AudioStreamID = -1;
-            pAudioCodecCtx = NULL;
-        }
-    }
-
-    AVFrame *pVideoFrameSource = avcodec_alloc_frame();
-    // TODO: use AVPicture as target -> tutorial02.c
-    AVFrame *pVideoFrameTarget = avcodec_alloc_frame();
-    AVFrame *pAudioFrameSource = avcodec_alloc_frame();
-    if(pVideoFrameTarget != NULL)
-    {
-        int PictureSize = avpicture_get_size(VideoTargetPixelFormat, VideoTargetWidth, VideoTargetHeight);
-        unsigned char *VideoBuffer = (unsigned char*)av_malloc(PictureSize);
-        SwsContext *pSwsCtx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height, pVideoCodecCtx->pix_fmt, VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, SWS_FAST_BILINEAR, NULL, NULL, NULL);
-        avpicture_fill((AVPicture*)pVideoFrameTarget, VideoBuffer, VideoTargetPixelFormat, VideoTargetWidth, VideoTargetHeight);
-
-        AVPacket packet;
-        av_init_packet(&packet);
-        int got_video_frame = 0;
-        int got_audio_frame = 0;
-
-        int64_t FrameTimestamp = 0;
-
-        SetStreamPosition(VideoStreamIndex, SeekKeyFrameIndex(VideoStreamIndex, FrameIndex));
-        // NOTE: flush buffers after search, also reset GOPBuffer to indicate that file position has changed
-        FlushBuffer();
-        while(*DoStream)
-        {
-            // reached end of file?
-            if(av_read_frame(pFormatCtx, &packet))
-            {
-                // codec buffer still hold frames?
-                if(got_video_frame)
-                {
-                    // prepare 'flush' packet to receive the
-                    // remaining frames from the codec buffer
-                    packet.data = NULL;
-                    packet.size = 0;
-                    packet.stream_index = VideoStreamID;
-                }
-                else if(got_audio_frame)
-                {
-                    // prepare 'flush' packet to receive the
-                    // remaining frames from the codec buffer
-                    packet.data = NULL;
-                    packet.size = 0;
-                    packet.stream_index = AudioStreamID;
-                }
-                else
-                {
-                    break; // leave loop
-                }
-            }
-
-            if(packet.stream_index == VideoStreamID)
-            {
-                // avcodec_decode_video()
-                // > 0, packet decoded to frame
-                // = 0, not decoded (i.e. read from codec buffer)
-                // < 0, error
-                if(avcodec_decode_video2(pVideoCodecCtx, pVideoFrameSource, &got_video_frame, &packet) > -1)
-                {
-                    if(got_video_frame && GetTimeFromTimestampV(VideoStreamIndex, pVideoFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
-                    {
-                        // NOTE: FrameTimestamp >= Timestamp should always be true,
-                        // because *ReferenceClock should be >= StartTimestamp
-
-                        FrameTimestamp = pVideoFrameSource->pkt_pts;
-                        if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
-                        {
-                            FrameTimestamp = pVideoFrameSource->pkt_dts;
-                        }
-
-                        if(pSwsCtx != NULL)
-                        {
-                            sws_scale(pSwsCtx, pVideoFrameSource->data, pVideoFrameSource->linesize, 0, pVideoCodecCtx->height, pVideoFrameTarget->data, pVideoFrameTarget->linesize);
-                            // FIXME: get correct frame duration...
-                            VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 40, VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, pVideoFrameSource->pict_type);
-                            tex->FillFrame(pVideoFrameTarget->data[0]);
-                            while(*DoStream && VideoFrameBuffer->IsFull())
-                            {
-                                wxMilliSleep(10);
-                            }
-                            VideoFrameBuffer->Push(tex);
-                        }
-                    }
-                }
-            }
-
-            if(packet.stream_index == AudioStreamID)
-            {
-                // avcodec_decode_audio()
-                // > 0, packet decoded to frame
-                // = 0, not decoded (i.e. read from codec buffer)
-                // < 0, error
-                if(avcodec_decode_audio4(pAudioCodecCtx, pAudioFrameSource, &got_audio_frame, &packet) > -1)
-                {
-                    if(got_audio_frame && GetTimeFromTimestampA(AudioStreamIndex, pAudioFrameSource->pkt_pts + packet.duration) >= *ReferenceClock)
-                    {
-                        FrameTimestamp = pAudioFrameSource->pkt_pts;
-                        if(FrameTimestamp == (int64_t)AV_NOPTS_VALUE)
-                        {
-                            FrameTimestamp = pAudioFrameSource->pkt_dts;
-                        }
-
-                        // FIXME: consider offset(start_time) related to the 'master' stream
-                        // FIXME: get correct frame duration...
-                        AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, pAudioFrameSource->nb_samples);
-                        snd->FillFrame(pAudioFrameSource->data[0]);
-                        while(*DoStream && AudioFrameBuffer->IsFull())
-                        {
-                            wxMilliSleep(10);
-                        }
-                        AudioFrameBuffer->Push(snd);
-                    }
-                }
-            }
-            av_free_packet(&packet);
-        }
-        sws_freeContext(pSwsCtx);
-        av_free(VideoBuffer);
-    }
-    av_free(pAudioFrameSource);
-    av_free(pVideoFrameTarget);
-    av_free(pVideoFrameSource);
-
-    pVideoCodecCtx = NULL;
-    pAudioCodecCtx = NULL;
 }

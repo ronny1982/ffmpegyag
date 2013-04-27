@@ -17,6 +17,7 @@ class EncodingFileLoader
     private: VideoFrameGOP GOPBuffer;
     // contains the timestamps for each frame of each video stream, extends the build in keyframe index: pFormatCtx->streams[i]->index_entries.timestamp
     private: AVFormatContext *pFormatCtx;
+    private: bool Locked;
 
     public: int64_t FileSize; // filesize in byte
     public: int64_t FileDuration; // shared duration of all streams in milli seconds
@@ -25,7 +26,9 @@ class EncodingFileLoader
     public: SubtitleStreamArray SubtitleStreams;
 
     // check if this file can be processed by libav
-    public: bool CanRead();
+    public: bool IsOpen();
+    // check if the reader is currently busy (reading in progress)
+    public: bool IsLocked();
     // clear the shared av buffer and reset gop buffer
     public: void FlushBuffer();
     // returns the estimaded frame number of a stream

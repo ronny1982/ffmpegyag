@@ -998,7 +998,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
             {
                 InputFile = new EncodingFileLoader(SourceFile);
 
-                if(InputFile->CanRead())
+                if(InputFile->IsOpen())
                 {
                     InsertIndex = ListCtrlTasks->GetItemCount();
                     ListCtrlTasks->InsertItem(InsertIndex, SourceFile.GetFullName());
