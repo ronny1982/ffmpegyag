@@ -1591,7 +1591,7 @@ void AVConvGUIFrame::OnSliderFrameKeyDown(wxKeyEvent& event)
 
 void AVConvGUIFrame::OnSliderFrameKeyUp(wxKeyEvent& event)
 {
-    if(event.GetKeyCode() == WXK_SPACE && IsPlaying)
+    if(event.GetKeyCode() == WXK_SPACE)
     {
         // FIXME: enable controls if locked by keydown
         SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
@@ -2029,8 +2029,6 @@ void AVConvGUIFrame::PlaybackMedia()
             // lost focus
             if(SliderFrame->FindFocus() != SliderFrame)
             {
-                SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
-                IsPlaying = false;
                 break;
             }
 
@@ -2058,8 +2056,6 @@ void AVConvGUIFrame::PlaybackMedia()
                 {
                     if(!thread->IsRunning())
                     {
-                        SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
-                        IsPlaying = false;
                         break;
                     }
                 }
@@ -2092,8 +2088,6 @@ void AVConvGUIFrame::PlaybackMedia()
                 {
                     if(!thread->IsRunning())
                     {
-                        SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
-                        IsPlaying = false;
                         break;
                     }
                 }
