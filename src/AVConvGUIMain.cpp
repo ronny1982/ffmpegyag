@@ -1575,6 +1575,8 @@ void AVConvGUIFrame::OnSliderFrameKeyDown(wxKeyEvent& event)
 {
     if(event.GetKeyCode() == WXK_SPACE && !IsPlaying)
     {
+        // disable all keydown events, until keyup was triggered
+        SliderFrame->Disconnect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
         IsPlaying = true;
         PlaybackMedia();
         IsPlaying = false;
@@ -1590,6 +1592,7 @@ void AVConvGUIFrame::OnSliderFrameKeyUp(wxKeyEvent& event)
 {
     if(event.GetKeyCode() == WXK_SPACE && IsPlaying)
     {
+        SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
         IsPlaying = false;
     }
 }
@@ -2018,9 +2021,6 @@ void AVConvGUIFrame::PlaybackMedia()
         thread->Run();
 
         clock_gettime(CLOCK_REALTIME, &StartTime);
-        // FIXME: when reaching the end of clip and leaving the loop,
-        // while spacebar is still pressed
-        // the stream event will be triggered over and over again -> segmentation fault
         while(IsPlaying/* && thread->IsRunning()*/)
         {
             // lost focus
