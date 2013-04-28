@@ -24,8 +24,8 @@ void SegmentFrameIntersection(Range* s, Range* f, size_t* f_count, size_t* p1, s
     if(f->To < s->From)
     {
         *p1 = *f_count;
-        *p2 = 0;
-        return; // Outside
+        *p2 = *f_count;
+        return; // Outside Beofre
     }
 
     // invalid segment interval
@@ -43,9 +43,9 @@ void SegmentFrameIntersection(Range* s, Range* f, size_t* f_count, size_t* p1, s
 
     if(f->From > s->To)
     {
-        *p1 = *f_count;
+        *p1 = 0;
         *p2 = 0;
-        return; // Outside
+        return; // Outside After
     }
 
     if(f->From >= s->From && f->To <= s->To)
@@ -1978,22 +1978,27 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
             // FIXME: what happens when segment time.from <= time.to ???
             // should work when time.from == time.to -> pivot.from == pivot.to
             SegmentFrameIntersection(&Segment->Time, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
-            // mute sound before
+            // mute sound between [0...PivotFrom]
             memset(data, 0, PivotFrom * Pulse->FrameSize);
 printf("Mute: From_A: 0, Count: %lu\n", (long)(PivotFrom * Pulse->FrameSize));
-            // keep overlap
-            //memset(data + (PivotFrom * Pulse->FrameSize), 0, (PivotTo - PivotFrom) * Pulse->FrameSize);
-            // mute sound after
+            // mute sound between [PivotTo...SampleCount]
             memset(data + (PivotTo * Pulse->FrameSize), 0, Pulse->DataSize - (PivotTo * Pulse->FrameSize));
 printf("Mute: From_C: %lu, Count: %lu\n", (long)(PivotTo * Pulse->FrameSize), (long)(Pulse->DataSize - (PivotTo * Pulse->FrameSize)));
 
             // fade in
             if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
             {
-                SegmentFrameIntersection(&Segment->AudioFadeIn, &PulseTime, &Pulse->DataSize, &PivotFrom, &PivotTo);
-                // mute sound before
-                // re-calculate overlap
-                // keep sound after
+                if(PulseTime.To < Segment->AudioFadeIn.From || PulseTimeFrom > Segment->AudioFadeIn.To)
+                {
+                    memset(data, 0, Pulse->DataSize);
+                }
+                else
+                {
+                    SegmentFrameIntersection(&Segment->AudioFadeIn, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
+                    // mute sound before
+                    // re-calculate overlap
+                    // keep sound after
+                }
             }
 
             // fade out

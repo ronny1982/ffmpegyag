@@ -21,6 +21,7 @@ class AudioFrame
     snd_pcm_format_t AlsaFormat;
     public: size_t SampleCount;
     public: size_t DataSize; // in byte
+    // TODO: rename to something like ChannelElementSize
     public: int FrameSize; // in byte
     public: int SampleSize; // in byte
     public: unsigned char* Data;
