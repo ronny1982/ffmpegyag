@@ -6,11 +6,13 @@ AudioFrame::AudioFrame()
     Timecode = int64_t(0);
     Duration = int64_t(0);
     SampleRate = 0;
-    Channels = 0;
+    ChannelCount = 0;
     AlsaFormat = SND_PCM_FORMAT_S16_LE;
     SampleCount = 0;
-    DataSize = av_samples_get_buffer_size(NULL, Channels, SampleCount, AV_SAMPLE_FMT_S16, 1);
+    DataSize = av_samples_get_buffer_size(NULL, ChannelCount, SampleCount, AV_SAMPLE_FMT_S16, 1);
     Data = (unsigned char*)av_malloc(DataSize);
+    FrameSize = DataSize / SampleCount;
+    SampleSize = FrameSize / ChannelCount;
     // silence
     for(size_t i=0; i<DataSize; i++)
     {
@@ -24,10 +26,12 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Timecode = FrameTimecode;
     Duration = FrameDuration;
     SampleRate = FrameSampleRate;
-    Channels = FrameChannels;
+    ChannelCount = FrameChannels;
     AlsaFormat = Libav::GetAlsaFormat(FrameFormat);
     SampleCount = FrameSampleCount;
     DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, FrameFormat, 1);
+    FrameSize = DataSize / SampleCount;
+    SampleSize = FrameSize / ChannelCount;
     Data = (unsigned char*)av_malloc(DataSize);
 }
 
@@ -37,17 +41,19 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Timecode = FrameTimecode;
     Duration = FrameDuration;
     SampleRate = FrameSampleRate;
-    Channels = FrameChannels;
+    ChannelCount = FrameChannels;
     AlsaFormat = SND_PCM_FORMAT_S16_LE;
     SampleCount = FrameSampleCount;
     DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, AV_SAMPLE_FMT_S16, 1);
+    FrameSize = DataSize / SampleCount;
+    SampleSize = FrameSize / ChannelCount;
     Data = (unsigned char*)av_malloc(DataSize);
 
     int amp = 6000/SampleCount;
     short* tmp = (short*)Data;
-    for(int i=0; i<SampleCount; i+=Channels)
+    for(int i=0; i<SampleCount; i+=ChannelCount)
     {
-        for(int c=0; c<Channels; ++c)
+        for(int c=0; c<ChannelCount; ++c)
         {
             tmp[i+c] = amp*(i%SampleCount);
         }

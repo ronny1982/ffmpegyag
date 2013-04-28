@@ -17,10 +17,12 @@ class AudioFrame
     public: int64_t Timecode; // in milliseconds
     public: int64_t Duration; // in milliseconds
     public: int SampleRate;
-    public: int Channels;
+    public: int ChannelCount;
     snd_pcm_format_t AlsaFormat;
     public: int SampleCount;
-    public: size_t DataSize;
+    public: size_t DataSize; // in byte
+    public: int FrameSize; // in byte
+    public: int SampleSize; // in byte
     public: unsigned char* Data;
 
     // copy all data from FrameData
