@@ -19,6 +19,23 @@ int64_t TimeSpecMilliDiff(struct timespec StartTime, struct timespec EndTime)
 }
 
 // p1, p2 indices of the mutual overlap of s and f (presented in f_count units)
+/*
+ *  return values p1 & p2 depending on f related to s:
+ *
+ *                 |----------s----------|
+ *                 :                     :
+ *  |----f----|    :                     :    |----f----|
+ *          p1|p2  :                     :  p1|p2
+ *                 :                     :
+ *            |----f----|           |----f----|
+ *               p1|----|p2       p1|----|p2
+ *                 :                     :
+ *                 :     |----f----|     :
+ *                 :   p1|---------|p2   :
+ *                 :                     :
+ *           |----------------f---------------|
+ *               p1|---------------------|p2
+ */
 void SegmentFrameIntersection(Range* s, Range* f, size_t* f_count, size_t* p1, size_t* p2)
 {
     if(f->To < s->From)
@@ -1966,7 +1983,7 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
         {
             Range PulseTime;
             PulseTime.From = Pulse->Timecode;
-            PulseTime.To = Pulse->Timecode + Pulse->Duration;
+            PulseTime.To = PulseTime.From + Pulse->Duration;
             size_t PivotFrom;
             size_t PivotTo;
 
@@ -1980,25 +1997,32 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
 //printf("Mute: A From: 0, Count: %lu\n", (long)(PivotFrom * Pulse->FrameSize));
 //printf("Mute: B From: %lu, Count: %lu\n", (long)(PivotTo * Pulse->FrameSize), (long)(Pulse->DataSize - (PivotTo * Pulse->FrameSize)));
             }
+
+            PulseTime.From = Pulse->Timecode - Segment->Time.From;
+            PulseTime.To = PulseTime.From + Pulse->Duration;
+
             // fade in
             if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
             {
-                if(PulseTime.To < Segment->AudioFadeIn.From || PulseTime.From > Segment->AudioFadeIn.To)
-                {
-                    memset(data, 0, Pulse->DataSize);
-                }
-                else
+                if(PulseTime.From < Segment->AudioFadeIn.To)
                 {
                     SegmentFrameIntersection(&Segment->AudioFadeIn, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
-                    // mute sound before
-                    // re-calculate overlap
-                    // keep sound after
+memset(data, 0, PivotFrom * Pulse->FrameSize); // mute sound between [0...PivotFrom]
+// fade sound between [PivotFrom...PivotTo]
+// don't change sound [PivotTo...SampleCount]
                 }
             }
 
             // fade out
             if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
             {
+                if(PulseTime.To > Segment->AudioFadeIn.From)
+                {
+                    SegmentFrameIntersection(&Segment->AudioFadeOut, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
+// don't change sound [0...PivotFrom]
+// fade sound between [PivotFrom...PivotTo]
+memset(data + (PivotTo * Pulse->FrameSize), 0, Pulse->DataSize - (PivotTo * Pulse->FrameSize)); // mute sound between [PivotTo...SampleCount]
+                }
             }
         }
         snd_pcm_writei(AlsaDevice, data, Pulse->SampleCount);
