@@ -1970,25 +1970,20 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
             size_t PivotFrom;
             size_t PivotTo;
 
-// [0...p1] -> memset 0
-// [p1...p2] -> mutual overlap
-// [p2...f_count] -> memset 0
-
-            // segment range
             // FIXME: what happens when segment time.from <= time.to ???
             // should work when time.from == time.to -> pivot.from == pivot.to
-            SegmentFrameIntersection(&Segment->Time, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
-            // mute sound between [0...PivotFrom]
-            memset(data, 0, PivotFrom * Pulse->FrameSize);
-printf("Mute: From_A: 0, Count: %lu\n", (long)(PivotFrom * Pulse->FrameSize));
-            // mute sound between [PivotTo...SampleCount]
-            memset(data + (PivotTo * Pulse->FrameSize), 0, Pulse->DataSize - (PivotTo * Pulse->FrameSize));
-printf("Mute: From_C: %lu, Count: %lu\n", (long)(PivotTo * Pulse->FrameSize), (long)(Pulse->DataSize - (PivotTo * Pulse->FrameSize)));
-
+            if(PulseTime.From < Segment->Time.From || (PulseTime.To > Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            {
+                SegmentFrameIntersection(&Segment->Time, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
+                memset(data, 0, PivotFrom * Pulse->FrameSize); // mute sound between [0...PivotFrom]
+                memset(data + (PivotTo * Pulse->FrameSize), 0, Pulse->DataSize - (PivotTo * Pulse->FrameSize)); // mute sound between [PivotTo...SampleCount]
+//printf("Mute: A From: 0, Count: %lu\n", (long)(PivotFrom * Pulse->FrameSize));
+//printf("Mute: B From: %lu, Count: %lu\n", (long)(PivotTo * Pulse->FrameSize), (long)(Pulse->DataSize - (PivotTo * Pulse->FrameSize)));
+            }
             // fade in
             if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
             {
-                if(PulseTime.To < Segment->AudioFadeIn.From || PulseTimeFrom > Segment->AudioFadeIn.To)
+                if(PulseTime.To < Segment->AudioFadeIn.From || PulseTime.From > Segment->AudioFadeIn.To)
                 {
                     memset(data, 0, Pulse->DataSize);
                 }
