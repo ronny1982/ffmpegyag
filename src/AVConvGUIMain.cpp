@@ -17,27 +17,15 @@ int64_t TimeSpecMilliDiff(struct timespec StartTime, struct timespec EndTime)
 {
     return (int64_t)(1000*(EndTime.tv_sec - StartTime.tv_sec) + (EndTime.tv_nsec - StartTime.tv_nsec)/1000000);
 }
-/*
-enum IntersectionType
-{
-    IntersectsOutside,
-    IntersectsInside,
-    IntersectsFrom,
-    IntersectsTo,
-    IntersectsBoth,
-};
-*/
-// p1, p2 indices of the mutual overlap of s and f
-// [0...p1] -> memset 0
-// [p1...p2] -> mutual overlap
-// [p2...f_count] -> memset 0
-/*IntersectionType*/ void SegmentFrameIntersection(Range* s, Range* f, size_t* f_count, size_t* p1, size_t* p2)
+
+// p1, p2 indices of the mutual overlap of s and f (presented in f_count units)
+void SegmentFrameIntersection(Range* s, Range* f, size_t* f_count, size_t* p1, size_t* p2)
 {
     if(f->To < s->From)
     {
         *p1 = *f_count;
         *p2 = 0;
-        return;// IntersectsOutside;
+        return; // Outside
     }
 
     // invalid segment interval
@@ -47,24 +35,24 @@ enum IntersectionType
         if(f->From < s->From)
         {
             *p1 = *f_count * (s->From - f->From) / f->GetDuration();
-            return;// IntersectsInside;
+            return; // Inside
         }
         *p1 = 0;
-        return; // IntersectionFrom
+        return; // Intersects @From
     }
 
     if(f->From > s->To)
     {
         *p1 = *f_count;
         *p2 = 0;
-        return;// IntersectsOutside;
+        return; // Outside
     }
 
     if(f->From >= s->From && f->To <= s->To)
     {
         *p1 = 0;
         *p2 = *f_count;
-        return;// IntersectsInside;
+        return; // Inside
     }
 
     if(f->From < s->From && f->To > s->From)
@@ -73,10 +61,10 @@ enum IntersectionType
         if(f->To <= s->To)
         {
             *p2 = *f_count;
-            return;// IntersectsFrom;
+            return; // Intersects @From
         }
         *p2 = *f_count * (s->To - f->From) / f->GetDuration();
-        return;// IntersectsBoth;
+        return; // Intersects @From & @To
     }
 
     if(f->From < s->To && f->To > s->To)
@@ -85,10 +73,10 @@ enum IntersectionType
         if(f->From >= s->From)
         {
             *p1 = 0;
-            return;// IntersectsTo;
+            return; // Intersects @To
         }
         *p1 = *f_count * (s->From - f->From) / f->GetDuration();
-        return;// IntersectsBoth;
+        return; // Intersects @From & @To
     }
 }
 
@@ -1989,16 +1977,15 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
             // segment range
             // FIXME: what happens when segment time.from <= time.to ???
             // should work when time.from == time.to -> pivot.from == pivot.to
-
-            SegmentFrameIntersection(&Segment->Time, &PulseTime, &Pulse->DataSize, &PivotFrom, &PivotTo);
+            SegmentFrameIntersection(&Segment->Time, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
             // mute sound before
-            memset(data, 0, PivotFrom);
-printf("Mute: From: 0, Count: %lu\n", (long)PivotFrom);
+            memset(data, 0, PivotFrom * Pulse->FrameSize);
+printf("Mute: From_A: 0, Count: %lu\n", (long)(PivotFrom * Pulse->FrameSize));
             // keep overlap
-            //memset(data + PivotFrom, 0, PivotTo - PivotFrom);
+            //memset(data + (PivotFrom * Pulse->FrameSize), 0, (PivotTo - PivotFrom) * Pulse->FrameSize);
             // mute sound after
-            memset(data + PivotTo, 0, Pulse->DataSize - PivotTo);
-printf("Mute: From: %lu, Count: %lu\n", PivotTo, (long)Pulse->DataSize - PivotTo);
+            memset(data + (PivotTo * Pulse->FrameSize), 0, Pulse->DataSize - (PivotTo * Pulse->FrameSize));
+printf("Mute: From_C: %lu, Count: %lu\n", (long)(PivotTo * Pulse->FrameSize), (long)(Pulse->DataSize - (PivotTo * Pulse->FrameSize)));
 
             // fade in
             if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)

@@ -20,7 +20,7 @@ AudioFrame::AudioFrame()
     }
 }
 
-AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, int FrameSampleCount)
+AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, size_t FrameSampleCount)
 {
     Timestamp = FrameTimestamp;
     Timecode = FrameTimecode;
@@ -35,7 +35,7 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Data = (unsigned char*)av_malloc(DataSize);
 }
 
-AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, int FrameSampleCount, int Frequency)
+AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, size_t FrameSampleCount, int Frequency)
 {
     Timestamp = FrameTimestamp;
     Timecode = FrameTimecode;

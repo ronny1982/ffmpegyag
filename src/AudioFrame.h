@@ -9,8 +9,8 @@ class AudioFrame
 {
     public: AudioFrame();
     // the pointer FrameData will be freed by this destructor, make sure not freeing it's content externally!
-    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, int FrameSampleCount);
-    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, int FrameSampleCount, int Frequency);
+    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, size_t FrameSampleCount);
+    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, size_t FrameSampleCount, int Frequency);
     public: virtual ~AudioFrame();
 
     public: int64_t Timestamp;
@@ -19,7 +19,7 @@ class AudioFrame
     public: int SampleRate;
     public: int ChannelCount;
     snd_pcm_format_t AlsaFormat;
-    public: int SampleCount;
+    public: size_t SampleCount;
     public: size_t DataSize; // in byte
     public: int FrameSize; // in byte
     public: int SampleSize; // in byte
