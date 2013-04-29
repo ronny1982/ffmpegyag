@@ -1906,25 +1906,34 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
             // mute
             if(Segment->Time.From > 0 || Segment->Time.From < Segment->Time.To)
             {
-                //From = Segment->Time.From;
-                //To; = Segment->Time.To;
-                Pulse->MuteClipped(&Segment->Time.From, &Segment->Time.To);
+                if(Pulse->Timecode < Segment->Time.From || Pulse->Timecode + Pulse->Duration > Segment->Time.To)
+                {
+                    //From = Segment->Time.From;
+                    //To; = Segment->Time.To;
+                    Pulse->MuteClipped(&Segment->Time.From, &Segment->Time.To);
+                }
             }
 
             // fade in
             if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
             {
-                From = Segment->Time.From + Segment->AudioFadeIn.From;
-                To = Segment->Time.From + Segment->AudioFadeIn.To;
-                Pulse->FadeInSquared(&From, &To);
+                if(Pulse->Timecode + Pulse->Duration > Segment->Time.From && Pulse->Timecode < Segment->Time.To)
+                {
+                    From = Segment->Time.From + Segment->AudioFadeIn.From;
+                    To = Segment->Time.From + Segment->AudioFadeIn.To;
+                    Pulse->FadeInSquared(&From, &To);
+                }
             }
 
             // fade out
             if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
             {
-                From = Segment->Time.From + Segment->AudioFadeOut.From;
-                To = Segment->Time.From + Segment->AudioFadeOut.To;
-                Pulse->FadeOutSquared(&From, &To);
+                if(Pulse->Timecode + Pulse->Duration > Segment->Time.From && Pulse->Timecode < Segment->Time.To)
+                {
+                    From = Segment->Time.From + Segment->AudioFadeOut.From;
+                    To = Segment->Time.From + Segment->AudioFadeOut.To;
+                    Pulse->FadeOutSquared(&From, &To);
+                }
             }
         }
         // NOTE: do not use Pulse->Data
