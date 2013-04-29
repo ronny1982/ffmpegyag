@@ -157,7 +157,7 @@ void AudioFrame::MuteClipped(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
     }
 }
 
-void AudioFrame::FadeInSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
+void AudioFrame::FadeIn(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType FadeType)
 {
     if(Timecode < *FilterTimeTo)
     {
@@ -167,44 +167,60 @@ void AudioFrame::FadeInSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
 
         // mute sound between [0...PivotFrom]
         memset(Data, 0, PivotFrom * SampleSize);
+
         // fade sound between [PivotFrom...PivotTo]
-
-int64_t range = *FilterTimeTo - *FilterTimeFrom;
-//int ratio;
-//int64_t sample_time;
-
-// unfortunately we using milli seconds as resolution -> accuracy max. 1ms, but should be sufficient for fading
-
-// loop all samples
-for(size_t i=PivotFrom; i<(PivotTo*ChannelCount); i+=ChannelCount)
-{
-    // loop all channels
-    for(size_t c=0; c<(size_t)ChannelCount; c++)
-    {
-        if(SampleFormatSize == 1)
+        int64_t ratio_num; // unfortunately we using milli seconds as resolution -> accuracy max. 1ms, but should be sufficient for fading
+        int64_t ratio_den = *FilterTimeTo - *FilterTimeFrom;
+        short* data_16LE = (short*)Data;
+        int* data_32LE = (int*)Data;
+        for(size_t sample_index=PivotFrom; sample_index<PivotTo; sample_index++) // loop all samples
         {
-            Data[i+c] = Data[i+c] * (Timecode + (Duration * i / SampleCount) - *FilterTimeFrom) / range;
+            for(size_t c=0; c<(size_t)ChannelCount; c++) // loop all channels
+            {
+                ratio_num = Timecode - *FilterTimeFrom + (Duration * (int64_t)sample_index / (int64_t)SampleCount);
+                if(SampleFormatSize == 1)
+                {
+                    if(FadeType == FadeLinear)
+                    {
+                        Data[sample_index*SampleFormatSize+c] = Data[sample_index*SampleFormatSize+c] * ratio_num / ratio_den;
+                    }
+                    if(FadeType == FadeQuadratic)
+                    {
+                        Data[sample_index*SampleFormatSize+c] = Data[sample_index*SampleFormatSize+c] * ratio_num / ratio_den;
+                    }
+                }
+                if(SampleFormatSize == 2)
+                {
+                    if(FadeType == FadeLinear)
+                    {
+                        data_16LE[sample_index*SampleFormatSize+c] = (short)(data_16LE[sample_index*SampleFormatSize+c] * ratio_num / ratio_den);
+                    }
+                    if(FadeType == FadeQuadratic)
+                    {
+                        data_16LE[sample_index*SampleFormatSize+c] = (short)(data_16LE[sample_index*SampleFormatSize+c] * ratio_num / ratio_den);
+                    }
+                }
+                if(SampleFormatSize == 4)
+                {
+                    if(FadeType == FadeLinear)
+                    {
+                        data_32LE[sample_index*SampleFormatSize+c] = (int)(data_32LE[sample_index*SampleFormatSize+c] * ratio_num / ratio_den);
+                    }
+                    if(FadeType == FadeQuadratic)
+                    {
+                        data_32LE[sample_index*SampleFormatSize+c] = (int)(data_32LE[sample_index*SampleFormatSize+c] * ratio_num / ratio_den);
+                    }
+                }
+            }
         }
-        if(SampleFormatSize == 2)
-        {
-            short* data_conv = (short*)Data;
-            data_conv[i+c] = data_conv[i+c] * (Timecode + (Duration * i / SampleCount) - *FilterTimeFrom) / range;
-        }
-        if(SampleFormatSize == 4)
-        {
-            int* data_conv = (int*)Data;
-            data_conv[i+c] = data_conv[i+c] * (Timecode + (Duration * i / SampleCount) - *FilterTimeFrom) / range;
-        }
-    }
-}
+        data_16LE = NULL;
+        data_32LE = NULL;
 
         // keep sound between [PivotTo...SampleCount]
-        //memset(...)
-printf("Fade In Mute: Frames[%lu, %lu], Time[%lu, %lu]\n", (long)0, (long)PivotFrom, (long)Timecode, (long)Timecode+Duration);
     }
 }
 
-void AudioFrame::FadeOutSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
+void AudioFrame::FadeOut(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType FadeType)
 {
     if(Timecode + Duration > *FilterTimeFrom)
     {
@@ -220,6 +236,6 @@ void AudioFrame::FadeOutSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
 
         // mute sound between [PivotTo...f_count]
         memset(Data + (PivotTo * SampleSize), 0, (SampleCount - PivotTo) * SampleSize);
-printf("Fade Out Mute: Frames[%lu, %lu], Time[%lu, %lu]\n", (long)0, (long)PivotFrom, (long)Timecode, (long)Timecode+Duration);
+//printf("Fade Out Mute: Frames[%lu, %lu], Time[%lu, %lu]\n", (long)0, (long)PivotFrom, (long)Timecode, (long)Timecode+Duration);
     }
 }

@@ -971,7 +971,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
 
                             // FIXME: consider offset(start_time) related to the 'master' stream
                             // FIXME: get correct frame duration...
-                            AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 23, pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, (size_t)pAudioFrameSource->nb_samples);
+                            AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 21, pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, (size_t)pAudioFrameSource->nb_samples);
                             snd->FillFrame(pAudioFrameSource->data[0]);
                             while(*DoStream && AudioFrameBuffer && AudioFrameBuffer->IsFull())
                             {

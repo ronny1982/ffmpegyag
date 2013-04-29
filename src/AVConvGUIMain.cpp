@@ -1788,7 +1788,7 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
         if(Segment)
         {
             // mute
-            if(Texture->Timecode + Texture->Duration < Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            if(Texture->Timecode + Texture->Duration <= Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
             {
                 glColor3f(1.0, 0.0, 0.0);
                 glBegin(GL_LINES);
@@ -1914,25 +1914,26 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
                 }
             }
 
-            // fade in
-            if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
+            if(Pulse->Timecode + Pulse->Duration < Segment->Time.From || (Pulse->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
             {
-                if(Pulse->Timecode + Pulse->Duration > Segment->Time.From && Pulse->Timecode < Segment->Time.To)
+                // frame completely outside
+            }
+            else
+            {
+                // fade in
+                if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
                 {
                     From = Segment->Time.From + Segment->AudioFadeIn.From;
                     To = Segment->Time.From + Segment->AudioFadeIn.To;
-                    Pulse->FadeInSquared(&From, &To);
+                    Pulse->FadeIn(&From, &To, FadeQuadratic);
                 }
-            }
 
-            // fade out
-            if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
-            {
-                if(Pulse->Timecode + Pulse->Duration > Segment->Time.From && Pulse->Timecode < Segment->Time.To)
+                // fade out
+                if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
                 {
                     From = Segment->Time.From + Segment->AudioFadeOut.From;
                     To = Segment->Time.From + Segment->AudioFadeOut.To;
-                    Pulse->FadeOutSquared(&From, &To);
+                    Pulse->FadeOut(&From, &To, FadeQuadratic);
                 }
             }
         }
@@ -2990,6 +2991,7 @@ void AVConvGUIFrame::OnMenuPresetsClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnMainWindowRClick(wxMouseEvent& event)
 {
+    // FIXME: crash when use context menu during playback (IsPlaying == true)
     int id = 0;
     while(MenuPresets->GetMenuItemCount() > 0)
     {
@@ -3129,6 +3131,7 @@ void AVConvGUIFrame::OnListCtrlSegmentsRClick(wxMouseEvent& event)
 {
     if(SelectedTaskIndices.GetCount() == 1 && SelectedSegmentIndices.GetCount() == 1)
     {
+        // FIXME: crash when use context menu during playback (IsPlaying == true)
         this->PopupMenu(MenuSegmentFilters);
     }
 }

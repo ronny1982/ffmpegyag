@@ -5,6 +5,12 @@
 
 #include "Libav.h"
 
+enum FadingType
+{
+    FadeLinear,
+    FadeQuadratic,
+};
+
 class AudioFrame
 {
     public: AudioFrame();
@@ -48,9 +54,9 @@ class AudioFrame
     // mute samples before FilterTime, keep samples inside FilterTime, mute samples after FilterTime
     public: void MuteClipped(int64_t* FilterTimeFrom, int64_t* FilterTimeTo);
     // mute samples before FilterTime, fade in samples inside FilterTime, keep samples after FilterTime
-    public: void FadeInSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo);
+    public: void FadeIn(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType FadeType);
     // keep samples before FilterTime, fade out samples inside FilterTime, mute samples after FilterTime
-    public: void FadeOutSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo);
+    public: void FadeOut(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType FadeType);
 };
 
 WX_DEFINE_ARRAY(AudioFrame*, AudioFrameArray);
