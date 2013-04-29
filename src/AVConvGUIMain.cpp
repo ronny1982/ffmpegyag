@@ -1788,9 +1788,16 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
         if(Segment)
         {
             // mute
-            if(Texture->Timecode + Texture->Duration <= Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            if(Texture->Timecode/* + Texture->Duration*/ < Segment->Time.From || (Texture->Timecode >= Segment->Time.To && Segment->Time.From < Segment->Time.To))
             {
-                glColor3f(1.0, 0.0, 0.0);
+                if(Texture->Timecode == Segment->Time.To)
+                {
+                    glColor3f(1.0, 0.5, 0.0);
+                }
+                else
+                {
+                    glColor3f(1.0, 0.0, 0.0);
+                }
                 glBegin(GL_LINES);
                     glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop);
                     glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom);
