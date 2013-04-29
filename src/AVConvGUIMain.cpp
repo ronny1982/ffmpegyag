@@ -1900,22 +1900,31 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
     {
         if(Segment)
         {
+            int64_t From;
+            int64_t To;
+
             // mute
             if(Segment->Time.From > 0 || Segment->Time.From < Segment->Time.To)
             {
+                //From = Segment->Time.From;
+                //To; = Segment->Time.To;
                 Pulse->MuteClipped(&Segment->Time.From, &Segment->Time.To);
             }
 
             // fade in
             if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
             {
-                Pulse->FadeInSquared(&Segment->AudioFadeIn.From, &Segment->AudioFadeIn.To);
+                From = Segment->Time.From + Segment->AudioFadeIn.From;
+                To = Segment->Time.From + Segment->AudioFadeIn.To;
+                Pulse->FadeInSquared(&From, &To);
             }
 
             // fade out
             if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
             {
-                Pulse->FadeOutSquared(&Segment->AudioFadeOut.From, &Segment->AudioFadeOut.To);
+                From = Segment->Time.From + Segment->AudioFadeOut.From;
+                To = Segment->Time.From + Segment->AudioFadeOut.To;
+                Pulse->FadeOutSquared(&From, &To);
             }
         }
         // NOTE: do not use Pulse->Data

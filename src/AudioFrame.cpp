@@ -173,6 +173,7 @@ void AudioFrame::FadeInSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
 
         // keep sound between [PivotTo...SampleCount]
         //memset(...)
+printf("Fade In Mute: Frames[%lu, %lu], Time[%lu, %lu]\n", (long)0, (long)PivotFrom, (long)Timecode, (long)Timecode+Duration);
     }
 }
 
@@ -192,5 +193,6 @@ void AudioFrame::FadeOutSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
 
         // mute sound between [PivotTo...f_count]
         memset(Data + (PivotTo * SampleSize), 0, (SampleCount - PivotTo) * SampleSize);
+printf("Fade Out Mute: Frames[%lu, %lu], Time[%lu, %lu]\n", (long)0, (long)PivotFrom, (long)Timecode, (long)Timecode+Duration);
     }
 }
