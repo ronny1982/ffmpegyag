@@ -266,51 +266,50 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
 
 void AudioFrame::MixDown()
 {
-    short* data_16 = (short*)Data;
-    int* data_32 = (int*)Data;
-    float* data_f = (float*)Data;
-    double* data_d = (double*)Data;
-    size_t index;
-    size_t index_center_channel;
-    for(size_t sample_index=0; sample_index<SampleCount; sample_index++) // loop all samples
+    if(ChannelCount > 2)
     {
-        index = sample_index*ChannelCount;
-
-        // Front_L, Front_R, Center, LowFreq, Side_L, Side_R, Back_L, Back_R
-        if(ChannelCount > 2)
+        short* data_16 = (short*)Data;
+        int* data_32 = (int*)Data;
+        float* data_f = (float*)Data;
+        double* data_d = (double*)Data;
+        size_t index;
+        size_t index_center_channel;
+        for(size_t sample_index=0; sample_index<SampleCount; sample_index++) // loop all samples
         {
+            index = sample_index*ChannelCount;
+            // Front_L, Front_R, Center, LowFreq, Side_L, Side_R, Back_L, Back_R
             index_center_channel = 2;
+
+            if(AlsaFormat == SND_PCM_FORMAT_S8)
+            {
+                Data[index+0] = (unsigned char)((Data[index+0] + Data[index+index_center_channel]) / 2); // center ++> left
+                Data[index+1] = (unsigned char)((Data[index+1] + Data[index+index_center_channel]) / 2); // center ++> right
+            }
+            if(AlsaFormat == SND_PCM_FORMAT_S16)
+            {
+                data_16[index+0] = (short)((data_16[index+0] + data_16[index+index_center_channel]) / 2); // center ++> left
+                data_16[index+1] = (short)((data_16[index+1] + data_16[index+index_center_channel]) / 2); // center ++> right
+            }
+            if(AlsaFormat == SND_PCM_FORMAT_S32)
+            {
+                data_32[index+0] = (int)((data_32[index+0] + data_32[index+index_center_channel]) / 2); // center ++> left
+                data_32[index+1] = (int)((data_32[index+1] + data_32[index+index_center_channel]) / 2); // center ++> right
+            }
+            if(AlsaFormat == SND_PCM_FORMAT_FLOAT)
+            {
+                data_f[index+0] = (float)((data_f[index+0] + data_f[index+index_center_channel]) / 2); // center ++> left
+                data_f[index+1] = (float)((data_f[index+1] + data_f[index+index_center_channel]) / 2); // center ++> right
+            }
+            if(AlsaFormat == SND_PCM_FORMAT_FLOAT64)
+            {
+                data_d[index+0] = (double)((data_d[index+0] + data_d[index+index_center_channel]) / 2); // center ++> left
+                data_d[index+1] = (double)((data_d[index+1] + data_d[index+index_center_channel]) / 2); // center ++> right
+            }
         }
 
-        if(AlsaFormat == SND_PCM_FORMAT_S8)
-        {
-            Data[index+0] = (unsigned char)((Data[index+0] + Data[index+index_center_channel]) / 2); // center ++> left
-            Data[index+1] = (unsigned char)((Data[index+1] + Data[index+index_center_channel]) / 2); // center ++> right
-        }
-        if(AlsaFormat == SND_PCM_FORMAT_S16)
-        {
-            data_16[index+0] = (short)((data_16[index+0] + data_16[index+index_center_channel]) / 2); // center ++> left
-            data_16[index+1] = (short)((data_16[index+1] + data_16[index+index_center_channel]) / 2); // center ++> right
-        }
-        if(AlsaFormat == SND_PCM_FORMAT_S32)
-        {
-            data_32[index+0] = (int)((data_32[index+0] + data_32[index+index_center_channel]) / 2); // center ++> left
-            data_32[index+1] = (int)((data_32[index+1] + data_32[index+index_center_channel]) / 2); // center ++> right
-        }
-        if(AlsaFormat == SND_PCM_FORMAT_FLOAT)
-        {
-            data_f[index+0] = (float)((data_f[index+0] + data_f[index+index_center_channel]) / 2); // center ++> left
-            data_f[index+1] = (float)((data_f[index+1] + data_f[index+index_center_channel]) / 2); // center ++> right
-        }
-        if(AlsaFormat == SND_PCM_FORMAT_FLOAT64)
-        {
-            data_d[index+0] = (double)((data_d[index+0] + data_d[index+index_center_channel]) / 2); // center ++> left
-            data_d[index+1] = (double)((data_d[index+1] + data_d[index+index_center_channel]) / 2); // center ++> right
-        }
+        data_16 = NULL;
+        data_32 = NULL;
+        data_f = NULL;
+        data_d = NULL;
     }
-
-    data_16 = NULL;
-    data_32 = NULL;
-    data_f = NULL;
-    data_d = NULL;
 }
