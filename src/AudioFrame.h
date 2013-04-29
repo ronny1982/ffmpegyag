@@ -22,12 +22,35 @@ class AudioFrame
     public: size_t SampleCount;
     public: size_t DataSize; // in byte
     // TODO: rename to something like ChannelElementSize
-    public: int FrameSize; // in byte
     public: int SampleSize; // in byte
+    public: int SampleFormatSize; // in byte
     public: unsigned char* Data;
 
     // copy all data from FrameData
     public: void FillFrame(unsigned char* FrameData);
+    // calculate p1, p2 indices of the mutual overlap of FilterTime and this AudioFrame (presented in SampleCount/SampleSize units)
+    /*
+     *                          |----------FilterTime----------|
+     *                          :                              :
+     *  |----AudioFrame----|    :                              :    |----AudioFrame----|
+     *                   p1|p2  :                              :  p1|p2
+     *                          :                              :
+     *                |----AudioFrame----|           |----AudioFrame----|
+     *                        p1|--------|p2       p1|---------|p2
+     *                          :                              :
+     *                    |----------------AudioFrame---------------|
+     *                        p1|------------------------------|p2
+     *                          :                              :
+     *                          :     |----AudioFrame----|     :
+     *                          :   p1|------------------|p2   :
+     */
+    private: void FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, size_t* PivotFrom, size_t* PivotTo);
+    // mute samples before FilterTime, keep samples inside FilterTime, mute samples after FilterTime
+    public: void MuteClipped(int64_t* FilterTimeFrom, int64_t* FilterTimeTo);
+    // mute samples before FilterTime, fade in samples inside FilterTime, keep samples after FilterTime
+    public: void FadeInSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo);
+    // keep samples before FilterTime, fade out samples inside FilterTime, mute samples after FilterTime
+    public: void FadeOutSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo);
 };
 
 WX_DEFINE_ARRAY(AudioFrame*, AudioFrameArray);

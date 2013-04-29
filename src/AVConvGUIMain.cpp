@@ -18,85 +18,6 @@ int64_t TimeSpecMilliDiff(struct timespec StartTime, struct timespec EndTime)
     return (int64_t)(1000*(EndTime.tv_sec - StartTime.tv_sec) + (EndTime.tv_nsec - StartTime.tv_nsec)/1000000);
 }
 
-// p1, p2 indices of the mutual overlap of s and f (presented in f_count units)
-/*
- *  return values p1 & p2 depending on f related to s:
- *
- *                 |----------s----------|
- *                 :                     :
- *  |----f----|    :                     :    |----f----|
- *          p1|p2  :                     :  p1|p2
- *                 :                     :
- *            |----f----|           |----f----|
- *               p1|----|p2       p1|----|p2
- *                 :                     :
- *                 :     |----f----|     :
- *                 :   p1|---------|p2   :
- *                 :                     :
- *           |----------------f---------------|
- *               p1|---------------------|p2
- */
-void SegmentFrameIntersection(Range* s, Range* f, size_t* f_count, size_t* p1, size_t* p2)
-{
-    if(f->To < s->From)
-    {
-        *p1 = *f_count;
-        *p2 = *f_count;
-        return; // Outside Beofre
-    }
-
-    // invalid segment interval
-    if(s->From >= s->To)
-    {
-        *p2 = *f_count;
-        if(f->From < s->From)
-        {
-            *p1 = *f_count * (s->From - f->From) / f->GetDuration();
-            return; // Inside
-        }
-        *p1 = 0;
-        return; // Intersects @From
-    }
-
-    if(f->From > s->To)
-    {
-        *p1 = 0;
-        *p2 = 0;
-        return; // Outside After
-    }
-
-    if(f->From >= s->From && f->To <= s->To)
-    {
-        *p1 = 0;
-        *p2 = *f_count;
-        return; // Inside
-    }
-
-    if(f->From < s->From && f->To > s->From)
-    {
-        *p1 = *f_count * (s->From - f->From) / f->GetDuration();
-        if(f->To <= s->To)
-        {
-            *p2 = *f_count;
-            return; // Intersects @From
-        }
-        *p2 = *f_count * (s->To - f->From) / f->GetDuration();
-        return; // Intersects @From & @To
-    }
-
-    if(f->From < s->To && f->To > s->To)
-    {
-        *p2 = *f_count * (s->To - f->From) / f->GetDuration();
-        if(f->From >= s->From)
-        {
-            *p1 = 0;
-            return; // Intersects @To
-        }
-        *p1 = *f_count * (s->From - f->From) / f->GetDuration();
-        return; // Intersects @From & @To
-    }
-}
-
 enum wxbuildinfoformat {
     short_f, long_f };
 
@@ -713,7 +634,7 @@ AVConvGUIFrame::~AVConvGUIFrame()
     if(IsPlaying)
     {
         IsPlaying = false;
-        // TODO: improve the waitning behaviour
+        // TODO: improve the waiting behaviour
         wxMilliSleep(250);
     }
 
@@ -1866,6 +1787,7 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
 
         if(Segment)
         {
+            // mute
             if(Texture->Timecode + Texture->Duration < Segment->Time.From || (Texture->Timecode > Segment->Time.To && Segment->Time.From < Segment->Time.To))
             {
                 glColor3f(1.0, 0.0, 0.0);
@@ -1976,55 +1898,30 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
 {
     if(Pulse)
     {
-        // do not modify AudioFrame->Data, create copy of...
-        unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
-        memcpy(data, Pulse->Data, Pulse->DataSize);
         if(Segment)
         {
-            Range PulseTime;
-            PulseTime.From = Pulse->Timecode;
-            PulseTime.To = PulseTime.From + Pulse->Duration;
-            size_t PivotFrom;
-            size_t PivotTo;
-
-            // FIXME: what happens when segment time.from <= time.to ???
-            // should work when time.from == time.to -> pivot.from == pivot.to
-            if(PulseTime.From < Segment->Time.From || (PulseTime.To > Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            // mute
+            if(Segment->Time.From > 0 || Segment->Time.From < Segment->Time.To)
             {
-                SegmentFrameIntersection(&Segment->Time, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
-                memset(data, 0, PivotFrom * Pulse->FrameSize); // mute sound between [0...PivotFrom]
-                memset(data + (PivotTo * Pulse->FrameSize), 0, Pulse->DataSize - (PivotTo * Pulse->FrameSize)); // mute sound between [PivotTo...SampleCount]
-//printf("Mute: A From: 0, Count: %lu\n", (long)(PivotFrom * Pulse->FrameSize));
-//printf("Mute: B From: %lu, Count: %lu\n", (long)(PivotTo * Pulse->FrameSize), (long)(Pulse->DataSize - (PivotTo * Pulse->FrameSize)));
+                Pulse->MuteClipped(&Segment->Time.From, &Segment->Time.To);
             }
-
-            PulseTime.From = Pulse->Timecode - Segment->Time.From;
-            PulseTime.To = PulseTime.From + Pulse->Duration;
 
             // fade in
             if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
             {
-                if(PulseTime.From < Segment->AudioFadeIn.To)
-                {
-                    SegmentFrameIntersection(&Segment->AudioFadeIn, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
-memset(data, 0, PivotFrom * Pulse->FrameSize); // mute sound between [0...PivotFrom]
-// fade sound between [PivotFrom...PivotTo]
-// don't change sound [PivotTo...SampleCount]
-                }
+                Pulse->FadeInSquared(&Segment->AudioFadeIn.From, &Segment->AudioFadeIn.To);
             }
 
             // fade out
             if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
             {
-                if(PulseTime.To > Segment->AudioFadeIn.From)
-                {
-                    SegmentFrameIntersection(&Segment->AudioFadeOut, &PulseTime, &Pulse->SampleCount, &PivotFrom, &PivotTo);
-// don't change sound [0...PivotFrom]
-// fade sound between [PivotFrom...PivotTo]
-memset(data + (PivotTo * Pulse->FrameSize), 0, Pulse->DataSize - (PivotTo * Pulse->FrameSize)); // mute sound between [PivotTo...SampleCount]
-                }
+                Pulse->FadeOutSquared(&Segment->AudioFadeOut.From, &Segment->AudioFadeOut.To);
             }
         }
+        // NOTE: do not use Pulse->Data
+        // create copy that will be written to alsa (alsa will free it)
+        unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
+        memcpy(data, Pulse->Data, Pulse->DataSize);
         snd_pcm_writei(AlsaDevice, data, Pulse->SampleCount);
     }
 }
@@ -2155,7 +2052,6 @@ void AVConvGUIFrame::PlaybackMedia()
                 }
             }
 
-            // FIXME: when spamming space bar, recursive wxYield() error
             wxYield();
         }
 
@@ -2203,6 +2099,7 @@ void AVConvGUIFrame::OnGLCanvasPreviewResize(wxSizeEvent& event)
 
 void AVConvGUIFrame::OnResize(wxSizeEvent& event)
 {
+    // FIXME: crash when resize during playback (IsPlaying == true)
     this->Layout();
 
     // prevent flickering when changing column size...
