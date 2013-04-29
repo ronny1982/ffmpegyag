@@ -165,11 +165,38 @@ void AudioFrame::FadeInSquared(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
         size_t PivotTo;
         FilterFrameIntersection(FilterTimeFrom, FilterTimeTo, &PivotFrom, &PivotTo);
 
-// cast data to type corresponding on f_sample_size
-
         // mute sound between [0...PivotFrom]
         memset(Data, 0, PivotFrom * SampleSize);
         // fade sound between [PivotFrom...PivotTo]
+
+int64_t range = *FilterTimeTo - *FilterTimeFrom;
+//int ratio;
+//int64_t sample_time;
+
+// unfortunately we using milli seconds as resolution -> accuracy max. 1ms, but should be sufficient for fading
+
+// loop all samples
+for(size_t i=PivotFrom; i<(PivotTo*ChannelCount); i+=ChannelCount)
+{
+    // loop all channels
+    for(size_t c=0; c<(size_t)ChannelCount; c++)
+    {
+        if(SampleFormatSize == 1)
+        {
+            Data[i+c] = Data[i+c] * (Timecode + (Duration * i / SampleCount) - *FilterTimeFrom) / range;
+        }
+        if(SampleFormatSize == 2)
+        {
+            short* data_conv = (short*)Data;
+            data_conv[i+c] = data_conv[i+c] * (Timecode + (Duration * i / SampleCount) - *FilterTimeFrom) / range;
+        }
+        if(SampleFormatSize == 4)
+        {
+            int* data_conv = (int*)Data;
+            data_conv[i+c] = data_conv[i+c] * (Timecode + (Duration * i / SampleCount) - *FilterTimeFrom) / range;
+        }
+    }
+}
 
         // keep sound between [PivotTo...SampleCount]
         //memset(...)
