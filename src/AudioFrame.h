@@ -7,6 +7,12 @@
 
 enum FadingType
 {
+    FadeIn,
+    FadeOut,
+};
+
+enum FadingCurve
+{
     FadeLinear,
     FadeQuadratic,
 };
@@ -53,10 +59,9 @@ class AudioFrame
     private: void FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, size_t* PivotFrom, size_t* PivotTo);
     // mute samples before FilterTime, keep samples inside FilterTime, mute samples after FilterTime
     public: void MuteClipped(int64_t* FilterTimeFrom, int64_t* FilterTimeTo);
-    // mute samples before FilterTime, fade in samples inside FilterTime, keep samples after FilterTime
-    public: void FadeIn(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType FadeType);
-    // keep samples before FilterTime, fade out samples inside FilterTime, mute samples after FilterTime
-    public: void FadeOut(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType FadeType);
+    // FadeIn: mute samples before FilterTime, fade in samples inside FilterTime, keep samples after FilterTime
+    // FadeOut: keep samples before FilterTime, fade out samples inside FilterTime, mute samples after FilterTime
+    public: void Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType FadeType, FadingCurve FadeCurve = FadeLinear);
 };
 
 WX_DEFINE_ARRAY(AudioFrame*, AudioFrameArray);

@@ -1925,7 +1925,7 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
                 {
                     From = Segment->Time.From + Segment->AudioFadeIn.From;
                     To = Segment->Time.From + Segment->AudioFadeIn.To;
-                    Pulse->FadeIn(&From, &To, FadeQuadratic);
+                    Pulse->Fade(&From, &To, FadeIn, FadeQuadratic);
                 }
 
                 // fade out
@@ -1933,7 +1933,7 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
                 {
                     From = Segment->Time.From + Segment->AudioFadeOut.From;
                     To = Segment->Time.From + Segment->AudioFadeOut.To;
-                    Pulse->FadeOut(&From, &To, FadeQuadratic);
+                    Pulse->Fade(&From, &To, FadeOut, FadeQuadratic);
                 }
             }
         }
