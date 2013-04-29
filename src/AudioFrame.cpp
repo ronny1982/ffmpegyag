@@ -7,7 +7,7 @@ AudioFrame::AudioFrame()
     Duration = int64_t(0);
     SampleRate = 0;
     ChannelCount = 0;
-    AlsaFormat = SND_PCM_FORMAT_S16_LE;
+    AlsaFormat = SND_PCM_FORMAT_S16;
     SampleCount = 0;
     DataSize = av_samples_get_buffer_size(NULL, ChannelCount, SampleCount, AV_SAMPLE_FMT_S16, 1);
     Data = (unsigned char*)av_malloc(DataSize);
@@ -42,7 +42,7 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     SampleRate = FrameSampleRate;
     ChannelCount = FrameChannels;
-    AlsaFormat = SND_PCM_FORMAT_S16_LE;
+    AlsaFormat = SND_PCM_FORMAT_S16;
     SampleCount = FrameSampleCount;
     DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, AV_SAMPLE_FMT_S16, 1);
     SampleSize = DataSize / SampleCount;
@@ -72,8 +72,6 @@ void AudioFrame::FillFrame(unsigned char* FrameData)
     memcpy(Data, FrameData, DataSize);
 }
 
-// FIXME: what happens when segment FilterTime.from <= FilterTime.to ???
-// should work when FilterTime.from == FilterTime.to -> pivot.from == pivot.to
 void AudioFrame::FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, size_t* p1, size_t* p2)
 {
     int64_t Endtime = Timecode + Duration;
@@ -147,13 +145,12 @@ void AudioFrame::MuteClipped(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
 
         // mute sound between [0...PivotFrom]
         memset(Data, 0, PivotFrom * SampleSize);
+
         // keep sound between [PivotFrom...PivotTo]
         //memset(...)
+
         // mute sound between [PivotTo...SampleCount]
         memset(Data + (PivotTo * SampleSize), 0, (SampleCount - PivotTo) * SampleSize);
-
-//printf("Mute: A From: 0, Count: %lu\n", (long)(PivotFrom * Pulse->FrameSize));
-//printf("Mute: B From: %lu, Count: %lu\n", (long)(PivotTo * Pulse->FrameSize), (long)(Pulse->DataSize - (PivotTo * Pulse->FrameSize)));
     }
 }
 
@@ -176,8 +173,11 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
         // unfortunately we using milli seconds as resolution -> accuracy max. 1ms, but should be sufficient for fading
         int64_t ratio_den = *FilterTimeTo - *FilterTimeFrom;
         int64_t ratio_num = ratio_den;
-        short* data_16LE = (short*)Data;
-        int* data_32LE = (int*)Data;
+        short* data_16 = (short*)Data;
+        int* data_32 = (int*)Data;
+        float* data_f = (float*)Data;
+        double* data_d = (double*)Data;
+        size_t index;
         for(size_t sample_index=PivotFrom; sample_index<PivotTo; sample_index++) // loop all samples
         {
             if(FadeType == FadeIn)
@@ -191,50 +191,126 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
 
             for(size_t c=0; c<(size_t)ChannelCount; c++) // loop all channels
             {
-                if(SampleFormatSize == 1)
+                index = sample_index * ChannelCount + c;
+
+                if(AlsaFormat == SND_PCM_FORMAT_S8)
                 {
                     if(FadeCurve == FadeLinear)
                     {
-                        Data[sample_index*SampleFormatSize+c] = Data[sample_index*SampleFormatSize+c] * ratio_num / ratio_den;
+                        Data[index] = (unsigned char)(Data[index] * ratio_num / ratio_den);
                     }
                     if(FadeCurve == FadeQuadratic)
                     {
-                        Data[sample_index*SampleFormatSize+c] = Data[sample_index*SampleFormatSize+c] * ratio_num / ratio_den;
+                        Data[index] = (unsigned char)(Data[index] * ratio_num / ratio_den);
                     }
                 }
-                if(SampleFormatSize == 2)
+                if(AlsaFormat == SND_PCM_FORMAT_S16)
                 {
                     if(FadeCurve == FadeLinear)
                     {
-                        data_16LE[sample_index*SampleFormatSize+c] = (short)(data_16LE[sample_index*SampleFormatSize+c] * ratio_num / ratio_den);
+                        data_16[index] = (short)(data_16[index] * ratio_num / ratio_den);
                     }
                     if(FadeCurve == FadeQuadratic)
                     {
-                        data_16LE[sample_index*SampleFormatSize+c] = (short)(data_16LE[sample_index*SampleFormatSize+c] * ratio_num / ratio_den);
+                        data_16[index] = (short)(data_16[index] * ratio_num / ratio_den);
                     }
                 }
-                if(SampleFormatSize == 4)
+                if(AlsaFormat == SND_PCM_FORMAT_S32)
                 {
                     if(FadeCurve == FadeLinear)
                     {
-                        data_32LE[sample_index*SampleFormatSize+c] = (int)(data_32LE[sample_index*SampleFormatSize+c] * ratio_num / ratio_den);
+                        data_32[index] = (int)(data_32[index] * ratio_num / ratio_den);
                     }
                     if(FadeCurve == FadeQuadratic)
                     {
-                        data_32LE[sample_index*SampleFormatSize+c] = (int)(data_32LE[sample_index*SampleFormatSize+c] * ratio_num / ratio_den);
+                        data_32[index] = (int)(data_32[index] * ratio_num / ratio_den);
+                    }
+                }
+                if(AlsaFormat == SND_PCM_FORMAT_FLOAT)
+                {
+                    if(FadeCurve == FadeLinear)
+                    {
+                        data_f[index] = (float)(data_f[index] * ((float)ratio_num / (float)ratio_den));
+                    }
+                    if(FadeCurve == FadeQuadratic)
+                    {
+                        data_f[index] = (float)(data_f[index] * ((float)ratio_num / (float)ratio_den));
+                    }
+                }
+                if(AlsaFormat == SND_PCM_FORMAT_FLOAT64)
+                {
+                    if(FadeCurve == FadeLinear)
+                    {
+                        data_d[index] = (double)(data_d[index] * ((double)ratio_num / (double)ratio_den));
+                    }
+                    if(FadeCurve == FadeQuadratic)
+                    {
+                        data_d[index] = (double)(data_d[index] * ((double)ratio_num / (double)ratio_den));
                     }
                 }
             }
         }
-        data_16LE = NULL;
-        data_32LE = NULL;
+        data_16 = NULL;
+        data_32 = NULL;
+        data_f = NULL;
+        data_d = NULL;
 
         if(FadeType == FadeOut)
         {
             // mute sound between [PivotTo...SampleCount]
             memset(Data + (PivotTo * SampleSize), 0, (SampleCount - PivotTo) * SampleSize);
-printf("PivotTo: %lu\n", (long)PivotTo);
         }
         // keep sound between [PivotTo...SampleCount]
     }
+}
+
+void AudioFrame::MixDown()
+{
+    short* data_16 = (short*)Data;
+    int* data_32 = (int*)Data;
+    float* data_f = (float*)Data;
+    double* data_d = (double*)Data;
+    size_t index;
+    size_t index_center_channel;
+    for(size_t sample_index=0; sample_index<SampleCount; sample_index++) // loop all samples
+    {
+        index = sample_index*ChannelCount;
+
+        // Front_L, Front_R, Center, LowFreq, Side_L, Side_R, Back_L, Back_R
+        if(ChannelCount > 2)
+        {
+            index_center_channel = 2;
+        }
+
+        if(AlsaFormat == SND_PCM_FORMAT_S8)
+        {
+            Data[index+0] = (unsigned char)((Data[index+0] + Data[index+index_center_channel]) / 2); // center ++> left
+            Data[index+1] = (unsigned char)((Data[index+1] + Data[index+index_center_channel]) / 2); // center ++> right
+        }
+        if(AlsaFormat == SND_PCM_FORMAT_S16)
+        {
+            data_16[index+0] = (short)((data_16[index+0] + data_16[index+index_center_channel]) / 2); // center ++> left
+            data_16[index+1] = (short)((data_16[index+1] + data_16[index+index_center_channel]) / 2); // center ++> right
+        }
+        if(AlsaFormat == SND_PCM_FORMAT_S32)
+        {
+            data_32[index+0] = (int)((data_32[index+0] + data_32[index+index_center_channel]) / 2); // center ++> left
+            data_32[index+1] = (int)((data_32[index+1] + data_32[index+index_center_channel]) / 2); // center ++> right
+        }
+        if(AlsaFormat == SND_PCM_FORMAT_FLOAT)
+        {
+            data_f[index+0] = (float)((data_f[index+0] + data_f[index+index_center_channel]) / 2); // center ++> left
+            data_f[index+1] = (float)((data_f[index+1] + data_f[index+index_center_channel]) / 2); // center ++> right
+        }
+        if(AlsaFormat == SND_PCM_FORMAT_FLOAT64)
+        {
+            data_d[index+0] = (double)((data_d[index+0] + data_d[index+index_center_channel]) / 2); // center ++> left
+            data_d[index+1] = (double)((data_d[index+1] + data_d[index+index_center_channel]) / 2); // center ++> right
+        }
+    }
+
+    data_16 = NULL;
+    data_32 = NULL;
+    data_f = NULL;
+    data_d = NULL;
 }

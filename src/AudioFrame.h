@@ -33,7 +33,6 @@ class AudioFrame
     snd_pcm_format_t AlsaFormat;
     public: size_t SampleCount;
     public: size_t DataSize; // in byte
-    // TODO: rename to something like ChannelElementSize
     public: int SampleSize; // in byte
     public: int SampleFormatSize; // in byte
     public: unsigned char* Data;
@@ -62,6 +61,8 @@ class AudioFrame
     // FadeIn: mute samples before FilterTime, fade in samples inside FilterTime, keep samples after FilterTime
     // FadeOut: keep samples before FilterTime, fade out samples inside FilterTime, mute samples after FilterTime
     public: void Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType FadeType, FadingCurve FadeCurve = FadeLinear);
+    // mix all channels into front-let & front-right
+    public: void MixDown();
 };
 
 WX_DEFINE_ARRAY(AudioFrame*, AudioFrameArray);

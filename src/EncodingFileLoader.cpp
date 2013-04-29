@@ -968,8 +968,14 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                             {
                                 FrameTimestamp = pAudioFrameSource->pkt_dts;
                             }
-
                             // FIXME: consider offset(start_time) related to the 'master' stream
+                            /*
+                            if(VideoStreamIndex > -1 && VideoStreamIndex < (long)VideoStreams.GetCount())
+                            {
+                                FrameTimestamp = VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp;
+                            }
+                            */
+
                             // FIXME: get correct frame duration...
                             AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 21, pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, (size_t)pAudioFrameSource->nb_samples);
                             snd->FillFrame(pAudioFrameSource->data[0]);

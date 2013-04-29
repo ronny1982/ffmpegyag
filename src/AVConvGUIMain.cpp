@@ -1787,10 +1787,13 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
 
         if(Segment)
         {
+            int64_t From = Segment->Time.From;
+            int64_t To = Segment->Time.To;
+
             // mute
-            if(Texture->Timecode/* + Texture->Duration*/ < Segment->Time.From || (Texture->Timecode >= Segment->Time.To && Segment->Time.From < Segment->Time.To))
+            if(Texture->Timecode/* + Texture->Duration*/ < From || (Texture->Timecode >= To && From < To))
             {
-                if(Texture->Timecode == Segment->Time.To)
+                if(Texture->Timecode == To)
                 {
                     glColor3f(1.0, 0.5, 0.0);
                 }
@@ -1807,19 +1810,18 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
             }
             else
             {
-                int64_t time = Texture->Timecode - Segment->Time.From;
-                // TODO: consider duration
-                int64_t duration = Texture->Duration;
-
                 // fade in
                 if(Segment->VideoFadeIn.From > 0 || Segment->VideoFadeIn.From < Segment->VideoFadeIn.To)
                 {
-                    if(time <= Segment->VideoFadeIn.To)
+                    From = Segment->Time.From + Segment->VideoFadeIn.From;
+                    To = Segment->Time.From + Segment->VideoFadeIn.To;
+
+                    if(Texture->Timecode <= To)
                     {
                         float ratio = 0.0;
-                        if(time >= Segment->VideoFadeIn.From)
+                        if(Texture->Timecode >= From)
                         {
-                            ratio = (float)(time - Segment->VideoFadeIn.From) / (float)Segment->VideoFadeIn.GetDuration();
+                            ratio = (float)(Texture->Timecode - From) / (float)Segment->VideoFadeIn.GetDuration();
                         }
                         glEnable(GL_BLEND);
                         glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
@@ -1837,12 +1839,15 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
                 // fade out
                 if(Segment->VideoFadeOut.From > 0 || Segment->VideoFadeOut.From < Segment->VideoFadeOut.To)
                 {
-                    if(time >= Segment->VideoFadeOut.From)
+                    From = Segment->Time.From + Segment->VideoFadeIn.From;
+                    To = Segment->Time.From + Segment->VideoFadeIn.To;
+
+                    if(Texture->Timecode >= From)
                     {
                         float ratio = 0.0;
-                        if(time <= Segment->VideoFadeOut.To)
+                        if(Texture->Timecode <= To)
                         {
-                            ratio = (float)(Segment->VideoFadeOut.To - time) / (float)Segment->VideoFadeOut.GetDuration();
+                            ratio = (float)(To - Texture->Timecode) / (float)Segment->VideoFadeOut.GetDuration();
                         }
                         glEnable(GL_BLEND);
                         glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
@@ -1944,6 +1949,7 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
                 }
             }
         }
+        Pulse->MixDown();
         // NOTE: do not use Pulse->Data
         // create copy that will be written to alsa (alsa will free it)
         unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
