@@ -1848,8 +1848,8 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
                 // fade out
                 if(Segment->VideoFadeOut.From > 0 || Segment->VideoFadeOut.From < Segment->VideoFadeOut.To)
                 {
-                    From = Segment->Time.From + Segment->VideoFadeIn.From;
-                    To = Segment->Time.From + Segment->VideoFadeIn.To;
+                    From = Segment->Time.From + Segment->VideoFadeOut.From;
+                    To = Segment->Time.From + Segment->VideoFadeOut.To;
 
                     if(Texture->Timecode >= From)
                     {
