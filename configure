@@ -37,15 +37,32 @@ check_command()
     $@ >/dev/null 2>&1
     if [ $? = 0 ]
     then
-        echo -e "$AF_GREEN ok $AF_RESET"
+        $ECHO_ESC "$AF_GREEN ok $AF_RESET"
     else
-        echo -e "$AF_RED failed $AF_RESET"
+        $ECHO_ESC "$AF_RED failed $AF_RESET"
         return 1
     fi
 }
 
 check_env()
 {
+    printf "  checking sh ... "
+    ECHO_NOLB="printf"
+    ECHO_ESC="echo"
+    if [ -n "$BASH_VERSION" ]
+    then
+        ECHO_ESC="echo -e"
+        $ECHO_ESC "\033[32mbash\033[0m"
+    elif [ -n "$ZSH_VERSION" ]
+    then
+        ECHO_ESC="echo"
+        $ECHO_ESC "\033[31mzsh\033[0m"
+        return 1
+    else
+        ECHO_ESC="echo"
+        $ECHO_ESC "\033[33munknown\033[0m"
+    fi
+
     tput -V >/dev/null 2>&1
     if [ $? = 0 ]
     then
@@ -54,77 +71,50 @@ check_env()
         AF_YELLOW=$(tput setaf 3)
         AF_RESET=$(tput sgr0)
     else
-        AF_RED=$(echo -e "\033[31m")
-        AF_GREEN=$(echo -e "\033[32m")
-        AF_YELLOW=$(echo -e "\033[33m")
-        AF_RESET=$(echo -e "\033[0m")
+        AF_RED=$($ECHO_ESC "\033[31m")
+        AF_GREEN=$($ECHO_ESC "\033[32m")
+        AF_YELLOW=$($ECHO_ESC "\033[33m")
+        AF_RESET=$($ECHO_ESC "\033[0m")
     fi
 
-    #echo -n "  checking ls ... "
-    #check_command "ls --version"
-
-    #echo -n "  checking cp ... "
-    #check_command "cp --version"
-
-    #echo -n "  checking rm ... "
-    #check_command "rm --version"
-
-    #echo -n "  checking mkdir ... "
-    #check_command "mkdir --version"
-
-    #echo -n "  checking rmdir ... "
-    #check_command "rmdir --version"
-
-    #echo -n "  checking tar ... "
-    #check_command "tar --version"
-
-    #echo -n "  checking chmod ... "
+    #$ECHO_NOLB "  checking chmod ... "
     #check_command "chmod --version"
 
-    #echo -n "  checking wc ... "
+    #$ECHO_NOLB "  checking wc ... "
     #check_command "wc --version"
 
-    echo -n "  checking find ... "
+    $ECHO_NOLB "  checking find ... "
     check_command "find --version"
 
-    echo -n "  checking du ... "
+    $ECHO_NOLB "  checking du ... "
     check_command "du --version"
 
-    echo -n "  checking grep ... "
+    $ECHO_NOLB "  checking grep ... "
     check_command "grep --version"
 
-    echo -n "  checking sed ... "
+    $ECHO_NOLB "  checking sed ... "
     check_command "sed --version"
 
-    echo -n "  checking printf ... "
-    check_command "printf '%s' 'x'"
-
-    echo -n "  checking sort ... "
+    $ECHO_NOLB "  checking sort ... "
     check_command "sort --version"
 
-    echo -n "  checking uniq ... "
+    $ECHO_NOLB "  checking uniq ... "
     check_command "uniq --version"
 
-    #echo -n "  checking uname ... "
+    #$ECHO_NOLB "  checking uname ... "
     #check_command "uname --version"
 
-    echo -n "  checking make ... "
+    $ECHO_NOLB "  checking tar ... "
+    check_command "tar --version"
+
+    $ECHO_NOLB "  checking make ... "
     check_command "make --version"
 
-    echo -n "  checking gcc ... "
+    $ECHO_NOLB "  checking gcc ... "
     check_command "gcc --version"
 
-    echo -n "  checking ld ... "
+    $ECHO_NOLB "  checking ld ... "
     check_command "ld --version"
-
-    #echo -n "  checking dpkg-deb ... "
-    #check_command "dpkg-deb --version"
-
-    #echo -n "  checking update-menus ... "
-    #check_command "update-menus --version"
-
-    #echo -n "  checking  update-mime ... "
-    #check_command "update-mime --version"
 }
 
 default_config()
@@ -155,7 +145,7 @@ Description"
 
 load_config()
 {
-    echo -n "  checking file access ... "
+    $ECHO_NOLB "  checking file access ... "
     if [ -f $CONFIGSCRIPT ]
     then
         echo "$AF_GREEN ok $AF_RESET"
@@ -165,11 +155,11 @@ load_config()
         return 1
     fi
 
-    echo -n "  checking source directory ($SRCDIR) ... "
+    $ECHO_NOLB "  checking source directory ($SRCDIR) ... "
     if [ -d "$SRCDIR" ]
     then
         echo "$AF_GREEN ok $AF_RESET"
-        echo -n "  checking source files ($SRCPATTERN) ... "
+        $ECHO_NOLB "  checking source files ($SRCPATTERN) ... "
         if [ $(find $SRCDIR -type f -name $(echo $SRCPATTERN | sed -e "s| | -or -name |g") | wc -l) != 0 ]
         then
             echo "$AF_GREEN ok $AF_RESET"
@@ -188,7 +178,7 @@ load_config()
         #fi
     fi
 
-    echo -n "  checking object directory ($OBJDIR) ... "
+    $ECHO_NOLB "  checking object directory ($OBJDIR) ... "
     if [ -d "$OBJDIR" ]
     then
         echo "$AF_GREEN ok $AF_RESET"
@@ -204,7 +194,7 @@ load_config()
     fi
 
     BINPATH=$(echo $BINFILE | sed -e 's|/[^/]*$||g')
-    echo -n "  checking binary file path ($BINPATH) ... "
+    $ECHO_NOLB "  checking binary file path ($BINPATH) ... "
     if [ -d "$BINPATH" ]
     then
         echo "$AF_GREEN ok $AF_RESET"
@@ -219,11 +209,11 @@ load_config()
         fi
     fi
 
-    echo -n "  checking distribution root ($DISTROOT) ... "
+    $ECHO_NOLB "  checking distribution root ($DISTROOT) ... "
     if [ -d "$DISTROOT" ]
     then
         echo "$AF_GREEN ok $AF_RESET"
-        echo -n "  checking distribution content ($DISTROOT/*) ... "
+        $ECHO_NOLB "  checking distribution content ($DISTROOT/*) ... "
         if [ $(ls $DISTROOT | wc -l) != 0 ]
         then
             echo "$AF_GREEN ok $AF_RESET"
@@ -236,202 +226,202 @@ load_config()
         DISTROOT=""
     fi
 
-    echo -n "  checking compiler ($CC) ... "
+    $ECHO_NOLB "  checking compiler ($CC) ... "
     check_command "$CC -v"
 
-    echo -n "  checking includes (-I) ... "
+    $ECHO_NOLB "  checking includes (-I) ... "
     check_command "ls $(echo '$CFLAGS' | grep -o '\-I\S*' | sed -e 's|-I||g')"
 
     # NOTE: check for resource compiler disabled because on linux none will be found...
-    echo -n "  checking rc-compiler ($RC) ... "
+    $ECHO_NOLB "  checking rc-compiler ($RC) ... "
     echo "$AF_YELLOW skipped $AF_RESET"
     #check_command "$RC -V"
 
-    echo -n "  checking rc-includes (-I) ... "
+    $ECHO_NOLB "  checking rc-includes (-I) ... "
     check_command "ls $(echo '$RCFLAGS' | grep -o '\-I\S*' | sed -e 's|-I||g')"
 
-    echo -n "  checking linker ($LD) ... "
+    $ECHO_NOLB "  checking linker ($LD) ... "
     check_command "$LD -v"
 
-    echo -n "  checking libraries (-L, -l, /*) ... "
+    $ECHO_NOLB "  checking libraries (-L, -l, /*) ... "
     check_command "ld -L/lib -lc $(echo '$LDLIBS' | grep -o '\s\/\S*\|[\-][Ll]\S*') -o null.bin"
     rm -f "null.bin"
 }
 
 write_makefile_header()
 {
-    echo -e "# Makefile generated by makebreed" >> $MAKEFILE
-    echo -e "# http://makebreed.googlecode.com" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "# Creation Time: '$(date)'" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
+    $ECHO_ESC "# Makefile generated by makebreed" >> $MAKEFILE
+    $ECHO_ESC "# http://makebreed.googlecode.com" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "# Creation Time: '$(date)'" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 write_makefile_configuration()
 {
-    echo -e "PKGNAME = $PKGNAME" >> $MAKEFILE
-    echo -e "PKGVERSION = $PKGVERSION" >> $MAKEFILE
-    echo -e "PKGSECTION = $PKGSECTION" >> $MAKEFILE
-    echo -e "PKGAUTHOR = $PKGAUTHOR" >> $MAKEFILE
-    echo -e "PKGHOMEPAGE = $PKGHOMEPAGE" >> $MAKEFILE
-    echo -e "PKGDEPENDS = $(echo $PKGDEPENDS | sed -e 's|([^)]*)||g;s|,||g;s|  | |g')" >> $MAKEFILE
-    echo -e "PKGDESCRIPTION = $PKGDESCRIPTION" | sed 's|$|\\n\\|'>> $MAKEFILE
-    echo -e " ." >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "SRCPATTERN = $SRCPATTERN" >> $MAKEFILE
-    echo -e "SRCDIR = $SRCDIR" >> $MAKEFILE
-    echo -e "RCPATTERN = $RCPATTERN" >> $MAKEFILE
-    echo -e "RCDIR = $RCDIR" >> $MAKEFILE
-    echo -e "OBJDIR = $OBJDIR" >> $MAKEFILE
+    $ECHO_ESC "PKGNAME = $PKGNAME" >> $MAKEFILE
+    $ECHO_ESC "PKGVERSION = $PKGVERSION" >> $MAKEFILE
+    $ECHO_ESC "PKGSECTION = $PKGSECTION" >> $MAKEFILE
+    $ECHO_ESC "PKGAUTHOR = $PKGAUTHOR" >> $MAKEFILE
+    $ECHO_ESC "PKGHOMEPAGE = $PKGHOMEPAGE" >> $MAKEFILE
+    $ECHO_ESC "PKGDEPENDS = $(echo $PKGDEPENDS | sed -e 's|([^)]*)||g;s|,||g;s|  | |g')" >> $MAKEFILE
+    $ECHO_ESC "PKGDESCRIPTION = $PKGDESCRIPTION" | sed 's|$|\\n\\|'>> $MAKEFILE
+    $ECHO_ESC " ." >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "SRCPATTERN = $SRCPATTERN" >> $MAKEFILE
+    $ECHO_ESC "SRCDIR = $SRCDIR" >> $MAKEFILE
+    $ECHO_ESC "RCPATTERN = $RCPATTERN" >> $MAKEFILE
+    $ECHO_ESC "RCDIR = $RCDIR" >> $MAKEFILE
+    $ECHO_ESC "OBJDIR = $OBJDIR" >> $MAKEFILE
 
     if [ "$DISTROOT" ]
     then
-        echo -e "DISTROOT = $DISTROOT" >> $MAKEFILE
+        $ECHO_ESC "DISTROOT = $DISTROOT" >> $MAKEFILE
     else
-        echo -e "DISTROOT = /dev/null" >> $MAKEFILE
+        $ECHO_ESC "DISTROOT = /dev/null" >> $MAKEFILE
     fi
 
-    echo -e "BINFILE = $BINFILE" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "CC = $CC" >> $MAKEFILE
-    echo -e "CFLAGS = $(echo $CFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
-    echo -e "RC = $RC" >> $MAKEFILE
-    echo -e "RCFLAGS = $(echo $RCFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
-    echo -e "LD = $LD" >> $MAKEFILE
-    echo -e "LDFLAGS = $(echo $LDFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
-    echo -e "LDLIBS = $(echo $LDLIBS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "SRCFILES := \$(shell find \$(SRCDIR) -type f -name '' \$(addprefix -or -name , \$(SRCPATTERN)))" >> $MAKEFILE
-    echo -e "RCFILES := \$(shell find \$(RCDIR) -type f -name '' \$(addprefix -or -name , \$(RCPATTERN)))" >> $MAKEFILE
-    echo -e "OBJFILES := \$(patsubst \$(SRCDIR)/%, \$(OBJDIR)/%.o, \$(SRCFILES)) \$(patsubst \$(RCDIR)/%, \$(OBJDIR)/%.x, \$(RCFILES))" >> $MAKEFILE
-    echo -e "DISTFILES := \$(patsubst \$(DISTROOT)/%, %, \$(shell find \$(DISTROOT) -type f))" >> $MAKEFILE
-    echo -e "DISTDIRECTORIES := \$(patsubst \$(DISTROOT)/%, %, \$(shell find \$(DISTROOT) -type d -empty))" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
+    $ECHO_ESC "BINFILE = $BINFILE" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "CC = $CC" >> $MAKEFILE
+    $ECHO_ESC "CFLAGS = $(echo $CFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
+    $ECHO_ESC "RC = $RC" >> $MAKEFILE
+    $ECHO_ESC "RCFLAGS = $(echo $RCFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
+    $ECHO_ESC "LD = $LD" >> $MAKEFILE
+    $ECHO_ESC "LDFLAGS = $(echo $LDFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
+    $ECHO_ESC "LDLIBS = $(echo $LDLIBS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "SRCFILES := \$(shell find \$(SRCDIR) -type f -name '' \$(addprefix -or -name , \$(SRCPATTERN)))" >> $MAKEFILE
+    $ECHO_ESC "RCFILES := \$(shell find \$(RCDIR) -type f -name '' \$(addprefix -or -name , \$(RCPATTERN)))" >> $MAKEFILE
+    $ECHO_ESC "OBJFILES := \$(patsubst \$(SRCDIR)/%, \$(OBJDIR)/%.o, \$(SRCFILES)) \$(patsubst \$(RCDIR)/%, \$(OBJDIR)/%.x, \$(RCFILES))" >> $MAKEFILE
+    $ECHO_ESC "DEPFILES := \$(patsubst \$(SRCDIR)/%, \$(OBJDIR)/%.d, \$(SRCFILES)) \$(patsubst \$(RCDIR)/%, \$(OBJDIR)/%.d, \$(RCFILES))" >> $MAKEFILE
+    $ECHO_ESC "DISTFILES := \$(patsubst \$(DISTROOT)/%, %, \$(shell find \$(DISTROOT) -type f))" >> $MAKEFILE
+    $ECHO_ESC "DISTDIRECTORIES := \$(patsubst \$(DISTROOT)/%, %, \$(shell find \$(DISTROOT) -type d -empty))" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 write_makefile_rule_build()
 {
-    echo -e "all: \$(BINFILE)" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "\$(BINFILE): \$(OBJFILES)" >> $MAKEFILE
-    echo -e "\t@echo " >> $MAKEFILE
-    echo -e "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
+    $ECHO_ESC "all: \$(BINFILE)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "\$(BINFILE): \$(OBJFILES)" >> $MAKEFILE
+    $ECHO_ESC "\t@echo " >> $MAKEFILE
+    $ECHO_ESC "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
     # TODO: update for use with ar to create static library files...
-    echo -e "\t\$(LD) \$(LDFLAGS) -o \$@ \$^ \$(LDLIBS)" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "\$(CURDIR)/\$(OBJDIR)/%.o \$(CURDIR)/\$(SRCDIR)/%.o \$(SRCDIR)/%.o: \$(OBJDIR)/%.o" >> $MAKEFILE
-    echo -e "\$(CURDIR)/\$(OBJDIR)/%.x \$(CURDIR)/\$(RCDIR)/%.x \$(RCDIR)/%.x: \$(OBJDIR)/%.x" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "\$(OBJDIR)/%.x: \$(RCDIR)/%" >> $MAKEFILE
-    echo -e "\t@echo " >> $MAKEFILE
-    echo -e "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
-    echo -e "\t\$(RC) \$(RCFLAGS) -o \$@ -i \$<" >> $MAKEFILE
+    $ECHO_ESC "\t\$(LD) \$(LDFLAGS) -o \$@ \$^ \$(LDLIBS)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "\$(CURDIR)/\$(OBJDIR)/%.x \$(CURDIR)/\$(RCDIR)/%.x \$(RCDIR)/%.x: \$(OBJDIR)/%.x" >> $MAKEFILE
+    $ECHO_ESC "\$(OBJDIR)/%.x: \$(RCDIR)/%" >> $MAKEFILE
+    $ECHO_ESC "\t@echo " >> $MAKEFILE
+    $ECHO_ESC "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
+    $ECHO_ESC "\t\$(RC) \$(RCFLAGS) -o \$@ -i \$<" >> $MAKEFILE
     # TODO: create a correct dependency file from an rc file... (depends on includes, icons, manifests, ...)
-    echo -e "\t@\$(CC) \$(CFLAGS) -M \$< > \$(OBJDIR)/\$*.depend 2> /dev/null" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "\$(OBJDIR)/%.o: \$(SRCDIR)/%" >> $MAKEFILE
-    echo -e "\t@echo " >> $MAKEFILE
-    echo -e "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
-    echo -e "\t\$(CC) \$(CFLAGS) -o \$@ \$<" >> $MAKEFILE
-    echo -e "\t@\$(CC) \$(CFLAGS) -M \$< > \$(OBJDIR)/\$*.depend" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "-include \$(\$(OBJFILES:.o=.depend):.x=.depend)" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
+    $ECHO_ESC "\t-@\$(CC) \$(CFLAGS) -MM -MT \$@ \$< > \$(OBJDIR)/\$*.d" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "\$(CURDIR)/\$(OBJDIR)/%.o \$(CURDIR)/\$(SRCDIR)/%.o \$(SRCDIR)/%.o: \$(OBJDIR)/%.o" >> $MAKEFILE
+    $ECHO_ESC "\$(OBJDIR)/%.o: \$(SRCDIR)/%" >> $MAKEFILE
+    $ECHO_ESC "\t@echo " >> $MAKEFILE
+    $ECHO_ESC "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
+    $ECHO_ESC "\t\$(CC) \$(CFLAGS) -o \$@ \$<" >> $MAKEFILE
+    $ECHO_ESC "\t-@\$(CC) \$(CFLAGS) -MM -MT \$@ \$< > \$(OBJDIR)/\$*.d" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "-include \$(DEPFILES)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 write_makefile_rule_clean()
 {
-    echo -e "clean:" >> $MAKEFILE
-    echo -e "\t@rm -f \$(OBJFILES) \$(OBJFILES:.o=.depend) \$(OBJFILES:.x=.depend) \$(BINFILE)" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
+    $ECHO_ESC "clean:" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f \$(DEPFILES) \$(OBJFILES) \$(BINFILE)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 write_makefile_rule_dist_installer()
 {
-    echo -e "install:" >> $MAKEFILE
-    echo -e "\t@cp -v -r \$(DISTROOT)/* $INSTALLDIR" >> $MAKEFILE
-    echo -e "\t-@update-menus" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "uninstall:" >> $MAKEFILE
-    echo -e "\t@rm -v -f \$(addprefix $INSTALLDIR/, \$(DISTFILES)) 2> /dev/null" >> $MAKEFILE
-    echo -e "\t@rmdir -p --ignore-fail-on-non-empty \$(addprefix $INSTALLDIR/, \$(DISTDIRECTORIES)) 2> /dev/null" >> $MAKEFILE
-    echo -e "\t@rmdir -p --ignore-fail-on-non-empty \$(dir \$(addprefix $INSTALLDIR/, \$(DISTFILES))) 2> /dev/null" >> $MAKEFILE
-    echo -e "\t-@update-menus" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
+    $ECHO_ESC "install:" >> $MAKEFILE
+    $ECHO_ESC "\t@cp -v -r \$(DISTROOT)/* $INSTALLDIR" >> $MAKEFILE
+    $ECHO_ESC "\t-@update-menus" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "uninstall:" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -v -f \$(addprefix $INSTALLDIR/, \$(DISTFILES)) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@rmdir -p --ignore-fail-on-non-empty \$(addprefix $INSTALLDIR/, \$(DISTDIRECTORIES)) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@rmdir -p --ignore-fail-on-non-empty \$(dir \$(addprefix $INSTALLDIR/, \$(DISTFILES))) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t-@update-menus" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 write_makefile_rule_dist_tgz()
 {
-    echo -e "TGZPKG := \$(PKGNAME)_\$(PKGVERSION).tar.gz" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "tgz:" >> $MAKEFILE
-    echo -e "\t@tar -v -c -z --exclude='\$(TGZPKG)' --exclude='make*' --exclude='Make*' --exclude='*.deb' --exclude='\$(BINFILE)' --exclude='\$(OBJDIR)/*' -f \$(TGZPKG) *" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
+    $ECHO_ESC "TGZPKG := \$(PKGNAME)_\$(PKGVERSION).tar.gz" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "tgz:" >> $MAKEFILE
+    $ECHO_ESC "\t@tar -v -c -z --exclude='\$(TGZPKG)' --exclude='make*' --exclude='Make*' --exclude='*.deb' --exclude='\$(BINFILE)' --exclude='\$(OBJDIR)/*' -f \$(TGZPKG) *" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 write_makefile_rule_dist_deb()
 {
-    echo -e "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture).deb" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
-    echo -e "deb: all" >> $MAKEFILE
-    echo -e "\t@mkdir -p deb/$DEBDIR 2> /dev/null" >> $MAKEFILE
-    echo -e "\t@mkdir -p deb/DEBIAN 2> /dev/null" >> $MAKEFILE
-    echo -e "\t@cp -r \$(DISTROOT)/* deb/$DEBDIR" >> $MAKEFILE
-    echo -e "\t@md5sum \$(shell find \$(DISTROOT) -type f) | sed 's|\$(DISTROOT)|$DEBDIR|g' > deb/DEBIAN/md5sums" >> $MAKEFILE
-    echo -e "\t@echo 'Package: \$(PKGNAME)' > deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Version: \$(PKGVERSION)' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Section: \$(PKGSECTION)' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Architecture: $(dpkg --print-architecture)' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Installed-Size: \$(shell du -k -c \$(DISTROOT) | grep 'total' | sed -e 's|\s*total||g')' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Depends: \$(RESOLVE_PKG_DEPS)' | sed -e 's|,\$\$||g' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Maintainer: \$(PKGAUTHOR)' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Priority: extra' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Homepage: \$(PKGHOMEPAGE)' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo 'Description: \$(PKGDESCRIPTION)' >> deb/DEBIAN/control" >> $MAKEFILE
-    echo -e "\t@echo '#! /bin/sh' > deb/DEBIAN/postinst" >> $MAKEFILE
-    echo -e "\t@echo '' >> deb/DEBIAN/postinst" >> $MAKEFILE
-    echo -e "\t@echo 'update-menus' >> deb/DEBIAN/postinst" >> $MAKEFILE
-    echo -e "\t@echo 'update-mime' >> deb/DEBIAN/postinst" >> $MAKEFILE
-    echo -e "\t@chmod 0755 deb/DEBIAN/postinst" >> $MAKEFILE
-    echo -e "\t@echo '#! /bin/sh' > deb/DEBIAN/postrm" >> $MAKEFILE
-    echo -e "\t@echo '' >> deb/DEBIAN/postrm" >> $MAKEFILE
-    echo -e "\t@echo 'update-menus' >> deb/DEBIAN/postrm" >> $MAKEFILE
-    echo -e "\t@echo 'update-mime' >> deb/DEBIAN/postrm" >> $MAKEFILE
-    echo -e "\t@chmod 0755 deb/DEBIAN/postrm" >> $MAKEFILE
-    echo -e "\t@rm -f \$(DEBPKG)" >> $MAKEFILE
-    echo -e "\t@dpkg-deb -v -b deb \$(DEBPKG)" >> $MAKEFILE
-    echo -e "\t@rm -f -r deb" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
+    $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture).deb" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "deb: all" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p deb/$DEBDIR 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p deb/DEBIAN 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@cp -r \$(DISTROOT)/* deb/$DEBDIR" >> $MAKEFILE
+    $ECHO_ESC "\t@md5sum \$(shell find \$(DISTROOT) -type f) | sed 's|\$(DISTROOT)|$DEBDIR|g' > deb/DEBIAN/md5sums" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Package: \$(PKGNAME)' > deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Version: \$(PKGVERSION)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Section: \$(PKGSECTION)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Architecture: $(dpkg --print-architecture)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Installed-Size: \$(shell du -k -c \$(DISTROOT) | grep 'total' | sed -e 's|\s*total||g')' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Depends: \$(RESOLVE_PKG_DEPS)' | sed -e 's|,\$\$||g' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Maintainer: \$(PKGAUTHOR)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Priority: extra' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Homepage: \$(PKGHOMEPAGE)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Description: \$(PKGDESCRIPTION)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '#! /bin/sh' > deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'update-menus' >> deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'update-mime' >> deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@chmod 0755 deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '#! /bin/sh' > deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'update-menus' >> deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'update-mime' >> deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@chmod 0755 deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f \$(DEBPKG)" >> $MAKEFILE
+    $ECHO_ESC "\t@dpkg-deb -v -b deb \$(DEBPKG)" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f -r deb" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 write_makefile_dependency_resolver()
 {
-    echo -e "# BEGIN: deb package dependency resolving block" >> $MAKEFILE
-    echo -e "# {" >> $MAKEFILE
-    echo -e "    # non-escape patterns" >> $MAKEFILE
-    echo -e "    PATTERN_01 = s|^Depends: ||g;s|([^)]*)||g;s|,||g;s|  | |g" >> $MAKEFILE
-    echo -e "    PATTERN_02 = ," >> $MAKEFILE
-    echo -e "    PATTERN_03 = (" >> $MAKEFILE
-    echo -e "    PATTERN_04 = )" >> $MAKEFILE
-    echo -e "    PATTERN_05 = (%)" >> $MAKEFILE
-    echo -e "    PATTERN_06 = =" >> $MAKEFILE
-    echo -e "    PATTERN_07 = (>=" >> $MAKEFILE
-    echo -e "    # generate a list of required packages for the binary file" >> $MAKEFILE
-    echo -e "    BIN_PKG_DEPS = \$(sort \$(shell dpkg -S \$(filter /%, \$(shell ldd \$(BINFILE) 2> /dev/null)) 2> /dev/null | sed -e 's|:.*||g'))" >> $MAKEFILE
-    echo -e "    # generate a list of user defined packages for the binary file" >> $MAKEFILE
-    echo -e "    USER_PKG_DEPS = \$(PKGDEPENDS)" >> $MAKEFILE
-    echo -e "    # add user defined packages to required packages" >> $MAKEFILE
-    echo -e "    BIN_USER_PKG_DEPS = \$(sort \$(BIN_PKG_DEPS) \$(USER_PKG_DEPS))" >> $MAKEFILE
-    echo -e "    # generate a list of all dependencies for each required package (ignore user defined packages)" >> $MAKEFILE
-    echo -e "    RECURSIVE_PKG_DEPS = \$(sort \$(shell dpkg -s \$(BIN_PKG_DEPS) 2> /dev/null | grep '^Depends:' | sed -e \"\$(PATTERN_01)\"))" >> $MAKEFILE
-    echo -e "    # remove packages which are already included by other packages (recursive dependencies)" >> $MAKEFILE
-    echo -e "    DISTINCT_PKG_DEPS = \$(filter-out \$(RECURSIVE_PKG_DEPS),\$(BIN_USER_PKG_DEPS))" >> $MAKEFILE
-    echo -e "    # append version information for each package available on the system" >> $MAKEFILE
-    echo -e "    GET_PKG_VERSION = \$(shell dpkg -s \$(PACKAGE) 2> /dev/null | grep '^Version:' | sed -e 's|Version: ||g')" >> $MAKEFILE
-    echo -e "    RESOLVE_PKG_DEPS = \$(foreach PACKAGE,\$(DISTINCT_PKG_DEPS),\$(if \$(GET_PKG_VERSION),\$(PACKAGE) \$(PATTERN_07)\$(GET_PKG_VERSION)\$(PATTERN_04),\$(PACKAGE))\$(PATTERN_02))" >> $MAKEFILE
-    echo -e "# }" >> $MAKEFILE
-    echo -e "# END" >> $MAKEFILE
-    echo -e "" >> $MAKEFILE
+    $ECHO_ESC "# BEGIN: deb package dependency resolving block" >> $MAKEFILE
+    $ECHO_ESC "# {" >> $MAKEFILE
+    $ECHO_ESC "    # non-escape patterns" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_01 = s|^Depends: ||g;s|([^)]*)||g;s|,||g;s|  | |g" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_02 = ," >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_03 = (" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_04 = )" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_05 = (%)" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_06 = =" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_07 = (>=" >> $MAKEFILE
+    $ECHO_ESC "    # generate a list of required packages for the binary file" >> $MAKEFILE
+    $ECHO_ESC "    BIN_PKG_DEPS = \$(sort \$(shell dpkg -S \$(filter /%, \$(shell ldd \$(BINFILE) 2> /dev/null)) 2> /dev/null | sed -e 's|:.*||g'))" >> $MAKEFILE
+    $ECHO_ESC "    # generate a list of user defined packages for the binary file" >> $MAKEFILE
+    $ECHO_ESC "    USER_PKG_DEPS = \$(PKGDEPENDS)" >> $MAKEFILE
+    $ECHO_ESC "    # add user defined packages to required packages" >> $MAKEFILE
+    $ECHO_ESC "    BIN_USER_PKG_DEPS = \$(sort \$(BIN_PKG_DEPS) \$(USER_PKG_DEPS))" >> $MAKEFILE
+    $ECHO_ESC "    # generate a list of all dependencies for each required package (ignore user defined packages)" >> $MAKEFILE
+    $ECHO_ESC "    RECURSIVE_PKG_DEPS = \$(sort \$(shell dpkg -s \$(BIN_PKG_DEPS) 2> /dev/null | grep '^Depends:' | sed -e \"\$(PATTERN_01)\"))" >> $MAKEFILE
+    $ECHO_ESC "    # remove packages which are already included by other packages (recursive dependencies)" >> $MAKEFILE
+    $ECHO_ESC "    DISTINCT_PKG_DEPS = \$(filter-out \$(RECURSIVE_PKG_DEPS),\$(BIN_USER_PKG_DEPS))" >> $MAKEFILE
+    $ECHO_ESC "    # append version information for each package available on the system" >> $MAKEFILE
+    $ECHO_ESC "    GET_PKG_VERSION = \$(shell dpkg -s \$(PACKAGE) 2> /dev/null | grep '^Version:' | sed -e 's|Version: ||g')" >> $MAKEFILE
+    $ECHO_ESC "    RESOLVE_PKG_DEPS = \$(foreach PACKAGE,\$(DISTINCT_PKG_DEPS),\$(if \$(GET_PKG_VERSION),\$(PACKAGE) \$(PATTERN_07)\$(GET_PKG_VERSION)\$(PATTERN_04),\$(PACKAGE))\$(PATTERN_02))" >> $MAKEFILE
+    $ECHO_ESC "# }" >> $MAKEFILE
+    $ECHO_ESC "# END" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 # TODO: add iss section for creating inno setup script
