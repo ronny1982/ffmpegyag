@@ -618,10 +618,15 @@ wxString Libav::GetPicType(AVPictureType PicType)
 
 GLint Libav::GetGLFormat(PixelFormat PixFormat)
 {
-    // TODO: add more formats
     switch(PixFormat)
     {
+        // currently limited to gl_formats of gl_type GL_UNSIGNED_BYTE
+        //case : return GL_RED;
+        //case : return GL_RG;
         case PIX_FMT_RGB24: return GL_RGB;
+        case PIX_FMT_BGR24: return GL_BGR;
+        case PIX_FMT_RGB32: return GL_RGBA;
+        case PIX_FMT_BGR32: return GL_BGRA;
         default: return 0;
     }
 }

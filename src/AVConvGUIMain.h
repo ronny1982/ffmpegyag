@@ -302,14 +302,6 @@ private: void ShowSelectedIndices();
         // enable disable controls depending on the selected format
         private: void EnableDisableAVFormatControls();
         // initialize the render device
-// TODO: callback this function when following changed:
-// + glpanel size
-// + selected task
-// + selected video stream
-// + crop
-// + aspect-ratio
-// + frame-size
-// ...
         private: bool InitializeGL();
         // initiaize the render device & render a single videoframe of current selected file, stream, timestamp
         private: void RenderSingleFrame();

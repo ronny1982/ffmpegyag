@@ -138,12 +138,21 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                         av_free_packet(&packet);
                     }
 
-                    // sort timestamps for each video stream because of b-frame prediction ordered frames (dts)
+                    // sort timestamps for each video stream, because of b-frame prediction ordered frames (dts)
                     for(size_t v=0; v<VideoStreams.GetCount(); v++)
                     {
                         VideoStreams[v]->IndexEntries.Sort(CompareIndexEntry);
                     }
-                    // TODO: sort audio & subtitle indices ???
+                    // sort timestamps for each audio stream, this might be unnecessary
+                    for(size_t a=0; a<AudioStreams.GetCount(); a++)
+                    {
+                        AudioStreams[a]->IndexEntries.Sort(CompareIndexEntry);
+                    }
+                    // sort timestamps for each subtitle stream, this might be unnecessary
+                    for(size_t s=0; s<SubtitleStreams.GetCount(); s++)
+                    {
+                        SubtitleStreams[s]->IndexEntries.Sort(CompareIndexEntry);
+                    }
                 //}
 
                 AVDictionaryEntry* MetaInfo;
@@ -433,8 +442,7 @@ EncodingFileLoader::~EncodingFileLoader()
     {
         // use unlock as indicator for all functions to break...
         Locked = false;
-        // TODO: improve the waitning behaviour
-        wxMilliSleep(100);
+        wxMilliSleep(250);
     }
 
     FlushBuffer();
@@ -736,7 +744,6 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
         if(GOPBuffer.GetLastTimestamp() < Timestamp)
         {
             AVFrame *pFrameSource = avcodec_alloc_frame();
-            // TODO: use AVPicture as target -> tutorial02.c
             AVFrame *pFrameTarget = avcodec_alloc_frame();
 
             if(pFrameTarget != NULL)
@@ -861,7 +868,6 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
         }
 
         AVFrame *pVideoFrameSource = avcodec_alloc_frame();
-        // TODO: use AVPicture as target -> tutorial02.c
         AVFrame *pVideoFrameTarget = avcodec_alloc_frame();
         AVFrame *pAudioFrameSource = avcodec_alloc_frame();
         if(pVideoFrameTarget != NULL)
@@ -932,8 +938,10 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                             if(pSwsCtx != NULL)
                             {
                                 sws_scale(pSwsCtx, pVideoFrameSource->data, pVideoFrameSource->linesize, 0, pVideoCodecCtx->height, pVideoFrameTarget->data, pVideoFrameTarget->linesize);
-                                // FIXME: get correct frame duration...
-                                VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), 40, VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, pVideoFrameSource->pict_type);
+                                // NOTE: frame duration guessed by framerate
+                                // long FrameIndex = GetFrameFromTimestampV(VideoStreamIndex, FrameTimestamp);
+                                // GetTimeFromFrameV(VideoStreamIndex, FrameIndex+1) - GetTimeFromFrameV(VideoStreamIndex, FrameIndex)
+                                VideoFrame* tex = new VideoFrame(FrameTimestamp, GetTimeFromTimestampV(VideoStreamIndex, FrameTimestamp), (int64_t)(1000 / VideoStreams[VideoStreamIndex]->FrameRate), VideoTargetWidth, VideoTargetHeight, VideoTargetPixelFormat, pVideoFrameSource->pict_type);
                                 tex->FillFrame(pVideoFrameTarget->data[0]);
                                 while(*DoStream &&  VideoFrameBuffer && VideoFrameBuffer->IsFull())
                                 {
@@ -968,16 +976,9 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                             {
                                 FrameTimestamp = pAudioFrameSource->pkt_dts;
                             }
-                            // FIXME: consider offset(start_time) related to the 'master' stream
-                            /*
-                            if(VideoStreamIndex > -1 && VideoStreamIndex < (long)VideoStreams.GetCount())
-                            {
-                                FrameTimestamp = VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp;
-                            }
-                            */
 
-                            // FIXME: get correct frame duration...
-                            AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), 21, pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, (size_t)pAudioFrameSource->nb_samples);
+                            // NOTE: frame duration guessed by samplerate
+                            AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), (int64_t)(1000 * pAudioFrameSource->nb_samples / pAudioCodecCtx->sample_rate), pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, (size_t)pAudioFrameSource->nb_samples);
                             snd->FillFrame(pAudioFrameSource->data[0]);
                             while(*DoStream && AudioFrameBuffer && AudioFrameBuffer->IsFull())
                             {

@@ -615,8 +615,6 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     MenuAudioFadeOut->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
     Connect(ID_LISTCTRL2,wxEVT_COMMAND_LIST_ITEM_RIGHT_CLICK,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlSegmentsRClick);
 
-    // TODO: verify if the submenu pointers have to be freed, or if they
-    // will automatically be freed when the parent menu is destroyed...
     MenuVideoFadeIn = NULL;
     MenuVideoFadeOut = NULL;
     MenuAudioFadeIn = NULL;
@@ -634,8 +632,7 @@ AVConvGUIFrame::~AVConvGUIFrame()
     if(IsPlaying)
     {
         IsPlaying = false;
-        // TODO: improve the waiting behaviour
-        wxMilliSleep(250);
+        wxMilliSleep(500);
     }
 
     WX_CLEAR_ARRAY(EncodingTasks);
@@ -970,7 +967,7 @@ void AVConvGUIFrame::EnableDisableAVFormatControls()
 void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
 {
     // open file dialog
-    if(FileDialogLoadFiles->ShowModal() == wxID_OK)
+    if(!IsPlaying && FileDialogLoadFiles->ShowModal() == wxID_OK)
     {
         //ListCtrlTasks->SetItemState(-1, !wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
 
@@ -1016,7 +1013,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
                     EncTask->OutputFile = SourceFile;
                     EncTask->OutputFormat = ComboBoxFileFormat->GetValue();
                     EncTask->OutputFile.SetExt(Libav::FormatExtensionMap[EncTask->OutputFormat]);
-//printf("A\n");
+
                     for(size_t v=0; v<InputFile->VideoStreams.GetCount(); v++)
                     {
                         vStream = InputFile->VideoStreams[v];
@@ -1074,7 +1071,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
 
                         vStream = NULL;
                     }
-//printf("B\n");
+
                     for(size_t a=0; a<InputFile->AudioStreams.GetCount(); a++)
                     {
                         aStream = InputFile->AudioStreams[a];
@@ -1106,7 +1103,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
 
                         aStream = NULL;
                     }
-//printf("C\n");
+
                     for(size_t s=0; s<InputFile->SubtitleStreams.GetCount(); s++)
                     {
                         sStream = InputFile->SubtitleStreams[s];
@@ -1137,7 +1134,7 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
                     EncTask->InputFiles.Add(InputFile);
                     EncodingTasks.Add(EncTask);
                     EncTask = NULL;
-//printf("D\n");
+
                     if(!HadSelectedTasks)
                     {
                         ListCtrlTasks->SetItemState(InsertIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
@@ -1163,29 +1160,32 @@ void AVConvGUIFrame::OnButtonAddTaskClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnButtonRemoveTaskClick(wxCommandEvent& event)
 {
-    long TaskIndex = -1;
+    if(!IsPlaying)
+    {
+        long TaskIndex = -1;
 
-    ListCtrlTasks->Freeze();
-    for(long i=SelectedTaskIndices.GetCount()-1; i>=0; i--)
-    {
-        TaskIndex = SelectedTaskIndices[i];
-        wxDELETE(EncodingTasks[TaskIndex]); // destructor executes flush buffer
-        EncodingTasks.RemoveAt(TaskIndex);
-        // triggers update of selected task indices on msw
-        ListCtrlTasks->DeleteItem(TaskIndex);
+        ListCtrlTasks->Freeze();
+        for(long i=SelectedTaskIndices.GetCount()-1; i>=0; i--)
+        {
+            TaskIndex = SelectedTaskIndices[i];
+            wxDELETE(EncodingTasks[TaskIndex]); // destructor executes flush buffer
+            EncodingTasks.RemoveAt(TaskIndex);
+            // triggers update of selected task indices on msw
+            ListCtrlTasks->DeleteItem(TaskIndex);
+        }
+        if(TaskIndex >= ListCtrlTasks->GetItemCount())
+        {
+            TaskIndex--;
+        }
+        ListCtrlTasks->SetItemState(TaskIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+        if(TaskIndex < 0)
+        {
+            // SetItemState is not triggering event, do it manually
+            wxListEvent le;
+            OnListCtrlTasksItemSelect(le);
+        }
+        ListCtrlTasks->Thaw();
     }
-    if(TaskIndex >= ListCtrlTasks->GetItemCount())
-    {
-        TaskIndex--;
-    }
-    ListCtrlTasks->SetItemState(TaskIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
-    if(TaskIndex < 0)
-    {
-        // SetItemState is not triggering event, do it manually
-        wxListEvent le;
-        OnListCtrlTasksItemSelect(le);
-    }
-    ListCtrlTasks->Thaw();
 }
 
 void AVConvGUIFrame::OnListCtrlTasksItemSelect(wxListEvent& event)
@@ -1575,8 +1575,12 @@ void AVConvGUIFrame::OnSliderFrameKeyDown(wxKeyEvent& event)
 {
     if(event.GetKeyCode() == WXK_SPACE && !IsPlaying)
     {
-        // FIXME: best is to lock other controls to prevent unwanted behaviour
-        // disable all keydown events, until keyup was triggered
+        ListCtrlTasks->Disable();
+        ListCtrlSegments->Disable();
+        CheckListBoxVideoStreams->Disable();
+        CheckListBoxAudioStreams->Disable();
+        CheckListBoxSubtitleStreams->Disable();
+        // disable keydown events, until keyup was triggered
         SliderFrame->Disconnect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
         IsPlaying = true;
         PlaybackMedia();
@@ -1593,7 +1597,12 @@ void AVConvGUIFrame::OnSliderFrameKeyUp(wxKeyEvent& event)
 {
     if(event.GetKeyCode() == WXK_SPACE)
     {
-        // FIXME: enable controls if locked by keydown
+        ListCtrlTasks->Enable();
+        ListCtrlSegments->Enable();
+        CheckListBoxVideoStreams->Enable();
+        CheckListBoxAudioStreams->Enable();
+        CheckListBoxSubtitleStreams->Enable();
+        // re-enable keydown events
         SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
         IsPlaying = false;
     }
@@ -2016,11 +2025,9 @@ void AVConvGUIFrame::PlaybackMedia()
         clock_gettime(CLOCK_REALTIME, &StartTime);
         while(IsPlaying)
         {
-            // TODO: add this as event to SliderFrame::OnLostFocus()
-            // lost focus
             if(SliderFrame->FindFocus() != SliderFrame)
             {
-                break;
+                SliderFrame->SetFocus();
             }
 
             // update clock
@@ -2118,7 +2125,7 @@ void AVConvGUIFrame::PlaybackMedia()
             wxDELETE(AudioFrameBuffer);
             CloseAlsa();
         }
-printf("DONE\n");
+
         Segment = NULL;
         efl = NULL;
     }
@@ -2131,7 +2138,6 @@ void AVConvGUIFrame::OnGLCanvasPreviewResize(wxSizeEvent& event)
 
 void AVConvGUIFrame::OnResize(wxSizeEvent& event)
 {
-    // FIXME: crash when resize during playback (IsPlaying == true)
     this->Layout();
 
     // prevent flickering when changing column size...
@@ -2151,7 +2157,10 @@ void AVConvGUIFrame::OnResize(wxSizeEvent& event)
     ListCtrlSegments->Thaw();
     ListCtrlTasks->Thaw();
 
-    RenderSingleFrame();
+    if(!IsPlaying)
+    {
+        RenderSingleFrame();
+    }
 }
 
 void AVConvGUIFrame::OnSpinCtrlCropChange(wxSpinEvent& event)
@@ -3004,19 +3013,21 @@ void AVConvGUIFrame::OnMenuPresetsClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnMainWindowRClick(wxMouseEvent& event)
 {
-    // FIXME: crash when use context menu during playback (IsPlaying == true)
-    int id = 0;
-    while(MenuPresets->GetMenuItemCount() > 0)
+    if(!IsPlaying)
     {
-        MenuPresets->Delete(id);
-        id++;
+        int id = 0;
+        while(MenuPresets->GetMenuItemCount() > 0)
+        {
+            MenuPresets->Delete(id);
+            id++;
+        }
+        wxArrayString Presets = AVConvSettings::GetPresets();
+        for(size_t i=0; i<Presets.GetCount(); i++)
+        {
+            MenuPresets->Append(i, Presets[i]);
+        }
+        this->PopupMenu(MenuMain);
     }
-    wxArrayString Presets = AVConvSettings::GetPresets();
-    for(size_t i=0; i<Presets.GetCount(); i++)
-    {
-        MenuPresets->Append(i, Presets[i]);
-    }
-    this->PopupMenu(MenuMain);
 }
 
 void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
@@ -3142,10 +3153,12 @@ void AVConvGUIFrame::OnMenuSegmentFiltersClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnListCtrlSegmentsRClick(wxMouseEvent& event)
 {
-    if(SelectedTaskIndices.GetCount() == 1 && SelectedSegmentIndices.GetCount() == 1)
+    if(!IsPlaying)
     {
-        // FIXME: crash when use context menu during playback (IsPlaying == true)
-        this->PopupMenu(MenuSegmentFilters);
+        if(SelectedTaskIndices.GetCount() == 1 && SelectedSegmentIndices.GetCount() == 1)
+        {
+            this->PopupMenu(MenuSegmentFilters);
+        }
     }
 }
 
@@ -3158,7 +3171,7 @@ void AVConvGUIFrame::OnButtonScriptClick(wxCommandEvent& event)
     FileDialogSaveFile->SetWildcard(wxT("CMD Script (*.cmd)|*.cmd|All Files (*.*)|*.*"));
     #endif
 
-    if(FileDialogSaveFile->ShowModal() == wxID_OK && !FileDialogSaveFile->GetPath().IsEmpty())
+    if(!IsPlaying && FileDialogSaveFile->ShowModal() == wxID_OK && !FileDialogSaveFile->GetPath().IsEmpty())
     {
         wxTextFile ScriptFile;
 
@@ -3194,7 +3207,7 @@ void AVConvGUIFrame::OnButtonScriptClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnButtonEncodeClick(wxCommandEvent& event)
 {
-    if(!VerifySettings())
+    if(IsPlaying || !VerifySettings())
     {
         return;
     }
