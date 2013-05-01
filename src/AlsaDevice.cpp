@@ -7,10 +7,10 @@ AlsaDevice::AlsaDevice()
 
 AlsaDevice::~AlsaDevice()
 {
-    //
+    Release();
 }
 
-bool AlsaDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSampleFormat Format)
+bool AlsaDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSampleFormat SampleFormat)
 {
     if(snd_pcm_open(&Device, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0)
     {
@@ -22,7 +22,7 @@ bool AlsaDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSamp
     snd_pcm_hw_params_any(Device, HardwareParameters);
     snd_pcm_hw_params_set_access(Device, HardwareParameters, SND_PCM_ACCESS_RW_INTERLEAVED);
     snd_pcm_hw_params_set_channels(Device, HardwareParameters, ChannelCount);
-    snd_pcm_hw_params_set_format(Device, HardwareParameters, GetAlsaFormat(Format));
+    snd_pcm_hw_params_set_format(Device, HardwareParameters, GetAlsaFormat(SampleFormat));
     snd_pcm_hw_params_set_rate(Device, HardwareParameters, SampleRate, 0);
     snd_pcm_hw_params(Device, HardwareParameters);
     snd_pcm_hw_params_free(HardwareParameters);
@@ -32,12 +32,10 @@ bool AlsaDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSamp
 
 void AlsaDevice::Release()
 {
-    // stopping after all remaining frames in the buffer have finished playing
-    //snd_pcm_drain(AlsaDevice);
-    // immediately stops playback, dropping any frames still left in the buffer
-    snd_pcm_drop(Device);
+    //snd_pcm_drain(Device); // stopping after all remaining frames in the buffer have finished playing
+    snd_pcm_drop(Device); // immediately stops playback, dropping any frames still left in the buffer
     snd_pcm_close(Device);
-    //Device = NULL;
+    Device = NULL;
 }
 
 void AlsaDevice::Play(unsigned char* Data, size_t SampleCount)
@@ -64,4 +62,9 @@ snd_pcm_format_t AlsaDevice::GetAlsaFormat(AVSampleFormat Format)
         //case AV_SAMPLE_FMT_DBLP: return;
         default: return SND_PCM_FORMAT_UNKNOWN;
     }
+}
+
+AlsaDevice* CreateAudioDevice()
+{
+    return new AlsaDevice();
 }

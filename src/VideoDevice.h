@@ -3,8 +3,8 @@
 
 class VideoDevice
 {
-    public: VideoDevice();
-    public: virtual ~VideoDevice();
+    public: VideoDevice() {};
+    public: virtual ~VideoDevice() {};
 };
 
 #endif // VIDEODEVICE_H
