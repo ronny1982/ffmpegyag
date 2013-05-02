@@ -7,9 +7,9 @@ AudioFrame::AudioFrame()
     Duration = int64_t(0);
     SampleRate = 0;
     ChannelCount = 0;
-    AlsaFormat = SND_PCM_FORMAT_S16;
+    PCMFormat = AV_SAMPLE_FMT_S16;
     SampleCount = 0;
-    DataSize = av_samples_get_buffer_size(NULL, ChannelCount, SampleCount, AV_SAMPLE_FMT_S16, 1);
+    DataSize = av_samples_get_buffer_size(NULL, ChannelCount, SampleCount, PCMFormat, 1);
     Data = (unsigned char*)av_malloc(DataSize);
     SampleSize = DataSize / SampleCount;
     SampleFormatSize = SampleSize / ChannelCount;
@@ -27,9 +27,9 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     SampleRate = FrameSampleRate;
     ChannelCount = FrameChannels;
-    AlsaFormat = Libav::GetAlsaFormat(FrameFormat);
+    PCMFormat = FrameFormat;
     SampleCount = FrameSampleCount;
-    DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, FrameFormat, 1);
+    DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, PCMFormat, 1);
     SampleSize = DataSize / SampleCount;
     SampleFormatSize = SampleSize / ChannelCount;
     Data = (unsigned char*)av_malloc(DataSize);
@@ -42,9 +42,9 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     SampleRate = FrameSampleRate;
     ChannelCount = FrameChannels;
-    AlsaFormat = SND_PCM_FORMAT_S16;
+    PCMFormat = AV_SAMPLE_FMT_S16;
     SampleCount = FrameSampleCount;
-    DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, AV_SAMPLE_FMT_S16, 1);
+    DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, PCMFormat, 1);
     SampleSize = DataSize / SampleCount;
     SampleFormatSize = SampleSize / ChannelCount;
     Data = (unsigned char*)av_malloc(DataSize);
@@ -193,7 +193,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
             {
                 index = sample_index * ChannelCount + c;
 
-                if(AlsaFormat == SND_PCM_FORMAT_S8)
+                if(PCMFormat == AV_SAMPLE_FMT_U8)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -204,7 +204,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
                         Data[index] = (unsigned char)(Data[index] * ratio_num / ratio_den);
                     }
                 }
-                if(AlsaFormat == SND_PCM_FORMAT_S16)
+                if(PCMFormat == AV_SAMPLE_FMT_S16)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -215,7 +215,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
                         data_16[index] = (short)(data_16[index] * ratio_num / ratio_den);
                     }
                 }
-                if(AlsaFormat == SND_PCM_FORMAT_S32)
+                if(PCMFormat == AV_SAMPLE_FMT_S32)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -226,7 +226,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
                         data_32[index] = (int)(data_32[index] * ratio_num / ratio_den);
                     }
                 }
-                if(AlsaFormat == SND_PCM_FORMAT_FLOAT)
+                if(PCMFormat == AV_SAMPLE_FMT_FLT)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -237,7 +237,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
                         data_f[index] = (float)(data_f[index] * ((float)ratio_num / (float)ratio_den));
                     }
                 }
-                if(AlsaFormat == SND_PCM_FORMAT_FLOAT64)
+                if(PCMFormat == AV_SAMPLE_FMT_DBL)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -280,27 +280,27 @@ void AudioFrame::MixDown()
             // Front_L, Front_R, Center, LowFreq, Side_L, Side_R, Back_L, Back_R
             index_center_channel = 2;
 
-            if(AlsaFormat == SND_PCM_FORMAT_S8)
+            if(PCMFormat == AV_SAMPLE_FMT_U8)
             {
                 Data[index+0] = (unsigned char)((Data[index+0] + Data[index+index_center_channel]) / 2); // center ++> left
                 Data[index+1] = (unsigned char)((Data[index+1] + Data[index+index_center_channel]) / 2); // center ++> right
             }
-            if(AlsaFormat == SND_PCM_FORMAT_S16)
+            if(PCMFormat == AV_SAMPLE_FMT_S16)
             {
                 data_16[index+0] = (short)((data_16[index+0] + data_16[index+index_center_channel]) / 2); // center ++> left
                 data_16[index+1] = (short)((data_16[index+1] + data_16[index+index_center_channel]) / 2); // center ++> right
             }
-            if(AlsaFormat == SND_PCM_FORMAT_S32)
+            if(PCMFormat == AV_SAMPLE_FMT_S32)
             {
                 data_32[index+0] = (int)((data_32[index+0] + data_32[index+index_center_channel]) / 2); // center ++> left
                 data_32[index+1] = (int)((data_32[index+1] + data_32[index+index_center_channel]) / 2); // center ++> right
             }
-            if(AlsaFormat == SND_PCM_FORMAT_FLOAT)
+            if(PCMFormat == AV_SAMPLE_FMT_FLT)
             {
                 data_f[index+0] = (float)((data_f[index+0] + data_f[index+index_center_channel]) / 2); // center ++> left
                 data_f[index+1] = (float)((data_f[index+1] + data_f[index+index_center_channel]) / 2); // center ++> right
             }
-            if(AlsaFormat == SND_PCM_FORMAT_FLOAT64)
+            if(PCMFormat == AV_SAMPLE_FMT_DBL)
             {
                 data_d[index+0] = (double)((data_d[index+0] + data_d[index+index_center_channel]) / 2); // center ++> left
                 data_d[index+1] = (double)((data_d[index+1] + data_d[index+index_center_channel]) / 2); // center ++> right

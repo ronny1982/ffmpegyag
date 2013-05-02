@@ -630,24 +630,3 @@ GLint Libav::GetGLFormat(PixelFormat PixFormat)
         default: return 0;
     }
 }
-
-snd_pcm_format_t Libav::GetAlsaFormat(SampleFormat SplFormat)
-{
-    // NOTE: ffmpegyag only supports interleaved formats
-    switch(SplFormat)
-    {
-        // interleaved formats (single array, alternating channel data)
-        case AV_SAMPLE_FMT_U8:  return SND_PCM_FORMAT_U8;
-        case AV_SAMPLE_FMT_S16: return SND_PCM_FORMAT_S16;
-        case AV_SAMPLE_FMT_S32: return SND_PCM_FORMAT_S32;
-        case AV_SAMPLE_FMT_FLT: return SND_PCM_FORMAT_FLOAT;
-        case AV_SAMPLE_FMT_DBL: return SND_PCM_FORMAT_FLOAT64;
-        // planar formats (multi dimensional array, one dimension for each channel)
-        //case AV_SAMPLE_FMT_U8P:  return;
-        //case AV_SAMPLE_FMT_S16P: return;
-        //case AV_SAMPLE_FMT_S32P: return;
-        //case AV_SAMPLE_FMT_FLTP: return;
-        //case AV_SAMPLE_FMT_DBLP: return;
-        default: return SND_PCM_FORMAT_UNKNOWN;
-    }
-}

@@ -30,7 +30,7 @@ class AudioFrame
     public: int64_t Duration; // in milliseconds
     public: int SampleRate;
     public: int ChannelCount;
-    snd_pcm_format_t AlsaFormat;
+    AVSampleFormat PCMFormat;
     public: size_t SampleCount;
     public: size_t DataSize; // in byte
     public: int SampleSize; // in byte

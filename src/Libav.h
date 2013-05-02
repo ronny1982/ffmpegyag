@@ -93,8 +93,6 @@ class Libav
     public: static wxString GetPicType(AVPictureType PicType);
     // convert AVPixelFormat to GL Format
     public: static GLint GetGLFormat(PixelFormat PixFormat);
-    // convert AVSampleFormat to Alsa Format
-    public: static snd_pcm_format_t GetAlsaFormat(SampleFormat SplFormat);
 };
 
 #endif // LIBAV_H
