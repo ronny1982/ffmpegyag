@@ -1,5 +1,5 @@
 #include "EncodingFileLoader.h"
-
+//#include <wx/msgdlg.h>
 static int CompareIndexEntry(IndexEntry** First, IndexEntry** Second)
 {
     return (int)((*First)->Timestamp - (*Second)->Timestamp);
@@ -481,8 +481,17 @@ int64_t EncodingFileLoader::GetStreamEstimatedFrameCount(unsigned int StreamInde
             // calculate estimated frame count
 
             int64_t EstimationDuration;
-            AVRational EstimationTimeBase = stream->time_base;
-            AVRational EstimationFrameRate = stream->avg_frame_rate;
+            AVRational EstimationTimeBase;
+            EstimationTimeBase.num = 1;
+            EstimationTimeBase.den = 1000;
+            AVRational EstimationFrameRate;
+            EstimationFrameRate.num = 1;
+            EstimationFrameRate.den = 1;
+
+            if(stream->time_base.num > 0 && stream->time_base.den > 0)
+            {
+                EstimationTimeBase = stream->time_base;
+            }
 
             if(stream ->duration != (int64_t)AV_NOPTS_VALUE)
             {
@@ -494,28 +503,40 @@ int64_t EncodingFileLoader::GetStreamEstimatedFrameCount(unsigned int StreamInde
                 EstimationDuration = (pFormatCtx->duration * EstimationTimeBase.den) / (AV_TIME_BASE * EstimationTimeBase.num);
             }
 
-            if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO || stream->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+            if(stream->avg_frame_rate.den > 0)
             {
-                if(stream->avg_frame_rate.den > 0)
-                {
-                    EstimationFrameRate = stream->avg_frame_rate;
-                }
-                else
-                {
-                    EstimationFrameRate = stream->r_frame_rate;
-                }
+                EstimationFrameRate = stream->avg_frame_rate;
             }
-
-            if(stream->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
+            else if(stream->r_frame_rate.den > 0)
             {
-                // assuming 0.5 subtitles / second
-                EstimationFrameRate.num = 1;
-                EstimationFrameRate.den = 2;
+                EstimationFrameRate = stream->r_frame_rate;
+            }
+            else
+            {
+                if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                {
+                    // assume 24 frames / second...
+                    EstimationFrameRate.num = 50;
+                    EstimationFrameRate.den = 1;
+                }
+                if(stream->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                {
+                    // assume 50 frames / second...
+                    EstimationFrameRate.num = 50;
+                    EstimationFrameRate.den = 1;
+                }
+                if(stream->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
+                {
+                    // assume 0.5 subtitles / second
+                    EstimationFrameRate.num = 1;
+                    EstimationFrameRate.den = 2;
+                }
             }
 
             return (int64_t)EstimationDuration * (int64_t)EstimationTimeBase.num * (int64_t)EstimationFrameRate.num / (int64_t)EstimationTimeBase.den / (int64_t)EstimationFrameRate.den;
         }
     }
+
     return (int64_t)0;
 }
 
