@@ -36,13 +36,13 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                 wxProgressDialog* ProgressDialog = new wxProgressDialog(wxT("Building Index..."), File.GetFullName()/*File.GetFullPath()*/, progress_max, NULL, wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_SMOOTH/* | wxPD_CAN_ABORT*/);
 
                 AVStream* stream;
+                int64_t* StreamSize = new int64_t(pFormatCtx->nb_streams); //new int64_t[pFormatCtx->nb_streams];
 
                 // +++++++++++++++++++++++++++++
                 // +++ INIT STREAMS & CODECS +++
                 // +++++++++++++++++++++++++++++
                 //{
                     AVCodecContext* pCodecCtx;
-                    int64_t StreamSize[pFormatCtx->nb_streams];
 
                     for(unsigned int i=0; i<pFormatCtx->nb_streams; i++)
                     {
@@ -427,7 +427,8 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                 //}
 
                 MetaInfo = NULL;
-
+                wxDELETEA(StreamSize);
+                StreamSize = NULL;
                 stream = NULL;
 
                 ProgressDialog->Close();
