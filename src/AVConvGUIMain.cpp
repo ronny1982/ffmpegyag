@@ -225,6 +225,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     GLCanvasPreview = new wxGLCanvas(this, ID_GLCANVAS1, wxDefaultPosition, wxDefaultSize, 0, _T("ID_GLCANVAS1"), GLCanvasAttributes_1);
     GLCanvasPreview->SetMinSize(wxSize(280,140));
     GLCanvasPreview->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW));
+//    GLCanvasPreview->SetDoubleBuffered(false);
     FlexGridSizer4->Add(GLCanvasPreview, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrlTime = new wxTextCtrl(this, ID_TEXTCTRL1, _("00:00:00.000 / 00:00:00.000 []"), wxDefaultPosition, wxDefaultSize, wxTE_CENTRE, wxDefaultValidator, _T("ID_TEXTCTRL1"));
     TextCtrlTime->Disable();
@@ -1912,7 +1913,7 @@ bool AVConvGUIFrame::InitializeAudio()
             long SelectedStream = SelectedAudioStreamIndices[0].StreamIndex;
             AudioStream* aStream = EncodingTasks[SelectedTask]->InputFiles[0]->AudioStreams[SelectedStream];
 
-            if(SoundDevice->Init((unsigned int)aStream->SampleRate, aStream->ChannelCount, aStream->SampleFormat))
+            if(SoundDevice->Init((unsigned int)aStream->SampleRate, (unsigned int)aStream->ChannelCount, aStream->SampleFormat))
             {
                 return true;
             }
@@ -2118,12 +2119,14 @@ void AVConvGUIFrame::PlaybackMedia()
             wxYield();
         }
 
+        /* obsolete
         while(thread->IsRunning())
         {
             wxMilliSleep(5);
         }
         thread->Delete();
-        thread->Wait();
+        */
+        thread->Wait(); // same as thread->Delete(), but wait until thread is finished
         wxDELETE(thread);
 
         if(VideoFrameBuffer)

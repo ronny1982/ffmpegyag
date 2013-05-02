@@ -5,11 +5,10 @@
 
 #ifdef __WINDOWS__
 
-//#include <stdio.h>
 #include <windows.h>
 #include <mmsystem.h>
 
-class WinMMDevice
+class WinMMDevice : public AudioDevice
 {
     public: WinMMDevice();
     public: virtual ~WinMMDevice();
@@ -24,6 +23,7 @@ class WinMMDevice
     private: static void CALLBACK FreeBlock(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2);
 
     private: HWAVEOUT Device;
+    private: WAVEFORMATEX HardwareInfo;
     /*
      * winMM does not have an internal buffer management
      * -> so we have to implement our own buffer

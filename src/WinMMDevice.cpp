@@ -17,14 +17,13 @@ bool WinMMDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSam
     // TODO:
     // WAVE_FORMAT_PCM only for 1/2 channel and 8/16 bit
     // WAVE_FORMAT_EXTENSIBLE support for ieee and multichannel
-    WAVEFORMATEX HardwareInfo;
-    HardwareInfo.nSamplesPerSec = SampleRate;
+    HardwareInfo.nSamplesPerSec = (int)SampleRate;
     HardwareInfo.wBitsPerSample = GetWinMMSampleSize(Format);
-    HardwareInfo.nChannels = ChannelCount;
+    HardwareInfo.nChannels = (int)ChannelCount;
     HardwareInfo.cbSize = 0;
     HardwareInfo.wFormatTag = WAVE_FORMAT_PCM;
-    HardwareInfo.nBlockAlign = (HardwareInfo.wBitsPerSample >> 3) * ChannelCount;
-    HardwareInfo.nAvgBytesPerSec = HardwareInfo.nBlockAlign * SampleRate;
+    HardwareInfo.nBlockAlign = (HardwareInfo.wBitsPerSample >> 3) * HardwareInfo.nChannels;
+    HardwareInfo.nAvgBytesPerSec = HardwareInfo.nBlockAlign * HardwareInfo.nSamplesPerSec;
 
     block_buffer_size = 8;
     block_buffer_current_count = 0;
@@ -73,6 +72,34 @@ void WinMMDevice::Release()
 
 void WinMMDevice::Play(unsigned char* FrameData, size_t SampleCount)
 {
+// HardwareInfo.nChannels
+// HardwareInfo.nBlockAlign
+short* data = (short*)FrameData;
+for(int i=0; i<(SampleCount*HardwareInfo.nChannels); i+=HardwareInfo.nChannels)
+{
+    // left
+    //data[i] = (short)(20*(i%32));
+    data[i] = 0;
+
+    // right
+    data[i+1] = (short)(10*(i%64));
+    //data[i+1] = 0;
+}
+
+/*
+unsigned char tmp;
+for(int i=0; i<SampleCount*HardwareInfo.nBlockAlign; i+=HardwareInfo.nBlockAlign)
+{
+    //left channel, first byte
+    //left channel, second byte
+
+    //right channel, first byte
+    //right channel, second byte
+
+    tmp = FrameData[i];
+    FrameData[i] = FrameData[i+1];
+    FrameData[i+1] = tmp;
+}*/
     while(block_buffer_current_count >= block_buffer_size){}
     // simple mutex/semaphore implementation
     while(block_buffer_is_locked){}
@@ -82,7 +109,7 @@ void WinMMDevice::Play(unsigned char* FrameData, size_t SampleCount)
     }
     block_buffer_is_locked = true;
     WAVEHDR* current_block = &block_buffer[(block_buffer_current_index + block_buffer_current_count) % block_buffer_size];
-    current_block->dwBufferLength = SampleCount;
+    current_block->dwBufferLength = (long)(SampleCount * HardwareInfo.nBlockAlign);
     current_block->lpData = (char*)FrameData;
     waveOutPrepareHeader(Device, current_block, sizeof(WAVEHDR));
     waveOutWrite(Device, current_block, sizeof(WAVEHDR));
@@ -93,13 +120,21 @@ void WinMMDevice::Play(unsigned char* FrameData, size_t SampleCount)
 int WinMMDevice::GetWinMMFormat(AVSampleFormat Format)
 {
     // TODO: change to real libav AVSampleFormat
+    // WAVE_FORMAT_PCM
     return 0;
 }
 
 int WinMMDevice::GetWinMMSampleSize(AVSampleFormat Format)
 {
-    // TODO: change to real libav AVSampleFormat
-    return 16;
+    switch(Format)
+    {
+        case AV_SAMPLE_FMT_U8:  return 8;
+        case AV_SAMPLE_FMT_S16: return 16;
+        case AV_SAMPLE_FMT_S32: return 32;
+        case AV_SAMPLE_FMT_FLT: return 32;
+        case AV_SAMPLE_FMT_DBL: return 64;
+        default: return 16;
+    }
 }
 
 void CALLBACK WinMMDevice::FreeBlock(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)

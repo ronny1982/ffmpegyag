@@ -59,7 +59,7 @@ class AudioStream : public MediaStream
 
     public: int SampleRate;
     public: int ChannelCount;
-    public: enum AVSampleFormat SampleFormat;
+    public: AVSampleFormat SampleFormat;
     public: AudioSettings EncodingSettings;
 };
 
