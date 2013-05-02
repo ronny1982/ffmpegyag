@@ -215,7 +215,10 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     // speed hack: disable doublebuffer
     int GLCanvasAttributes_1[] = {
         WX_GL_RGBA,
-//        WX_GL_DOUBLEBUFFER,
+// TODO: windows currently requires double buffering
+#ifdef __WINDOWS__
+        WX_GL_DOUBLEBUFFER,
+#endif
         WX_GL_DEPTH_SIZE,      0,
         WX_GL_STENCIL_SIZE,    0,
         0, 0 };
@@ -1882,7 +1885,10 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
     }
 
     // BOTTLENECK (when double buffering is enabled)
-    //GLCanvasPreview->SwapBuffers(); // makes glFlush / glFinish obsolete
+    // TODO: windows currently requires double buffering
+    #ifdef __WINDOWS__
+    GLCanvasPreview->SwapBuffers(); // makes glFlush / glFinish obsolete
+    #endif
     // glFlush(); // submit all gl commands in buffer for execution and continue
     glFinish(); // submit all gl commands in buffer for execution and wait until completed
 }
@@ -2175,10 +2181,7 @@ void AVConvGUIFrame::OnResize(wxSizeEvent& event)
     ListCtrlSegments->Thaw();
     ListCtrlTasks->Thaw();
 
-    if(!IsPlaying)
-    {
-        RenderSingleFrame();
-    }
+    RenderSingleFrame();
 }
 
 void AVConvGUIFrame::OnSpinCtrlCropChange(wxSpinEvent& event)
@@ -2237,7 +2240,6 @@ void AVConvGUIFrame::OnSpinCtrlCropChange(wxSpinEvent& event)
     }
 
     Layout();
-
     RenderSingleFrame();
 
     //wxMessageBox(wxT("Crop Changed"));
@@ -2321,6 +2323,7 @@ void AVConvGUIFrame::OnButtonSegmentFromClick(wxCommandEvent& event)
     }
     SliderFrame->SetFocus();
     RenderSingleFrame();
+
     //wxMessageBox(wxT("Set Segment From"));
 }
 
@@ -2348,6 +2351,7 @@ void AVConvGUIFrame::OnButtonSegmentToClick(wxCommandEvent& event)
     }
     SliderFrame->SetFocus();
     RenderSingleFrame();
+
     //wxMessageBox(wxT("Set Segment To"));
 }
 
