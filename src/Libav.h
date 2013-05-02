@@ -10,8 +10,8 @@
 #include <wx/choicdlg.h>
 #include <wx/textdlg.h>
 
+// TODO: remove when VideoDevice implementation is done
 #include <GL/gl.h>
-#include <alsa/asoundlib.h>
 
 #ifndef INT64_C
 #define INT64_C(c)  c ## L
@@ -91,6 +91,7 @@ class Libav
     public: static PixelFormatHashMap PixelDescriptionMap; // PixelFormat PIX_FMT_* -> wxString PixelDescription
     // human readable picture type
     public: static wxString GetPicType(AVPictureType PicType);
+    // TODO: remove when VideoDevice implementation is done
     // convert AVPixelFormat to GL Format
     public: static GLint GetGLFormat(PixelFormat PixFormat);
 };

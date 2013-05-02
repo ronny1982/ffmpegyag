@@ -30,8 +30,6 @@
 #include <wx/mstream.h>
 #include <wx/icon.h>
 
-#include <sys/time.h>
-
 #include "resource.h"
 #include "EncodingTask.h"
 #include "AVConvSettings.h"

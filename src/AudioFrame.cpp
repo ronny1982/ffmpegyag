@@ -20,14 +20,14 @@ AudioFrame::AudioFrame()
     }
 }
 
-AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, SampleFormat FrameFormat, size_t FrameSampleCount)
+AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, AVSampleFormat FrameSampleFormat, size_t FrameSampleCount)
 {
     Timestamp = FrameTimestamp;
     Timecode = FrameTimecode;
     Duration = FrameDuration;
     SampleRate = FrameSampleRate;
     ChannelCount = FrameChannels;
-    PCMFormat = FrameFormat;
+    PCMFormat = FrameSampleFormat;
     SampleCount = FrameSampleCount;
     DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, PCMFormat, 1);
     SampleSize = DataSize / SampleCount;

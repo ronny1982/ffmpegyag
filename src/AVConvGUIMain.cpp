@@ -9,14 +9,19 @@
 //*)
 
 #include <wx/arrimpl.cpp>
-
 WX_DEFINE_OBJARRAY(SelectedStreamIndexArray);
 
-//helper functions
+#ifdef __LINUX__
+#include <sys/time.h>
 int64_t TimeSpecMilliDiff(struct timespec StartTime, struct timespec EndTime)
 {
     return (int64_t)(1000*(EndTime.tv_sec - StartTime.tv_sec) + (EndTime.tv_nsec - StartTime.tv_nsec)/1000000);
 }
+#endif
+#ifdef __WINDOWS__
+//#include <time.h>
+#include <windows.h>
+#endif
 
 enum wxbuildinfoformat {
     short_f, long_f };
@@ -2004,8 +2009,6 @@ void AVConvGUIFrame::PlaybackMedia()
             }
         }
 
-        struct timespec StartTime;
-        struct timespec ClockTime;
         int64_t ReferenceStart = efl->GetTimeFromFrameV(VideoStreamIndex, (long)SliderFrame->GetValue());
         int64_t ReferenceClock = ReferenceStart;
 
@@ -2013,7 +2016,17 @@ void AVConvGUIFrame::PlaybackMedia()
         thread->Create();
         thread->Run();
 
+        // init clock
+        #ifdef __LINUX__
+        struct timespec StartTime;
+        struct timespec ClockTime;
         clock_gettime(CLOCK_REALTIME, &StartTime);
+        #endif
+        #ifdef __WINDOWS__
+        // TODO: GetTickCount() has only resolution of ~16ms
+        long StartTime = GetTickCount();
+        #endif
+
         while(IsPlaying)
         {
             if(SliderFrame->FindFocus() != SliderFrame)
@@ -2022,8 +2035,14 @@ void AVConvGUIFrame::PlaybackMedia()
             }
 
             // update clock
+            #ifdef __LINUX__
             clock_gettime(CLOCK_REALTIME, &ClockTime);
             ReferenceClock = ReferenceStart + TimeSpecMilliDiff(StartTime, ClockTime);
+            #endif
+            #ifdef __WINDOWS__
+            // TODO: GetTickCount() has only resolution of ~16ms
+            ReferenceClock = ReferenceStart + (GetTickCount() - StartTime);
+            #endif
 
             if(AudioFrameBuffer)
             {
@@ -2051,8 +2070,14 @@ void AVConvGUIFrame::PlaybackMedia()
             }
 
             // update clock
+            #ifdef __LINUX__
             clock_gettime(CLOCK_REALTIME, &ClockTime);
             ReferenceClock = ReferenceStart + TimeSpecMilliDiff(StartTime, ClockTime);
+            #endif
+            #ifdef __WINDOWS__
+            // TODO: GetTickCount() has only resolution of ~16ms
+            ReferenceClock = ReferenceStart + (GetTickCount() - StartTime);
+            #endif
 
             if(VideoFrameBuffer)
             {

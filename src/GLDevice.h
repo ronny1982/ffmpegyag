@@ -2,8 +2,9 @@
 #define GLDEVICE_H
 
 #include "VideoDevice.h"
+#include <GL/gl.h>
 
-class GLDevice
+class GLDevice/* : VideoDevice*/
 {
     public: GLDevice();
     public: virtual ~GLDevice();
