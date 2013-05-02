@@ -630,6 +630,8 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     ComboBoxAudioCodec->SetValue(wxT("aac"));
     ComboBoxSubtitleCodec->SetValue(wxT("copy"));
     EnableDisableAVFormatControls();
+
+    IsPlaying = false;
 }
 
 AVConvGUIFrame::~AVConvGUIFrame()

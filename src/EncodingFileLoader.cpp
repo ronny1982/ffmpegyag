@@ -51,21 +51,23 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
 
                         // initialize codec context for each stream (if not done, decoding packets will crash!)
                         pCodecCtx = stream->codec;
-                        avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_VIDEO)
                         {
+                            avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             VideoStreams.Add(new VideoStream(i, false));
                             VideoStreams[VideoStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
 
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_AUDIO)
                         {
+                            avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             AudioStreams.Add(new AudioStream(i, false));
                             AudioStreams[AudioStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
 
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_SUBTITLE)
                         {
+                            avcodec_open2(pCodecCtx, avcodec_find_decoder(pCodecCtx->codec_id), NULL);
                             SubtitleStreams.Add(new SubtitleStream(i, false));
                             SubtitleStreams[SubtitleStreams.GetCount()-1]->IndexEntries.Alloc(GetStreamEstimatedFrameCount(i)+10); // add 10 additional frames
                         }
