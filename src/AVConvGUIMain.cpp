@@ -20,7 +20,7 @@ int64_t TimeSpecMilliDiff(struct timespec StartTime, struct timespec EndTime)
 #endif
 #ifdef __WINDOWS__
 //#include <time.h>
-#include <windows.h>
+//#include <windows.h>
 #endif
 
 enum wxbuildinfoformat {
@@ -2024,7 +2024,7 @@ void AVConvGUIFrame::PlaybackMedia()
         #endif
         #ifdef __WINDOWS__
         // TODO: GetTickCount() has only resolution of ~16ms
-        long StartTime = GetTickCount();
+        wxLongLong StartTime = wxGetLocalTimeMillis();
         #endif
 
         while(IsPlaying)
@@ -2041,7 +2041,7 @@ void AVConvGUIFrame::PlaybackMedia()
             #endif
             #ifdef __WINDOWS__
             // TODO: GetTickCount() has only resolution of ~16ms
-            ReferenceClock = ReferenceStart + (GetTickCount() - StartTime);
+            ReferenceClock = ReferenceStart + (int64_t)((wxGetLocalTimeMillis() - StartTime).ToLong());
             #endif
 
             if(AudioFrameBuffer)
@@ -2076,7 +2076,7 @@ void AVConvGUIFrame::PlaybackMedia()
             #endif
             #ifdef __WINDOWS__
             // TODO: GetTickCount() has only resolution of ~16ms
-            ReferenceClock = ReferenceStart + (GetTickCount() - StartTime);
+            ReferenceClock = ReferenceStart + (int64_t)((wxGetLocalTimeMillis() - StartTime).ToLong());
             #endif
 
             if(VideoFrameBuffer)
