@@ -1888,9 +1888,10 @@ void AVConvGUIFrame::CloseGL()
     }
 }
 
-bool AVConvGUIFrame::InitializeAlsa()
+bool AVConvGUIFrame::InitializeAudio()
 {
-    if(snd_pcm_open(&AlsaDevice, "default", SND_PCM_STREAM_PLAYBACK, 0) >= 0)
+    SoundDevice = AudioDevice::Create();
+    if(SoundDevice)
     {
         if(SelectedTaskIndices.GetCount() == 1 && SelectedAudioStreamIndices.GetCount() == 1)
         {
@@ -1898,18 +1899,10 @@ bool AVConvGUIFrame::InitializeAlsa()
             long SelectedStream = SelectedAudioStreamIndices[0].StreamIndex;
             AudioStream* aStream = EncodingTasks[SelectedTask]->InputFiles[0]->AudioStreams[SelectedStream];
 
-            snd_pcm_hw_params_t* AlsaParameters;
-            snd_pcm_hw_params_malloc(&AlsaParameters);
-            snd_pcm_hw_params_any(AlsaDevice, AlsaParameters);
-            snd_pcm_hw_params_set_access(AlsaDevice, AlsaParameters, SND_PCM_ACCESS_RW_INTERLEAVED);
-            snd_pcm_hw_params_set_format(AlsaDevice, AlsaParameters, Libav::GetAlsaFormat(aStream->SampleFormat));
-            snd_pcm_hw_params_set_rate_near(AlsaDevice, AlsaParameters, (unsigned int*)&aStream->SampleRate, 0);
-            snd_pcm_hw_params_set_channels(AlsaDevice, AlsaParameters, aStream->ChannelCount);
-            snd_pcm_hw_params(AlsaDevice, AlsaParameters);
-            snd_pcm_hw_params_free(AlsaParameters);
-            snd_pcm_prepare(AlsaDevice);
-            aStream = NULL;
-            return true;
+            if(SoundDevice->Init((unsigned int)aStream->SampleRate, aStream->ChannelCount, aStream->SampleFormat))
+            {
+                return true;
+            }
         }
     }
     return false;
@@ -1959,24 +1952,22 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
             }
         }
         Pulse->MixDown();
+
         // NOTE: do not use Pulse->Data
         // create copy that will be written to alsa (alsa will free it)
         unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
         memcpy(data, Pulse->Data, Pulse->DataSize);
-        snd_pcm_writei(AlsaDevice, data, Pulse->SampleCount);
+        SoundDevice->Play(data, Pulse->SampleCount);
     }
 }
 
-void AVConvGUIFrame::CloseAlsa()
+void AVConvGUIFrame::CloseAudio()
 {
-    if(AlsaDevice)
+    if(SoundDevice)
     {
-        // stopping after all remaining frames in the buffer have finished playing
-        //snd_pcm_drain(AlsaDevice);
-        // immediately stops playback, dropping any frames still left in the buffer
-        snd_pcm_drop(AlsaDevice);
-        snd_pcm_close(AlsaDevice);
-        //AlsaDevice = NULL;
+        SoundDevice->Release();
+        wxDELETE(SoundDevice);
+        SoundDevice = NULL;
     }
 }
 
@@ -2006,7 +1997,7 @@ void AVConvGUIFrame::PlaybackMedia()
         StreamBuffer* AudioFrameBuffer = NULL;
         if(SelectedAudioStreamIndices.GetCount() == 1)
         {
-            if(InitializeAlsa())
+            if(InitializeAudio())
             {
                 AudioStreamIndex = SelectedAudioStreamIndices[0].StreamIndex;
                 AudioFrameBuffer = new StreamBuffer(FIFO, 50);
@@ -2123,7 +2114,7 @@ void AVConvGUIFrame::PlaybackMedia()
                 wxDELETE(buffer);
             }
             wxDELETE(AudioFrameBuffer);
-            CloseAlsa();
+            CloseAudio();
         }
 
         Segment = NULL;

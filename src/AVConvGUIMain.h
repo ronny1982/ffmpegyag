@@ -36,6 +36,7 @@
 #include "EncodingTask.h"
 #include "AVConvSettings.h"
 #include "MediaStreamThread.h"
+#include "AudioDevice.h"
 
 #define STR_DEFAULT wxT("default")
 #define STR_NO_CHANGE wxT("no change")
@@ -264,7 +265,7 @@ class AVConvGUIFrame: public wxFrame
         wxMenu* MenuPresets;
         wxMenu* MenuSegmentFilters;
 
-        snd_pcm_t* AlsaDevice;
+        AudioDevice* SoundDevice;
 
         bool IsPlaying;
         bool AbortEncoding;
@@ -310,11 +311,11 @@ private: void ShowSelectedIndices();
         // close the render device
         private: void CloseGL();
         // initialize the audio device
-        private: bool InitializeAlsa();
+        private: bool InitializeAudio();
         // plays a frame on the initialized audio device
         private: void RenderSound(AudioFrame* Pulse, FileSegment* Segment);
         // close the audio device
-        private: void CloseAlsa();
+        private: void CloseAudio();
         //
         private: void PlaybackMedia();
         // test if the settings are consistent

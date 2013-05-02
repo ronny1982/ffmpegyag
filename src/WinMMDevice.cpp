@@ -1,7 +1,10 @@
 #include "WinMMDevice.h"
 
+#ifdef __WINDOWS__
+
 WinMMDevice::WinMMDevice()
 {
+    //
 }
 
 WinMMDevice::~WinMMDevice()
@@ -11,6 +14,9 @@ WinMMDevice::~WinMMDevice()
 
 bool WinMMDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSampleFormat Format)
 {
+    // TODO:
+    // WAVE_FORMAT_PCM only for 1/2 channel and 8/16 bit
+    // WAVE_FORMAT_EXTENSIBLE support for ieee and multichannel
     WAVEFORMATEX HardwareInfo;
     HardwareInfo.nSamplesPerSec = SampleRate;
     HardwareInfo.wBitsPerSample = GetWinMMSampleSize(Format);
@@ -31,7 +37,6 @@ bool WinMMDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSam
     {
         return false;
     }
-//printf("Initialized\n");
     return true;
 }
 
@@ -39,12 +44,11 @@ void WinMMDevice::Release()
 {
     if(!block_buffer)
     {
-        // already released
         return;
     }
 
     // simple mutex/semaphore implementation
-    while(block_buffer_is_locked){printf("   Trapped C\n"); Sleep(15);}
+    while(block_buffer_is_locked){}
     block_buffer_is_locked = true;
 
     // free block_buffer
@@ -52,7 +56,6 @@ void WinMMDevice::Release()
     {
         if(block_buffer[i].lpData)
         {
-//printf("Free Block\n");
             free(block_buffer[i].lpData);
             block_buffer[i].lpData = NULL;
         }
@@ -62,25 +65,19 @@ void WinMMDevice::Release()
     free(block_buffer);
     block_buffer = NULL;
 
-//printf("waveOutReset\n");
-    // triggers callbacks to FreeBlock()
     waveOutReset(Device); // != MMSYSERR_NOERROR
-
-//printf("waveOutClose\n");
     waveOutClose(Device); // != MMSYSERR_NOERROR
 
     block_buffer_is_locked = false;
-//printf("C\n");
 }
 
 void WinMMDevice::Play(unsigned char* FrameData, size_t SampleCount)
 {
-    while(block_buffer_current_count >= block_buffer_size){/*printf("   Buffer Full...\n"); Sleep(15);*/}
+    while(block_buffer_current_count >= block_buffer_size){}
     // simple mutex/semaphore implementation
-    while(block_buffer_is_locked){/*printf("   Trapped E\n"); Sleep(15);*/}
+    while(block_buffer_is_locked){}
     if(!block_buffer)
     {
-//printf("RETURN\n");
         return;
     }
     block_buffer_is_locked = true;
@@ -91,18 +88,17 @@ void WinMMDevice::Play(unsigned char* FrameData, size_t SampleCount)
     waveOutWrite(Device, current_block, sizeof(WAVEHDR));
     block_buffer_current_count++;
     block_buffer_is_locked = false;
-//printf("   + Block: \n");
 }
 
 int WinMMDevice::GetWinMMFormat(AVSampleFormat Format)
 {
-    // TODO: implement switch
+    // TODO: change to real libav AVSampleFormat
     return 0;
 }
 
 int WinMMDevice::GetWinMMSampleSize(AVSampleFormat Format)
 {
-    // TODO: implement switch
+    // TODO: change to real libav AVSampleFormat
     return 16;
 }
 
@@ -111,18 +107,15 @@ void CALLBACK WinMMDevice::FreeBlock(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInsta
     if(uMsg == WOM_DONE)
     {
         WinMMDevice* Device = (WinMMDevice*)dwInstance;
-//printf("CALLBACK\n");
         // simple mutex/semaphore implementation
-        while(Device && Device->block_buffer && Device->block_buffer_is_locked){/*printf("   Trapped A\n"); Sleep(100);*/}
+        while(Device && Device->block_buffer && Device->block_buffer_is_locked){}
         if(!Device || !Device->block_buffer)
         {
-//printf("RETURN\n");
             return;
         }
         Device->block_buffer_is_locked = true;
         WAVEHDR* current_block = &(Device->block_buffer[Device->block_buffer_current_index]);
-        while(waveOutUnprepareHeader(Device->Device, current_block, sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){/*printf("   Trapped B\n"); Sleep(100);*/}
-//printf("   - Block: \n");
+        while(waveOutUnprepareHeader(Device->Device, current_block, sizeof(WAVEHDR)) == WAVERR_STILLPLAYING){}
         free(current_block->lpData);
         current_block->lpData = NULL;
         current_block->dwBufferLength = 0;
@@ -130,19 +123,11 @@ void CALLBACK WinMMDevice::FreeBlock(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInsta
         current_block = NULL;
         Device->block_buffer_current_count--;
         Device->block_buffer_is_locked = false;
-
         Device = NULL;
     }
 }
 
-
-
-
-
-
-
-
-
+/*
 // DEMO APPLICATION
 int main(int argc, char* argv[])
 {
@@ -172,3 +157,6 @@ int main(int argc, char* argv[])
     AudioDevice->Release();
     delete AudioDevice;
 }
+*/
+
+#endif // WINDOWS

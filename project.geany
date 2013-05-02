@@ -23,21 +23,15 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=13
+current_page=7
 FILE_NAME_0=10165;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.h;0;4
 FILE_NAME_1=102471;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
 FILE_NAME_2=1005;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.h;0;4
 FILE_NAME_3=43481;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.cpp;0;4
-FILE_NAME_4=243;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAudioDevice.h;0;4
-FILE_NAME_5=322;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAudioDevice.cpp;0;4
-FILE_NAME_6=561;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAlsaDevice.h;0;4
-FILE_NAME_7=2233;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAlsaDevice.cpp;0;4
-FILE_NAME_8=132;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FVideoDevice.h;0;4
-FILE_NAME_9=64;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FGLDevice.h;0;4
-FILE_NAME_10=0;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FGLDevice.cpp;0;4
-FILE_NAME_11=4101;C;0;16;0;1;0;.%2Fsrc%2FLibav.h;0;4
-FILE_NAME_12=34145;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FLibav.cpp;0;4
-FILE_NAME_13=0;C;0;16;0;1;0;.%2Fsrc%2FAudioFrame.h;0;4
+FILE_NAME_4=322;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAudioDevice.cpp;0;4
+FILE_NAME_5=4101;C;0;16;0;1;0;.%2Fsrc%2FLibav.h;0;4
+FILE_NAME_6=34145;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FLibav.cpp;0;4
+FILE_NAME_7=68;C;0;16;0;1;0;.%2Fsrc%2FAudioFrame.h;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag

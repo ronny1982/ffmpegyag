@@ -3,19 +3,13 @@
 
 #include "Libav.h"
 
-enum AudioAPI
-{
-    AlsaAPI,
-    // MMediaAPI,
-};
-
 class AudioDevice
 {
     public: AudioDevice();
     public: virtual ~AudioDevice();
 
-    // static functions (instance creation)
-    public: static AudioDevice* Create(AudioAPI DeviceType);
+    // static function (instance creation)
+    public: static AudioDevice* Create();
 
     // interface functions
     public: virtual bool Init(unsigned int SampleRate, unsigned int ChannelCount, AVSampleFormat SampleFormat) = 0;

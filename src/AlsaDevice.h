@@ -2,6 +2,9 @@
 #define ALSADEVICE_H
 
 #include "AudioDevice.h"
+
+#ifdef __LINUX__
+
 #include <alsa/asoundlib.h>
 
 class AlsaDevice : public AudioDevice
@@ -17,6 +20,6 @@ class AlsaDevice : public AudioDevice
     private: snd_pcm_t* Device;
 };
 
-AlsaDevice* CreateAudioDevice();
+#endif // LINUX
 
 #endif // ALSADEVICE_H

@@ -1,5 +1,7 @@
 #include "AlsaDevice.h"
 
+#ifdef __LINUX__
+
 AlsaDevice::AlsaDevice()
 {
     //
@@ -32,10 +34,13 @@ bool AlsaDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSamp
 
 void AlsaDevice::Release()
 {
-    //snd_pcm_drain(Device); // stopping after all remaining frames in the buffer have finished playing
-    snd_pcm_drop(Device); // immediately stops playback, dropping any frames still left in the buffer
-    snd_pcm_close(Device);
-    Device = NULL;
+    if(Device)
+    {
+        //snd_pcm_drain(Device); // stopping after all remaining frames in the buffer have finished playing
+        snd_pcm_drop(Device); // immediately stops playback, dropping any frames still left in the buffer
+        snd_pcm_close(Device);
+        Device = NULL;
+    }
 }
 
 void AlsaDevice::Play(unsigned char* Data, size_t SampleCount)
@@ -64,7 +69,4 @@ snd_pcm_format_t AlsaDevice::GetAlsaFormat(AVSampleFormat Format)
     }
 }
 
-AlsaDevice* CreateAudioDevice()
-{
-    return new AlsaDevice();
-}
+#endif // LINUX

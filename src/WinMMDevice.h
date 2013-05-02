@@ -1,21 +1,13 @@
 #ifndef WINMM_H
 #define WINMM_H
 
-#include <stdio.h>
+#include "AudioDevice.h"
+
+#ifdef __WINDOWS__
+
+//#include <stdio.h>
 #include <windows.h>
 #include <mmsystem.h>
-
-// TODO: change to real libav AVSampleFormat
-// WAVE_FORMAT_PCM only for 1/2 channel and 8/16 bit
-// WAVE_FORMAT_EXTENSIBLE support for ieee and multichannel
-enum AVSampleFormat
-{
-    AV_FMT_S8,
-    AV_FMT_S16,
-    AV_FMT_S32,
-    AV_FMT_F32,
-    AV_FMT_F64,
-};
 
 class WinMMDevice
 {
@@ -42,5 +34,7 @@ class WinMMDevice
     private: WAVEHDR* block_buffer;
     private: bool block_buffer_is_locked;
 };
+
+#endif // WINDOWS
 
 #endif // WINMM_H
