@@ -12,6 +12,9 @@
 
 // TODO: remove when VideoDevice implementation is done
 #include <GL/gl.h>
+#ifdef __WINDOWS__
+#include <GL/glext.h>
+#endif
 
 #ifndef INT64_C
 #define INT64_C(c)  c ## L

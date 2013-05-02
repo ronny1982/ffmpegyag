@@ -3,6 +3,9 @@
 
 #include "VideoDevice.h"
 #include <GL/gl.h>
+#ifdef __WINDOWS__
+#include <GL/glext.h>
+#endif
 
 class GLDevice/* : VideoDevice*/
 {

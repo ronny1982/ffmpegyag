@@ -59,4 +59,5 @@ LDLIBS="
     -luuid
     -lcomctl32
     -lopengl32
+    -lwinmm
     "
