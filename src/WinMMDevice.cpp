@@ -72,18 +72,27 @@ void WinMMDevice::Release()
 
 void WinMMDevice::Play(unsigned char* FrameData, size_t SampleCount)
 {
+
 // HardwareInfo.nChannels
 // HardwareInfo.nBlockAlign
-short* data = (short*)FrameData;
+short* data16 = (short*)FrameData;
 for(int i=0; i<(SampleCount*HardwareInfo.nChannels); i+=HardwareInfo.nChannels)
 {
     // left
-    //data[i] = (short)(20*(i%32));
-    data[i] = 0;
+    data16[i] = (short)(20*(i%32)-300);
+    //data16[i] = 0;
 
     // right
-    data[i+1] = (short)(10*(i%64));
-    //data[i+1] = 0;
+    //data16[i+1] = (short)(10*(i%64));
+    //data16[i+1] = 0;
+}
+
+
+unsigned char* data8 = (unsigned char*)FrameData;
+for(int i=0; i<128; i+=HardwareInfo.nBlockAlign)
+{
+    int i16 = i/HardwareInfo.nChannels;
+    printf("Values: %hi, %hi [%u, %u], [%u, %u]\n", data16[i16], data16[i16+1], data8[i], data8[i+1], data8[i+2], data8[i+3]);
 }
 
 /*
