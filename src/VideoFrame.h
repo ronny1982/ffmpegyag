@@ -19,6 +19,7 @@ class VideoFrame
     public: int Width;
     public: int Height;
     public: GLint GLFormat;
+    public: PixelFormat PicFormat;
     public: wxString PicType;
     public: size_t DataSize;
     public: unsigned char* Data;

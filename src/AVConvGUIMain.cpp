@@ -635,6 +635,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     ComboBoxSubtitleCodec->SetValue(wxT("copy"));
     EnableDisableAVFormatControls();
 
+    RenderMapper = new TexturePanelMap();
     IsPlaying = false;
 }
 
@@ -646,6 +647,8 @@ AVConvGUIFrame::~AVConvGUIFrame()
         wxMilliSleep(500);
     }
 
+    wxDELETE(RenderMapper);
+    RenderMapper = NULL;
     WX_CLEAR_ARRAY(EncodingTasks);
     SelectedTaskIndices.Clear();
     //SelectedInputFilesIndex.Clear();
@@ -1624,28 +1627,34 @@ void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
     RenderSingleFrame();
 }
 
-bool AVConvGUIFrame::InitializeGL()
+bool AVConvGUIFrame::InitializeVideo()
 {
     // check if control is on display
     if(GLCanvasPreview->GetContext())
     {
-        int GlPanelWidth;// = GLCanvasPreview->GetSize().x;
-        int GlPanelHeight;// = GLCanvasPreview->GetSize().y;
-        GLCanvasPreview->GetClientSize(&GlPanelWidth, &GlPanelHeight);
+        RenderDevice = VideoDevice::Create(VideoDeviceGL);
+        if(RenderDevice)
+        {
+            Window* test = (Window*)RenderDevice->CreateWidget("OpenGL - GLX", 640, 360, false);
+            if(RenderDevice->Init((void*)test))
+            {
+                wxMilliSleep(250);
+            }
+        }
 
         // BOTTLENECK
         GLCanvasPreview->SetCurrent();
+        // TODO: implementation of glx not finished, keep wxGL interface
+        //RenderDevice->MakeCurrent();
 
-        glViewport(0, 0, GlPanelWidth, GlPanelHeight);
-
+        int CanvasWidth;// = GLCanvasPreview->GetSize().x;
+        int CanvasHeight;// = GLCanvasPreview->GetSize().y;
+        GLCanvasPreview->GetClientSize(&CanvasWidth, &CanvasHeight);
+        RenderDevice->SetViewport(0, 0, CanvasWidth, CanvasHeight);
         wxColour bc = GLCanvasPreview->GetBackgroundColour();
-        glClearColor(float(bc.Red())/255.0f, float(bc.Green())/255.0f, float(bc.Blue())/255.0f, 0.0f);
+        RenderDevice->SetClearColour(float(bc.Red())/255.0f, float(bc.Green())/255.0f, float(bc.Blue())/255.0f, 0.0f);
 
         // update the rendering mapper (video_texture -> gl_panel) depending on current task, videostream, aspectratio, framesize, crop,...
-        wxDELETE(RenderMapper);
-        RenderMapper = NULL;
-        RenderMapper = new TexturePanelMap();
-
         if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)
         {
             long SelectedTask = SelectedTaskIndices[0];
@@ -1691,8 +1700,8 @@ bool AVConvGUIFrame::InitializeGL()
                 EncodingHeight = VideoHeight-VideoCropTop-VideoCropBottom;
             }
 
-            RenderMapper->PanelTop = double(EncodingHeight) / double(GlPanelHeight);
-            RenderMapper->PanelRight = double(EncodingWidth) / double(GlPanelWidth);
+            RenderMapper->PanelTop = double(EncodingHeight) / double(CanvasHeight);
+            RenderMapper->PanelRight = double(EncodingWidth) / double(CanvasWidth);
             if(RenderMapper->PanelRight > RenderMapper->PanelTop)
             {
                 // scale height with width-ratio
@@ -1722,7 +1731,7 @@ bool AVConvGUIFrame::InitializeGL()
 
 void AVConvGUIFrame::RenderSingleFrame()
 {
-    if(!IsPlaying && InitializeGL())
+    if(!IsPlaying && InitializeVideo())
     {
         FileSegment* Segment = NULL;
         VideoFrame* Texture = NULL;
@@ -1761,49 +1770,18 @@ void AVConvGUIFrame::RenderSingleFrame()
         Texture = NULL; // dereference pointer (free is done by GOPBuffer)
         Segment = NULL;
 
-        CloseGL();
+        CloseVideo();
     }
 }
 
 void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, FileSegment* Segment)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    RenderDevice->Clear();
 
     if(Texture && Mapper)
     {
-        GLuint TexturePointer;
-        glGenTextures(1, &TexturePointer);
-        glBindTexture(GL_TEXTURE_2D, TexturePointer);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-        //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, Texture->GLFormat, Texture->Width, Texture->Height, 0, Texture->GLFormat, GL_UNSIGNED_BYTE, Texture->Data);
-
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, TexturePointer);
-
-        glBegin(GL_QUADS);
-            // top left
-            glTexCoord2d(Mapper->TextureLeft, Mapper->TextureTop);
-            glVertex2d(Mapper->PanelLeft, Mapper->PanelTop);
-            // top right
-            glTexCoord2d(Mapper->TextureRight, Mapper->TextureTop);
-            glVertex2d(Mapper->PanelRight, Mapper->PanelTop);
-            // bottom right
-            glTexCoord2d(Mapper->TextureRight, Mapper->TextureBottom);
-            glVertex2d(Mapper->PanelRight, Mapper->PanelBottom);
-            // bottom left
-            glTexCoord2d(Mapper->TextureLeft, Mapper->TextureBottom);
-            glVertex2d(Mapper->PanelLeft, Mapper->PanelBottom);
-        glEnd();
-
-        glDisable(GL_TEXTURE_2D);
-        // this will not free memory of Texture->Data
-        glDeleteTextures(1, &TexturePointer);
+        // TODO: change VideoFrame to use AVFormat
+        RenderDevice->RenderTexture(Mapper, Texture->Width, Texture->Height, PIX_FMT_RGB24 /*Texture->GLFormat*/, Texture->Data);
 
         if(Segment)
         {
@@ -1815,18 +1793,12 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, F
             {
                 if(Texture->Timecode == To)
                 {
-                    glColor3f(1.0, 0.5, 0.0);
+                    RenderDevice->RenderTextureCross(Mapper, 1.0f, 0.5f, 0.0f, 0.0f);
                 }
                 else
                 {
-                    glColor3f(1.0, 0.0, 0.0);
+                    RenderDevice->RenderTextureCross(Mapper, 1.0f, 0.0f, 0.0f, 0.0f);
                 }
-                glBegin(GL_LINES);
-                    glVertex2d(Mapper->PanelLeft, Mapper->PanelTop);
-                    glVertex2d(Mapper->PanelRight, Mapper->PanelBottom);
-                    glVertex2d(Mapper->PanelRight, Mapper->PanelTop);
-                    glVertex2d(Mapper->PanelLeft, Mapper->PanelBottom);
-                glEnd();
             }
             else
             {
@@ -1843,16 +1815,7 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, F
                         {
                             ratio = (float)(Texture->Timecode - From) / (float)Segment->VideoFadeIn.GetDuration();
                         }
-                        glEnable(GL_BLEND);
-                        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-                        glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
-                        glBegin(GL_QUADS);
-                            glVertex2d(Mapper->PanelLeft, Mapper->PanelTop); // top left
-                            glVertex2d(Mapper->PanelRight, Mapper->PanelTop); // top right
-                            glVertex2d(Mapper->PanelRight, Mapper->PanelBottom); // bottom right
-                            glVertex2d(Mapper->PanelLeft, Mapper->PanelBottom); // bottom left
-                        glEnd();
-                        glDisable(GL_BLEND);
+                        RenderDevice->RenderTextureBlend(Mapper, 0.0f, 0.0f, 0.0f, (float)ratio);
                     }
                 }
 
@@ -1869,22 +1832,15 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, F
                         {
                             ratio = (float)(To - Texture->Timecode) / (float)Segment->VideoFadeOut.GetDuration();
                         }
-                        glEnable(GL_BLEND);
-                        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-                        glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
-                        glBegin(GL_QUADS);
-                            glVertex2d(Mapper->PanelLeft, Mapper->PanelTop); // top left
-                            glVertex2d(Mapper->PanelRight, Mapper->PanelTop); // top right
-                            glVertex2d(Mapper->PanelRight, Mapper->PanelBottom); // bottom right
-                            glVertex2d(Mapper->PanelLeft, Mapper->PanelBottom); // bottom left
-                        glEnd();
-                        glDisable(GL_BLEND);
+                        RenderDevice->RenderTextureBlend(Mapper, 0.0f, 0.0f, 0.0f, (float)ratio);
                     }
                 }
             }
         }
     }
 
+    RenderDevice->SwapBuffers();
+/*
     // BOTTLENECK (when double buffering is enabled)
     // TODO: windows currently requires double buffering
     #ifdef __WINDOWS__
@@ -1892,10 +1848,19 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, F
     #endif
     // glFlush(); // submit all gl commands in buffer for execution and continue
     glFinish(); // submit all gl commands in buffer for execution and wait until completed
+*/
 }
 
-void AVConvGUIFrame::CloseGL()
+void AVConvGUIFrame::CloseVideo()
 {
+    if(RenderDevice)
+    {
+printf("close video device\n");
+        RenderDevice->Release();
+        wxDELETE(RenderDevice);
+        RenderDevice = NULL;
+    }
+
     if(GLCanvasPreview->GetContext())
     {
         //printf("CloseGL()\n");
@@ -2001,7 +1966,7 @@ void AVConvGUIFrame::PlaybackMedia()
         StreamBuffer* VideoFrameBuffer = NULL;
         if(SelectedVideoStreamIndices.GetCount() == 1)
         {
-            if(InitializeGL())
+            if(InitializeVideo())
             {
                 VideoStreamIndex = SelectedVideoStreamIndices[0].StreamIndex;
                 VideoFrameBuffer = new StreamBuffer(FIFO, 30);
@@ -2138,7 +2103,7 @@ void AVConvGUIFrame::PlaybackMedia()
                 wxDELETE(buffer);
             }
             wxDELETE(VideoFrameBuffer);
-            CloseGL();
+            CloseVideo();
         }
 
         if(AudioFrameBuffer)

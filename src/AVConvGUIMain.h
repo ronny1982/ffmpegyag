@@ -252,6 +252,7 @@ class AVConvGUIFrame: public wxFrame
         wxMenu* MenuSegmentFilters;
 
         AudioDevice* SoundDevice;
+        VideoDevice* RenderDevice;
 
         bool IsPlaying;
         bool AbortEncoding;
@@ -289,13 +290,13 @@ private: void ShowSelectedIndices();
         // enable disable controls depending on the selected format
         private: void EnableDisableAVFormatControls();
         // initialize the render device
-        private: bool InitializeGL();
+        private: bool InitializeVideo();
         // initiaize the render device & render a single videoframe of current selected file, stream, timestamp
         private: void RenderSingleFrame();
         // draws a frame on the initialized render device
         private: void RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, FileSegment* Segment);
         // close the render device
-        private: void CloseGL();
+        private: void CloseVideo();
         // initialize the audio device
         private: bool InitializeAudio();
         // plays a frame on the initialized audio device

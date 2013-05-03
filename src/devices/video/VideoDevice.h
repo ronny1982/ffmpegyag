@@ -18,14 +18,12 @@ struct TexturePanelMap
 
 enum VideoDeviceType
 {
-    VideoDeviceWXGL, // OpenGL using wxGLCanvas (multi platform)
+    VideoDeviceGL,
     #ifdef __LINUX__
-    //VideoDeviceGLX, // OpenGL using GLX
+    //
     #endif
     #ifdef __WINDOWS__
-    //VideoDeviceWGL, // OpenGL using WGL
-    //VideoDeviceWD3D, // Direct3D using WinAPI
-    //VideoDeviceWXD3D, // Direct3D using wx::GetHWND
+    //VideoDeviceD3D,
     #endif
 };
 
@@ -38,13 +36,14 @@ class VideoDevice
     public: static VideoDevice* Create(VideoDeviceType Type);
 
     // interface functions
-    public: virtual void* InitWidget(const char* title, int width, int height, int fullscreen) = 0;
-    public: virtual bool InitContext(void* Widget) = 0;
-    public: virtual void ReleaseContext() = 0;
-    public: virtual void ReleaseWidget(void* Widget) = 0;
+    public: virtual void* CreateWidget(const char* title, int width, int height, bool fullscreen) = 0;
+    public: virtual bool Init(void* Widget) = 0;
+    public: virtual void Release() = 0;
+    public: virtual void MakeCurrent() = 0;
     public: virtual void SetViewport(int x, int y, int w, int h) = 0;
-    public: virtual void ClearColour(float red, float green, float blue, float alpha) = 0;
-    public: virtual void RenderTexture(TexturePanelMap* Mapper, int TextureWidth, int TextureHeight, AVPictureType TextureFormat, unsigned char* TextureData) = 0;
+    public: virtual void SetClearColour(float red, float green, float blue, float alpha) = 0;
+    public: virtual void Clear() = 0;
+    public: virtual void RenderTexture(TexturePanelMap* Mapper, int TextureWidth, int TextureHeight, PixelFormat TextureFormat, unsigned char* TextureData) = 0;
     public: virtual void RenderTextureCross(TexturePanelMap* Mapper, float red, float green, float blue, float alpha) = 0;
     public: virtual void RenderTextureBlend(TexturePanelMap* Mapper, float red, float green, float blue, float alpha) = 0;
     public: virtual void SwapBuffers() = 0;

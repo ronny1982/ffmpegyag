@@ -25,4 +25,5 @@ AudioDevice* AudioDevice::Create()
     #ifdef __WINDOWS__
     return (AudioDevice*)(new WinMMDevice());
     #endif
+    return NULL;
 }
