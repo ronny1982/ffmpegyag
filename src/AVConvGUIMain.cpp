@@ -1644,7 +1644,7 @@ bool AVConvGUIFrame::InitializeGL()
         // update the rendering mapper (video_texture -> gl_panel) depending on current task, videostream, aspectratio, framesize, crop,...
         wxDELETE(RenderMapper);
         RenderMapper = NULL;
-        RenderMapper = new TextureGLPanelMap();
+        RenderMapper = new TexturePanelMap();
 
         if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)
         {
@@ -1691,22 +1691,22 @@ bool AVConvGUIFrame::InitializeGL()
                 EncodingHeight = VideoHeight-VideoCropTop-VideoCropBottom;
             }
 
-            RenderMapper->GlPanelTop = double(EncodingHeight) / double(GlPanelHeight);
-            RenderMapper->GlPanelRight = double(EncodingWidth) / double(GlPanelWidth);
-            if(RenderMapper->GlPanelRight > RenderMapper->GlPanelTop)
+            RenderMapper->PanelTop = double(EncodingHeight) / double(GlPanelHeight);
+            RenderMapper->PanelRight = double(EncodingWidth) / double(GlPanelWidth);
+            if(RenderMapper->PanelRight > RenderMapper->PanelTop)
             {
                 // scale height with width-ratio
-                RenderMapper->GlPanelTop = RenderMapper->GlPanelTop / RenderMapper->GlPanelRight;
-                RenderMapper->GlPanelRight = 1.0;
+                RenderMapper->PanelTop = RenderMapper->PanelTop / RenderMapper->PanelRight;
+                RenderMapper->PanelRight = 1.0;
             }
             else
             {
                 // scale width with height-ratio
-                RenderMapper->GlPanelRight = RenderMapper->GlPanelRight / RenderMapper->GlPanelTop;
-                RenderMapper->GlPanelTop = 1.0;
+                RenderMapper->PanelRight = RenderMapper->PanelRight / RenderMapper->PanelTop;
+                RenderMapper->PanelTop = 1.0;
             }
-            RenderMapper->GlPanelBottom = -RenderMapper->GlPanelTop;
-            RenderMapper->GlPanelLeft = -RenderMapper->GlPanelRight;
+            RenderMapper->PanelBottom = -RenderMapper->PanelTop;
+            RenderMapper->PanelLeft = -RenderMapper->PanelRight;
 
             // calculate texture mapping area depending on crop
             // values are in uv representation (+0 to +1)
@@ -1765,7 +1765,7 @@ void AVConvGUIFrame::RenderSingleFrame()
     }
 }
 
-void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper, FileSegment* Segment)
+void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, FileSegment* Segment)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1789,16 +1789,16 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
         glBegin(GL_QUADS);
             // top left
             glTexCoord2d(Mapper->TextureLeft, Mapper->TextureTop);
-            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop);
+            glVertex2d(Mapper->PanelLeft, Mapper->PanelTop);
             // top right
             glTexCoord2d(Mapper->TextureRight, Mapper->TextureTop);
-            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelTop);
+            glVertex2d(Mapper->PanelRight, Mapper->PanelTop);
             // bottom right
             glTexCoord2d(Mapper->TextureRight, Mapper->TextureBottom);
-            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom);
+            glVertex2d(Mapper->PanelRight, Mapper->PanelBottom);
             // bottom left
             glTexCoord2d(Mapper->TextureLeft, Mapper->TextureBottom);
-            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelBottom);
+            glVertex2d(Mapper->PanelLeft, Mapper->PanelBottom);
         glEnd();
 
         glDisable(GL_TEXTURE_2D);
@@ -1822,10 +1822,10 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
                     glColor3f(1.0, 0.0, 0.0);
                 }
                 glBegin(GL_LINES);
-                    glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop);
-                    glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom);
-                    glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelTop);
-                    glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelBottom);
+                    glVertex2d(Mapper->PanelLeft, Mapper->PanelTop);
+                    glVertex2d(Mapper->PanelRight, Mapper->PanelBottom);
+                    glVertex2d(Mapper->PanelRight, Mapper->PanelTop);
+                    glVertex2d(Mapper->PanelLeft, Mapper->PanelBottom);
                 glEnd();
             }
             else
@@ -1847,10 +1847,10 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
                         glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
                         glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
                         glBegin(GL_QUADS);
-                            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop); // top left
-                            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelTop); // top right
-                            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom); // bottom right
-                            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelBottom); // bottom left
+                            glVertex2d(Mapper->PanelLeft, Mapper->PanelTop); // top left
+                            glVertex2d(Mapper->PanelRight, Mapper->PanelTop); // top right
+                            glVertex2d(Mapper->PanelRight, Mapper->PanelBottom); // bottom right
+                            glVertex2d(Mapper->PanelLeft, Mapper->PanelBottom); // bottom left
                         glEnd();
                         glDisable(GL_BLEND);
                     }
@@ -1873,10 +1873,10 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper,
                         glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
                         glColor4f(0.0f, 0.0f, 0.0f, (float)ratio);
                         glBegin(GL_QUADS);
-                            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelTop); // top left
-                            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelTop); // top right
-                            glVertex2d(Mapper->GlPanelRight, Mapper->GlPanelBottom); // bottom right
-                            glVertex2d(Mapper->GlPanelLeft, Mapper->GlPanelBottom); // bottom left
+                            glVertex2d(Mapper->PanelLeft, Mapper->PanelTop); // top left
+                            glVertex2d(Mapper->PanelRight, Mapper->PanelTop); // top right
+                            glVertex2d(Mapper->PanelRight, Mapper->PanelBottom); // bottom right
+                            glVertex2d(Mapper->PanelLeft, Mapper->PanelBottom); // bottom left
                         glEnd();
                         glDisable(GL_BLEND);
                     }

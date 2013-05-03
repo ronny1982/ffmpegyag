@@ -34,23 +34,11 @@
 #include "EncodingTask.h"
 #include "AVConvSettings.h"
 #include "MediaStreamThread.h"
-#include "AudioDevice.h"
+#include "devices/audio/AudioDevice.h"
+#include "devices/video/VideoDevice.h"
 
 #define STR_DEFAULT wxT("default")
 #define STR_NO_CHANGE wxT("no change")
-
-struct TextureGLPanelMap
-{
-    double TextureTop;
-    double TextureBottom;
-    double TextureLeft;
-    double TextureRight;
-
-    double GlPanelTop;
-    double GlPanelBottom;
-    double GlPanelLeft;
-    double GlPanelRight;
-};
 
 struct SelectedStreamIndex
 {
@@ -267,7 +255,7 @@ class AVConvGUIFrame: public wxFrame
 
         bool IsPlaying;
         bool AbortEncoding;
-        TextureGLPanelMap* RenderMapper;
+        TexturePanelMap* RenderMapper;
         EncodingTaskArray EncodingTasks;
         // the list of currently highlighted tasks
         wxArrayLong SelectedTaskIndices;
@@ -305,7 +293,7 @@ private: void ShowSelectedIndices();
         // initiaize the render device & render a single videoframe of current selected file, stream, timestamp
         private: void RenderSingleFrame();
         // draws a frame on the initialized render device
-        private: void RenderFrame(VideoFrame* Texture, TextureGLPanelMap* Mapper, FileSegment* Segment);
+        private: void RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, FileSegment* Segment);
         // close the render device
         private: void CloseGL();
         // initialize the audio device
