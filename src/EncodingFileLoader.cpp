@@ -1,5 +1,5 @@
 #include "EncodingFileLoader.h"
-//#include <wx/msgdlg.h>
+
 static int CompareIndexEntry(IndexEntry** First, IndexEntry** Second)
 {
     return (int)((*First)->Timestamp - (*Second)->Timestamp);
@@ -36,8 +36,15 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                 wxProgressDialog* ProgressDialog = new wxProgressDialog(wxT("Building Index..."), File.GetFullName()/*File.GetFullPath()*/, progress_max, NULL, wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_SMOOTH/* | wxPD_CAN_ABORT*/);
 
                 AVStream* stream;
-                int64_t* StreamSize = new int64_t(pFormatCtx->nb_streams); //new int64_t[pFormatCtx->nb_streams];
-
+// FIXME: mutual exclusive for linux/windows
+#ifdef __LINUX__
+// works on linux, but won't compile on windows
+int64_t StreamSize[pFormatCtx->nb_streams];
+#endif
+#ifdef __WINDOWS__
+// works on windows but crash on linux
+int64_t* StreamSize = new int64_t(pFormatCtx->nb_streams); //new int64_t[pFormatCtx->nb_streams];
+#endif
                 // +++++++++++++++++++++++++++++
                 // +++ INIT STREAMS & CODECS +++
                 // +++++++++++++++++++++++++++++
@@ -427,8 +434,12 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
                 //}
 
                 MetaInfo = NULL;
+                #ifdef __WINDOWS__
+                // TODO: check if free() is working correctly
                 wxDELETEA(StreamSize);
                 StreamSize = NULL;
+                #endif
+
                 stream = NULL;
 
                 ProgressDialog->Close();

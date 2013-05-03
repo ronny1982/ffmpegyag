@@ -59,7 +59,13 @@ class AudioStream : public MediaStream
 
     public: int SampleRate;
     public: int ChannelCount;
+// FIXME: mutual exclusive for linux/windows ?
+    #ifdef __LINUX__
+    public: enum AVSampleFormat SampleFormat;
+    #endif
+    #ifdef __WINDOWS__
     public: AVSampleFormat SampleFormat;
+    #endif
     public: AudioSettings EncodingSettings;
 };
 
