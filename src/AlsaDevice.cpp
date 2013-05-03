@@ -43,9 +43,9 @@ void AlsaDevice::Release()
     }
 }
 
-void AlsaDevice::Play(unsigned char* Data, size_t SampleCount)
+void AlsaDevice::Play(unsigned char* FrameData, size_t SampleCount)
 {
-    snd_pcm_writei(Device, Data, SampleCount);
+    snd_pcm_writei(Device, FrameData, SampleCount);
 }
 
 snd_pcm_format_t AlsaDevice::GetAlsaFormat(AVSampleFormat Format)

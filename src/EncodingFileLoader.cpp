@@ -1015,6 +1015,14 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                             // NOTE: frame duration guessed by samplerate
                             AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), (int64_t)(1000 * pAudioFrameSource->nb_samples / pAudioCodecCtx->sample_rate), pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, (size_t)pAudioFrameSource->nb_samples);
                             snd->FillFrame(pAudioFrameSource->data[0]);
+// print 32 debug samples
+short* data16 = (short*)pAudioFrameSource->data[0];
+unsigned char* data8 = (unsigned char*)pAudioFrameSource->data[0];
+for(int i=0; i<128; i+=4)
+{
+    int i16 = i/2;
+    printf("Values: %hi, %hi [%u, %u], [%u, %u]\n", data16[i16], data16[i16+1], data8[i], data8[i+1], data8[i+2], data8[i+3]);
+}
                             while(*DoStream && AudioFrameBuffer && AudioFrameBuffer->IsFull())
                             {
                                 wxMilliSleep(10);
