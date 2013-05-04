@@ -58,8 +58,8 @@ void WXGLDevice::SwapBuffers()
     // FIXME: only swap when doublebuffering is enabled!
     // has SwapBuffer any negative effect on singlebuffering anyway?
     // create benchmark
-    #ifdef __WINDOWS__
+    //#ifdef __WINDOWS__
     widget->SwapBuffers();
-    #endif
+    //#endif
     GLDevice::SwapBuffers();
 }
