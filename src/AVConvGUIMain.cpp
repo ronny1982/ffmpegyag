@@ -635,6 +635,8 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     ComboBoxSubtitleCodec->SetValue(wxT("copy"));
     EnableDisableAVFormatControls();
 
+    // TODO: use GLX instead of WXGL
+    RenderDevice = VideoDevice::Create(VideoDeviceWX);
     RenderMapper = new TexturePanelMap();
     IsPlaying = false;
 }
@@ -646,9 +648,16 @@ AVConvGUIFrame::~AVConvGUIFrame()
         IsPlaying = false;
         wxMilliSleep(500);
     }
-
-    wxDELETE(RenderMapper);
-    RenderMapper = NULL;
+    if(RenderDevice)
+    {
+        wxDELETE(RenderDevice);
+        RenderDevice = NULL;
+    }
+    if(RenderMapper)
+    {
+        wxDELETE(RenderMapper);
+        RenderMapper = NULL;
+    }
     WX_CLEAR_ARRAY(EncodingTasks);
     SelectedTaskIndices.Clear();
     //SelectedInputFilesIndex.Clear();
@@ -1630,13 +1639,6 @@ void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 bool AVConvGUIFrame::InitializeVideo()
 {
 /*
-// TODO: implementation of glx not finished, keep wxGL interface
-if(!GLCanvasPreview->GetContext())
-{
-    return false;
-}
-
-    RenderDevice = VideoDevice::Create(VideoDeviceGL);
     if(RenderDevice)
     {
         // FIXME: convert wxGLCancvas to XWindow
@@ -1650,9 +1652,10 @@ if(!GLCanvasPreview->GetContext())
             RenderDevice->SwapBuffers();
             wxMilliSleep(250);
 */
-    RenderDevice = VideoDevice::Create(VideoDeviceWX);
+
     if(RenderDevice)
     {
+        // TODO: when using GLX we need to convert wxGLCamvas to XWindow
         if(RenderDevice->Init((void*)GLCanvasPreview))
         {
             int CanvasWidth;// = GLCanvasPreview->GetSize().x;
@@ -1865,15 +1868,7 @@ void AVConvGUIFrame::CloseVideo()
 {
     if(RenderDevice)
     {
-printf("close video device\n");
         RenderDevice->Release();
-        wxDELETE(RenderDevice);
-        RenderDevice = NULL;
-    }
-
-    if(GLCanvasPreview->GetContext())
-    {
-        //printf("CloseGL()\n");
     }
 }
 
