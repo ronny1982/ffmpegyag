@@ -1629,102 +1629,115 @@ void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 
 bool AVConvGUIFrame::InitializeVideo()
 {
-    // check if control is on display
-    if(GLCanvasPreview->GetContext())
+
+// TODO: implementation of glx not finished, keep wxGL interface
+if(!GLCanvasPreview->GetContext())
+{
+    return false;
+}
+
+    RenderDevice = VideoDevice::Create(VideoDeviceGL);
+    if(RenderDevice)
     {
-        RenderDevice = VideoDevice::Create(VideoDeviceGL);
-        if(RenderDevice)
+        // FIXME: convert wxGLCancvas to XWindow
+        Window* test = (Window*)RenderDevice->CreateWidget("OpenGL - GLX", 640, 360, false);
+        if(RenderDevice->Init((void*)test))
         {
-            Window* test = (Window*)RenderDevice->CreateWidget("OpenGL - GLX", 640, 360, false);
-            if(RenderDevice->Init((void*)test))
+            RenderDevice->MakeCurrent();
+            RenderDevice->SetViewport(0, 0, 640, 360);
+            RenderDevice->SetClearColour(1.0f, 0.0f, 0.0f, 0.0f);
+            RenderDevice->Clear();
+            RenderDevice->SwapBuffers();
+            wxMilliSleep(250);
+
+
+            int CanvasWidth;// = GLCanvasPreview->GetSize().x;
+            int CanvasHeight;// = GLCanvasPreview->GetSize().y;
+            GLCanvasPreview->GetClientSize(&CanvasWidth, &CanvasHeight);
+            wxColour bc = GLCanvasPreview->GetBackgroundColour();
+
+
+// BOTTLENECK
+// TODO: implementation of glx not finished, keep wxGL interface
+//GLCanvasPreview->SetCurrent();
+RenderDevice->MakeCurrent();
+
+            RenderDevice->SetViewport(0, 0, CanvasWidth, CanvasHeight);
+            RenderDevice->SetClearColour(float(bc.Red())/255.0f, float(bc.Green())/255.0f, float(bc.Blue())/255.0f, 0.0f);
+
+
+            // update the rendering mapper (video_texture -> gl_panel) depending on current task, videostream, aspectratio, framesize, crop,...
+            if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)
             {
-                wxMilliSleep(250);
-            }
-        }
+                long SelectedTask = SelectedTaskIndices[0];
+                long SelectedStream = SelectedVideoStreamIndices[0].StreamIndex;
+                VideoStream* vStream = EncodingTasks[SelectedTask]->InputFiles[0]->VideoStreams[SelectedStream];
 
-        // BOTTLENECK
-        GLCanvasPreview->SetCurrent();
-        // TODO: implementation of glx not finished, keep wxGL interface
-        //RenderDevice->MakeCurrent();
+                int VideoWidth = vStream->Width;
+                int VideoHeight = vStream->Height;
+                int VideoCropTop = SpinCtrlTop->GetValue();
+                int VideoCropBottom = SpinCtrlBottom->GetValue();
+                int VideoCropLeft = SpinCtrlLeft->GetValue();
+                int VideoCropRight = SpinCtrlRight->GetValue();
 
-        int CanvasWidth;// = GLCanvasPreview->GetSize().x;
-        int CanvasHeight;// = GLCanvasPreview->GetSize().y;
-        GLCanvasPreview->GetClientSize(&CanvasWidth, &CanvasHeight);
-        RenderDevice->SetViewport(0, 0, CanvasWidth, CanvasHeight);
-        wxColour bc = GLCanvasPreview->GetBackgroundColour();
-        RenderDevice->SetClearColour(float(bc.Red())/255.0f, float(bc.Green())/255.0f, float(bc.Blue())/255.0f, 0.0f);
-
-        // update the rendering mapper (video_texture -> gl_panel) depending on current task, videostream, aspectratio, framesize, crop,...
-        if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)
-        {
-            long SelectedTask = SelectedTaskIndices[0];
-            long SelectedStream = SelectedVideoStreamIndices[0].StreamIndex;
-            VideoStream* vStream = EncodingTasks[SelectedTask]->InputFiles[0]->VideoStreams[SelectedStream];
-
-            int VideoWidth = vStream->Width;
-            int VideoHeight = vStream->Height;
-            int VideoCropTop = SpinCtrlTop->GetValue();
-            int VideoCropBottom = SpinCtrlBottom->GetValue();
-            int VideoCropLeft = SpinCtrlLeft->GetValue();
-            int VideoCropRight = SpinCtrlRight->GetValue();
-
-            int EncodingWidth;
-            int EncodingHeight;
-            if(!vStream->EncodingSettings.AspectRatio.IsEmpty())
-            {
-                double ar;
-                if(vStream->EncodingSettings.AspectRatio.Find(wxT(":")) > -1)
+                int EncodingWidth;
+                int EncodingHeight;
+                if(!vStream->EncodingSettings.AspectRatio.IsEmpty())
                 {
-                    double ar_num;
-                    double ar_den;
-                    vStream->EncodingSettings.AspectRatio.BeforeFirst(':').ToDouble(&ar_num);
-                    vStream->EncodingSettings.AspectRatio.AfterLast(':').ToDouble(&ar_den);
+                    double ar;
+                    if(vStream->EncodingSettings.AspectRatio.Find(wxT(":")) > -1)
+                    {
+                        double ar_num;
+                        double ar_den;
+                        vStream->EncodingSettings.AspectRatio.BeforeFirst(':').ToDouble(&ar_num);
+                        vStream->EncodingSettings.AspectRatio.AfterLast(':').ToDouble(&ar_den);
 
-                    ar = ar_num / ar_den;
+                        ar = ar_num / ar_den;
+                    }
+                    else
+                    {
+                        vStream->EncodingSettings.AspectRatio.ToDouble(&ar);
+                    }
+                    EncodingHeight = 720;
+                    EncodingWidth = (int)(EncodingHeight * ar);
+                }
+                else if(!vStream->EncodingSettings.FrameSize.IsEmpty())
+                {
+                    EncodingWidth = wxAtoi(vStream->EncodingSettings.FrameSize.BeforeFirst('x'));
+                    EncodingHeight = wxAtoi(vStream->EncodingSettings.FrameSize.AfterLast('x'));
                 }
                 else
                 {
-                    vStream->EncodingSettings.AspectRatio.ToDouble(&ar);
+                    EncodingWidth = VideoWidth-VideoCropLeft-VideoCropRight;
+                    EncodingHeight = VideoHeight-VideoCropTop-VideoCropBottom;
                 }
-                EncodingHeight = 720;
-                EncodingWidth = (int)(EncodingHeight * ar);
-            }
-            else if(!vStream->EncodingSettings.FrameSize.IsEmpty())
-            {
-                EncodingWidth = wxAtoi(vStream->EncodingSettings.FrameSize.BeforeFirst('x'));
-                EncodingHeight = wxAtoi(vStream->EncodingSettings.FrameSize.AfterLast('x'));
-            }
-            else
-            {
-                EncodingWidth = VideoWidth-VideoCropLeft-VideoCropRight;
-                EncodingHeight = VideoHeight-VideoCropTop-VideoCropBottom;
-            }
 
-            RenderMapper->PanelTop = double(EncodingHeight) / double(CanvasHeight);
-            RenderMapper->PanelRight = double(EncodingWidth) / double(CanvasWidth);
-            if(RenderMapper->PanelRight > RenderMapper->PanelTop)
-            {
-                // scale height with width-ratio
-                RenderMapper->PanelTop = RenderMapper->PanelTop / RenderMapper->PanelRight;
-                RenderMapper->PanelRight = 1.0;
-            }
-            else
-            {
-                // scale width with height-ratio
-                RenderMapper->PanelRight = RenderMapper->PanelRight / RenderMapper->PanelTop;
-                RenderMapper->PanelTop = 1.0;
-            }
-            RenderMapper->PanelBottom = -RenderMapper->PanelTop;
-            RenderMapper->PanelLeft = -RenderMapper->PanelRight;
+                RenderMapper->PanelTop = double(EncodingHeight) / double(CanvasHeight);
+                RenderMapper->PanelRight = double(EncodingWidth) / double(CanvasWidth);
+                if(RenderMapper->PanelRight > RenderMapper->PanelTop)
+                {
+                    // scale height with width-ratio
+                    RenderMapper->PanelTop = RenderMapper->PanelTop / RenderMapper->PanelRight;
+                    RenderMapper->PanelRight = 1.0;
+                }
+                else
+                {
+                    // scale width with height-ratio
+                    RenderMapper->PanelRight = RenderMapper->PanelRight / RenderMapper->PanelTop;
+                    RenderMapper->PanelTop = 1.0;
+                }
+                RenderMapper->PanelBottom = -RenderMapper->PanelTop;
+                RenderMapper->PanelLeft = -RenderMapper->PanelRight;
 
-            // calculate texture mapping area depending on crop
-            // values are in uv representation (+0 to +1)
-            RenderMapper->TextureTop = double(VideoCropTop) / double(VideoHeight);
-            RenderMapper->TextureBottom = double(VideoHeight-VideoCropBottom) / double(VideoHeight);
-            RenderMapper->TextureLeft = double(VideoCropLeft) / double(VideoWidth);
-            RenderMapper->TextureRight = double(VideoWidth-VideoCropRight) / double(VideoWidth);
+                // calculate texture mapping area depending on crop
+                // values are in uv representation (+0 to +1)
+                RenderMapper->TextureTop = double(VideoCropTop) / double(VideoHeight);
+                RenderMapper->TextureBottom = double(VideoHeight-VideoCropBottom) / double(VideoHeight);
+                RenderMapper->TextureLeft = double(VideoCropLeft) / double(VideoWidth);
+                RenderMapper->TextureRight = double(VideoWidth-VideoCropRight) / double(VideoWidth);
+            }
+            return true;
         }
-        return true;
     }
     return false;
 }

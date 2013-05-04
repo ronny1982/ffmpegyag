@@ -91,7 +91,7 @@ printf("vi->class = %i\n", vi->c_class);
 
     //glEnable(GL_DEPTH_TEST);
 
-    return false;
+    return true;
 }
 
 void GLXDevice::Release()

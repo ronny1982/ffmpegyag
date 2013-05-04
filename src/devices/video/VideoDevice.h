@@ -19,6 +19,7 @@ struct TexturePanelMap
 enum VideoDeviceType
 {
     VideoDeviceGL,
+    VideoDeviceWX,
     #ifdef __LINUX__
     //
     #endif

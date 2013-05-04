@@ -6,6 +6,7 @@
 #ifdef __WINDOWS__
 #include "WGLDevice.h"
 #endif
+#include "WXGLDevice.h"
 
 VideoDevice::VideoDevice()
 {
@@ -28,6 +29,10 @@ VideoDevice* VideoDevice::Create(VideoDeviceType Type)
         #ifdef __WINDOWS__
         return (VideoDevice*)(new WGLDevice());
         #endif
+    }
+    if(Type == VideoDeviceWX)
+    {
+        return (VideoDevice*)(new WXGLDevice());
     }
     return NULL;
 }

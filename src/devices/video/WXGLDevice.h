@@ -1,16 +1,14 @@
-#ifndef GLXDEVICE_H
-#define GLXDEVICE_H
+#ifndef WXGLDEVICE_H
+#define WXGLDEVICE_H
 
 #include "GLDevice.h"
+#include <wx/glcanvas.h>
 
-#ifdef __LINUX__
-
-#include <GL/glx.h>
-
-class GLXDevice : GLDevice
+// extra class espacially for wxWidgets glCanvas support
+class WXGLDevice : GLDevice
 {
-    public: GLXDevice();
-    public: ~GLXDevice();
+    public: WXGLDevice();
+    public: ~WXGLDevice();
 
     public: void* CreateWidget(const char* title, int width, int height, bool fullscreen);
     public: bool Init(void* Widget);
@@ -19,11 +17,7 @@ class GLXDevice : GLDevice
     // extend swap buffers from gl base class
     public: void SwapBuffers();
 
-    private: Display* display;
-    private: Window* widget;
-    private: GLXContext* context;
+    private: wxGLCanvas* widget;
 };
 
-#endif // LINUX
-
-#endif // GLXDEVICE_H
+#endif // WXGLDEVICE_H
