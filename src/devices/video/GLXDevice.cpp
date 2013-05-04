@@ -34,14 +34,20 @@ void* GLXDevice::CreateWidget(const char* title, int width, int height, bool ful
 void GLXDevice::DestroyWidget(void* Widget)
 {
     // TODO: destroy
-    if(Widget)
+    Window* tmp = (Window*)Widget;
+    if(tmp)
     {
+printf("valid widget\n");
         if(!display)
         {
+printf("create default display\n");
             display = XOpenDisplay(NULL);
         }
-        XDestroyWindow(display, *widget);
-        widget = NULL;
+printf("destroy widget\n");
+        XDestroyWindow(display, *tmp);
+        tmp = NULL;
+        Widget = NULL;
+printf("destroyed\n");
     }
 }
 

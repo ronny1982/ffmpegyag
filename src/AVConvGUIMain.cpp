@@ -635,8 +635,42 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     ComboBoxSubtitleCodec->SetValue(wxT("copy"));
     EnableDisableAVFormatControls();
 
+// UNITTEST for GLX
+//{
+    #ifdef __LINUX__
+    RenderDevice = VideoDevice::Create(VideoDeviceGL);
+    if(RenderDevice)
+    {
+        void* test = RenderDevice->CreateWidget("OpenGL - GLX", 640, 360, false);
+        if(RenderDevice->Init(test))
+        {
+            RenderDevice->MakeCurrent();
+            RenderDevice->SetViewport(0, 0, 640, 360);
+            RenderDevice->SetClearColour(0.0f, 0.0f, 1.0f, 0.0f);
+            RenderDevice->Clear();
+            RenderDevice->SwapBuffers();
+            wxMilliSleep(500);
+        }
+        RenderDevice->Release();
+        RenderDevice->DestroyWidget(test);
+        // RenderDevice->widget is also destroyed
+        if(test)
+        {
+            wxMessageBox(wxT("Destroy Failed!"));
+        }
+        wxDELETE(RenderDevice);
+        RenderDevice = NULL;
+    }
+    #endif
+//}
     // TODO: use GLX instead of WXGL
     RenderDevice = VideoDevice::Create(VideoDeviceWX);
+    if(!RenderDevice || !RenderDevice->Init((void*)GLCanvasPreview))
+    {
+wxMessageBox(_("fail"));
+        wxDELETE(RenderDevice);
+        RenderDevice = NULL;
+    }
     RenderMapper = new TexturePanelMap();
     IsPlaying = false;
 }
@@ -650,6 +684,7 @@ AVConvGUIFrame::~AVConvGUIFrame()
     }
     if(RenderDevice)
     {
+        RenderDevice->Release();
         wxDELETE(RenderDevice);
         RenderDevice = NULL;
     }
@@ -1638,26 +1673,11 @@ void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 
 bool AVConvGUIFrame::InitializeVideo()
 {
-/*
-    if(RenderDevice)
-    {
-        // FIXME: convert wxGLCancvas to XWindow
-        Window* test = (Window*)RenderDevice->CreateWidget("OpenGL - GLX", 640, 360, false);
-        if(RenderDevice->Init((void*)test))
-        {
-            RenderDevice->MakeCurrent();
-            RenderDevice->SetViewport(0, 0, 640, 360);
-            RenderDevice->SetClearColour(1.0f, 0.0f, 0.0f, 0.0f);
-            RenderDevice->Clear();
-            RenderDevice->SwapBuffers();
-            wxMilliSleep(250);
-*/
-
     if(RenderDevice)
     {
         // TODO: when using GLX we need to convert wxGLCamvas to XWindow
-        if(RenderDevice->Init((void*)GLCanvasPreview))
-        {
+//        if(RenderDevice->Init((void*)GLCanvasPreview))
+//        {
             int CanvasWidth;// = GLCanvasPreview->GetSize().x;
             int CanvasHeight;// = GLCanvasPreview->GetSize().y;
             GLCanvasPreview->GetClientSize(&CanvasWidth, &CanvasHeight);
@@ -1738,7 +1758,7 @@ bool AVConvGUIFrame::InitializeVideo()
                 RenderMapper->TextureRight = double(VideoWidth-VideoCropRight) / double(VideoWidth);
             }
             return true;
-        }
+ //       }
     }
     return false;
 }
@@ -1866,10 +1886,12 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, F
 
 void AVConvGUIFrame::CloseVideo()
 {
+    /*
     if(RenderDevice)
     {
         RenderDevice->Release();
     }
+    */
 }
 
 bool AVConvGUIFrame::InitializeAudio()
