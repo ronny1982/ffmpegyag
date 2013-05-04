@@ -663,14 +663,17 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     }
     #endif
 //}
+
+    // need to show, so glcanvas has valid context
+    this->Show();
     // TODO: use GLX instead of WXGL
     RenderDevice = VideoDevice::Create(VideoDeviceWX);
-    if(!RenderDevice || !RenderDevice->Init((void*)GLCanvasPreview))
+    if(RenderDevice && !RenderDevice->Init(GLCanvasPreview))
     {
-wxMessageBox(_("fail"));
         wxDELETE(RenderDevice);
         RenderDevice = NULL;
     }
+
     RenderMapper = new TexturePanelMap();
     IsPlaying = false;
 }
