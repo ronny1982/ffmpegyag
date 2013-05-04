@@ -635,15 +635,16 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     ComboBoxSubtitleCodec->SetValue(wxT("copy"));
     EnableDisableAVFormatControls();
 
-// UNITTEST for GLX
 //{
+    // UNIT_TEST for GLX
     #ifdef __LINUX__
     RenderDevice = VideoDevice::Create(VideoDeviceGL);
     if(RenderDevice)
     {
-        void* test = RenderDevice->CreateWidget("OpenGL - GLX", 640, 360, false);
+        Window* test = (Window*)RenderDevice->CreateWidget("OpenGL - GLX", 640, 360, false);
         if(RenderDevice->Init(test))
         {
+            // show window and initialize context for rendering
             RenderDevice->MakeCurrent();
             RenderDevice->SetViewport(0, 0, 640, 360);
             RenderDevice->SetClearColour(0.0f, 0.0f, 1.0f, 0.0f);
@@ -653,14 +654,16 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
         }
         RenderDevice->Release();
         RenderDevice->DestroyWidget(test);
+        test = NULL;
         // RenderDevice->widget is also destroyed
-        if(test)
-        {
-            wxMessageBox(wxT("Destroy Failed!"));
-        }
         wxDELETE(RenderDevice);
         RenderDevice = NULL;
     }
+    #endif
+
+    // UNIT_TEST for WGL
+    #ifdef __WINDOWS__
+    //
     #endif
 //}
 

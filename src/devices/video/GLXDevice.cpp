@@ -33,21 +33,22 @@ void* GLXDevice::CreateWidget(const char* title, int width, int height, bool ful
 
 void GLXDevice::DestroyWidget(void* Widget)
 {
-    // TODO: destroy
     Window* tmp = (Window*)Widget;
     if(tmp)
     {
-printf("valid widget\n");
         if(!display)
         {
-printf("create default display\n");
             display = XOpenDisplay(NULL);
         }
-printf("destroy widget\n");
+        // test if internal widget is destroyed
+        if(tmp == widget)
+        {
+            // internal widget is same as widget requested for destruction
+            widget = NULL;
+        }
         XDestroyWindow(display, *tmp);
         tmp = NULL;
-        Widget = NULL;
-printf("destroyed\n");
+        //Widget = NULL; // statement has no effect, pointer only valid in local scope
     }
 }
 

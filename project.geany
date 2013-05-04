@@ -25,14 +25,14 @@ long_line_column=72
 [files]
 current_page=1
 FILE_NAME_0=12264;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.h;0;4
-FILE_NAME_1=93799;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
-FILE_NAME_2=978;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FVideoDevice.h;0;4
-FILE_NAME_3=957;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLDevice.h;0;4
-FILE_NAME_4=3147;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLDevice.cpp;0;4
-FILE_NAME_5=183;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.h;0;4
-FILE_NAME_6=3381;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.cpp;0;4
-FILE_NAME_7=885;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FVideoFrame.h;0;4
-FILE_NAME_8=1454;C++;0;16;0;1;0;.%2Fsrc%2FVideoFrame.cpp;0;4
+FILE_NAME_1=47611;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
+FILE_NAME_2=827;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FVideoDevice.h;0;4
+FILE_NAME_3=333;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLDevice.h;0;4
+FILE_NAME_4=700;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLDevice.cpp;0;4
+FILE_NAME_5=279;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.h;0;4
+FILE_NAME_6=1182;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.cpp;0;4
+FILE_NAME_7=368;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FWXGLDevice.h;0;4
+FILE_NAME_8=419;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FWXGLDevice.cpp;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag
