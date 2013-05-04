@@ -7,9 +7,9 @@ VideoFrame::VideoFrame()
     Duration = int64_t(0);
     Width = 32;
     Height = 32;
-    GLFormat = GL_RGB;
+    PicFormat = PIX_FMT_RGB24;
     PicType = Libav::GetPicType(AV_PICTURE_TYPE_I);
-    DataSize = avpicture_get_size(PIX_FMT_RGB24, Width, Height);
+    DataSize = avpicture_get_size(PicFormat, Width, Height);
     Data = (unsigned char*)av_malloc(DataSize);
     // black frame
     for(size_t i=0; i<DataSize; i++)
@@ -25,7 +25,7 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     Width = FrameWidth;
     Height = FrameHeight;
-    GLFormat = Libav::GetGLFormat(FrameFormat);
+    PicFormat = FrameFormat;
     PicType = Libav::GetPicType(FrameType);
     DataSize = avpicture_get_size(FrameFormat, FrameWidth, FrameHeight);
     Data = (unsigned char*)av_malloc(DataSize);
@@ -38,9 +38,9 @@ VideoFrame::VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     Duration = FrameDuration;
     Width = FrameWidth;
     Height = FrameHeight;
-    GLFormat = GL_RGB;
+    PicFormat = PIX_FMT_RGB24;
     PicType = Libav::GetPicType(FrameType);
-    DataSize = avpicture_get_size(PIX_FMT_RGB24, FrameWidth, FrameHeight);
+    DataSize = avpicture_get_size(PicFormat, FrameWidth, FrameHeight);
     Data = (unsigned char*)av_malloc(DataSize);
 
     for(size_t i=0; i<DataSize; i+=3)

@@ -18,7 +18,6 @@ class VideoFrame
     public: int64_t Duration; // in milliseconds
     public: int Width;
     public: int Height;
-    public: GLint GLFormat;
     public: PixelFormat PicFormat;
     public: wxString PicType;
     public: size_t DataSize;

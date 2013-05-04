@@ -23,18 +23,16 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=3
+current_page=1
 FILE_NAME_0=12264;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.h;0;4
-FILE_NAME_1=87554;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
-FILE_NAME_2=373;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.h;0;4
-FILE_NAME_3=1920;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.cpp;0;4
-FILE_NAME_4=277;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FWGLDevice.h;0;4
-FILE_NAME_5=114;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FWGLDevice.cpp;0;4
-FILE_NAME_6=2090;C;0;16;0;1;0;%2Fhome%2Fronny%2FDesktop%2Fopengl%2Fquad%2Fquad.c;0;4
-FILE_NAME_7=0;C;0;16;0;1;0;%2Fhome%2Fronny%2FDesktop%2FwxWidgets-2.8.12%2Finclude%2Fwx%2Fgtk%2Fglcanvas.h;0;4
-FILE_NAME_8=3319;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDesktop%2FwxWidgets-2.8.12%2Fsrc%2Fgtk%2Fglcanvas.cpp;0;4
-FILE_NAME_9=8927;C;0;16;0;1;0;%2Fusr%2Finclude%2FX11%2FXlib.h;0;4
-FILE_NAME_10=15218;C;0;16;0;1;0;%2Fusr%2Finclude%2FX11%2FXutil.h;0;4
+FILE_NAME_1=93799;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
+FILE_NAME_2=978;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FVideoDevice.h;0;4
+FILE_NAME_3=957;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLDevice.h;0;4
+FILE_NAME_4=3147;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLDevice.cpp;0;4
+FILE_NAME_5=183;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.h;0;4
+FILE_NAME_6=3381;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.cpp;0;4
+FILE_NAME_7=885;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FVideoFrame.h;0;4
+FILE_NAME_8=1454;C++;0;16;0;1;0;.%2Fsrc%2FVideoFrame.cpp;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag

@@ -1780,8 +1780,7 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, F
 
     if(Texture && Mapper)
     {
-        // TODO: change VideoFrame to use AVFormat
-        RenderDevice->RenderTexture(Mapper, Texture->Width, Texture->Height, PIX_FMT_RGB24 /*Texture->GLFormat*/, Texture->Data);
+        RenderDevice->RenderTexture(Mapper, Texture->Width, Texture->Height, Texture->PicFormat, Texture->Data);
 
         if(Segment)
         {
