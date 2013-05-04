@@ -16,6 +16,15 @@ void* WXGLDevice::CreateWidget(const char* title, int width, int height, bool fu
     return NULL;
 }
 
+void WXGLDevice::DestroyWidget(void* Widget)
+{
+    Release();
+    wxGLCanvas* tmp = (wxGLCanvas*)Widget;
+    wxDELETE(tmp);
+    tmp = NULL;
+    Widget = NULL;
+}
+
 bool WXGLDevice::Init(void* Widget)
 {
     widget = (wxGLCanvas*)Widget;
@@ -23,7 +32,6 @@ bool WXGLDevice::Init(void* Widget)
     {
         return true;
     }
-
     return false;
 }
 

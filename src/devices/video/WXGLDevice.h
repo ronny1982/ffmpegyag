@@ -11,6 +11,7 @@ class WXGLDevice : GLDevice
     public: ~WXGLDevice();
 
     public: void* CreateWidget(const char* title, int width, int height, bool fullscreen);
+    public: void DestroyWidget(void* Widget);
     public: bool Init(void* Widget);
     public: void Release();
     public: void MakeCurrent();

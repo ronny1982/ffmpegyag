@@ -1629,7 +1629,7 @@ void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 
 bool AVConvGUIFrame::InitializeVideo()
 {
-
+/*
 // TODO: implementation of glx not finished, keep wxGL interface
 if(!GLCanvasPreview->GetContext())
 {
@@ -1649,22 +1649,20 @@ if(!GLCanvasPreview->GetContext())
             RenderDevice->Clear();
             RenderDevice->SwapBuffers();
             wxMilliSleep(250);
-
-
+*/
+    RenderDevice = VideoDevice::Create(VideoDeviceWX);
+    if(RenderDevice)
+    {
+        if(RenderDevice->Init((void*)GLCanvasPreview))
+        {
             int CanvasWidth;// = GLCanvasPreview->GetSize().x;
             int CanvasHeight;// = GLCanvasPreview->GetSize().y;
             GLCanvasPreview->GetClientSize(&CanvasWidth, &CanvasHeight);
             wxColour bc = GLCanvasPreview->GetBackgroundColour();
 
-
-// BOTTLENECK
-// TODO: implementation of glx not finished, keep wxGL interface
-//GLCanvasPreview->SetCurrent();
-RenderDevice->MakeCurrent();
-
+            RenderDevice->MakeCurrent();
             RenderDevice->SetViewport(0, 0, CanvasWidth, CanvasHeight);
             RenderDevice->SetClearColour(float(bc.Red())/255.0f, float(bc.Green())/255.0f, float(bc.Blue())/255.0f, 0.0f);
-
 
             // update the rendering mapper (video_texture -> gl_panel) depending on current task, videostream, aspectratio, framesize, crop,...
             if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)

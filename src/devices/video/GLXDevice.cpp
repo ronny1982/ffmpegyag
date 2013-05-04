@@ -23,16 +23,26 @@ void* GLXDevice::CreateWidget(const char* title, int width, int height, bool ful
     XSetWindowAttributes swa;
     swa.colormap = XCreateColormap(display, x_window_root, x_visual_info->visual, AllocNone);
     swa.event_mask = ExposureMask | KeyPressMask;
-    Window* widget = new Window();
-    *widget = XCreateWindow(display, x_window_root, 0, 0, 640, 360, 0, x_visual_info->depth, InputOutput, x_visual_info->visual, CWColormap | CWEventMask, &swa);
-    XMapWindow(display, *widget);
-    XStoreName(display, *widget, "OpenGL - GLX");
-/*
-    context = new GLXContext();
-    *context = glXCreateContext(display, x_visual_info, NULL, GL_TRUE);
-    glXMakeCurrent(display, *widget, *context);
-*/
-    return widget;
+    Window* x_window_client = new Window();
+    *x_window_client = XCreateWindow(display, x_window_root, 0, 0, 640, 360, 0, x_visual_info->depth, InputOutput, x_visual_info->visual, CWColormap | CWEventMask, &swa);
+    XMapWindow(display, *x_window_client);
+    XStoreName(display, *x_window_client, "OpenGL - GLX");
+
+    return x_window_client;
+}
+
+void GLXDevice::DestroyWidget(void* Widget)
+{
+    // TODO: destroy
+    if(Widget)
+    {
+        if(!display)
+        {
+            display = XOpenDisplay(NULL);
+        }
+        XDestroyWindow(display, *widget);
+        widget = NULL;
+    }
 }
 
 bool GLXDevice::Init(void* Widget)
@@ -98,11 +108,14 @@ void GLXDevice::Release()
 {
     if(display)
     {
+        // widget belongs to the user, do not destroy !
+        /*
         if(widget)
         {
             XDestroyWindow(display, *widget);
             widget = NULL;
         }
+        */
         if(context)
         {
             glXMakeCurrent(display, None, NULL);

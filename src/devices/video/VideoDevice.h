@@ -38,6 +38,7 @@ class VideoDevice
 
     // interface functions
     public: virtual void* CreateWidget(const char* title, int width, int height, bool fullscreen) = 0;
+    public: virtual void DestroyWidget(void* Widget) = 0;
     public: virtual bool Init(void* Widget) = 0;
     public: virtual void Release() = 0;
     public: virtual void MakeCurrent() = 0;
