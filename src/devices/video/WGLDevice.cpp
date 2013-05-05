@@ -1,6 +1,6 @@
-#ifdef __WINDOWS__
-
 #include "WGLDevice.h"
+
+#ifdef __WINDOWS__
 
 WGLDevice::WGLDevice()
 {
@@ -18,6 +18,10 @@ void* WGLDevice::CreateWidget(const char* title, int width, int height, bool ful
     return widget;
 }
 
+void WGLDevice::DestroyWidget(void* Widget)
+{
+    //
+}
 bool WGLDevice::Init(void* Widget)
 {
     widget = (HDC)Widget;
@@ -42,4 +46,9 @@ void WGLDevice::MakeCurrent()
     wglMakeCurrent(widget, context);
 }
 
+void WGLDevice::SwapBuffers()
+{
+    //wglSwapuffer(widget, context);
+    GLDevice::SwapBuffers();
+}
 #endif // WINDOWS
