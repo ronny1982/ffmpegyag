@@ -55,11 +55,6 @@ void WXGLDevice::MakeCurrent()
 
 void WXGLDevice::SwapBuffers()
 {
-    // FIXME: only swap when doublebuffering is enabled!
-    // has SwapBuffer any negative effect on singlebuffering anyway?
-    // create benchmark
-    //#ifdef __WINDOWS__
-    widget->SwapBuffers();
-    //#endif
+    widget->SwapBuffers(); // SwapBuffer has no negative effect on single buffering (can always be used)
     GLDevice::SwapBuffers();
 }

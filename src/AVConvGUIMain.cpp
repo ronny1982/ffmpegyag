@@ -638,6 +638,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
 //{
     // UNIT_TEST for GLX
     #ifdef __LINUX__
+    /*
     RenderDevice = VideoDevice::Create(VideoDeviceGL);
     if(RenderDevice)
     {
@@ -659,6 +660,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
         wxDELETE(RenderDevice);
         RenderDevice = NULL;
     }
+    */
     #endif
 
     // UNIT_TEST for WGL

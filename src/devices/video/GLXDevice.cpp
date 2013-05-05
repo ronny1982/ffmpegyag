@@ -142,7 +142,7 @@ void GLXDevice::MakeCurrent()
 void GLXDevice::SwapBuffers()
 {
     glXSwapBuffers(display, *widget);
-    GLDevice::SwapBuffers();
+    GLDevice::SwapBuffers(); // must be used on single buffering & double buffering
 }
 
 #endif

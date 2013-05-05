@@ -23,16 +23,18 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=1
+current_page=8
 FILE_NAME_0=12264;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.h;0;4
-FILE_NAME_1=47611;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
+FILE_NAME_1=104724;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
 FILE_NAME_2=827;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FVideoDevice.h;0;4
 FILE_NAME_3=333;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLDevice.h;0;4
 FILE_NAME_4=700;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLDevice.cpp;0;4
 FILE_NAME_5=279;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.h;0;4
-FILE_NAME_6=1182;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.cpp;0;4
+FILE_NAME_6=3755;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FGLXDevice.cpp;0;4
 FILE_NAME_7=368;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FWXGLDevice.h;0;4
-FILE_NAME_8=419;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FWXGLDevice.cpp;0;4
+FILE_NAME_8=1174;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Fvideo%2FWXGLDevice.cpp;0;4
+FILE_NAME_9=8900;C++;0;16;0;1;0;.%2Fsrc%2FAudioFrame.cpp;0;4
+FILE_NAME_10=45917;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.cpp;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag
