@@ -179,7 +179,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     ListCtrlTasks->SetToolTip(_("List of all tasks that will be encoded. You can select\na single task for editing, or select multiple tasks for\nmass editing. Depending on the differences in the\nselected tasks, there might be some limitations in\nmass editing\n(i.e. tasks with different amount of audio tracks)."));
     FlexGridSizerJobList->Add(ListCtrlTasks, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
-    ButtonAddTask = new wxButton(this, ID_BUTTON3, _("Add Tasks(s)..."), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
+    ButtonAddTask = new wxButton(this, ID_BUTTON3, _("Add Task(s)..."), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
     ButtonAddTask->SetToolTip(_("Add new task(s) to the list.\nTIP: Added task(s) will be initialized with the current\nFFmpegYAG settings. If you want to add multiple files\nwith the same settings, it would be smart to make\nthe 'master' setting before you add the files ;)"));
     BoxSizer4->Add(ButtonAddTask, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     ButtonRemoveTask = new wxButton(this, ID_BUTTON4, _("Remove Task(s)"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON4"));
