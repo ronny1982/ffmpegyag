@@ -1,0 +1,37 @@
+ffmpegyag current
+
+ * live preview (video & audio playback)
+ * video/audio fade in/out filters
+ * segment processing (split)
+ * template support
+ * many bugs fixed
+
+ffmpegyag 0.6.0
+
+ * re-designed interface
+ * re-build codebase to support more sophisticated tasks
+   i.e. file segment processing, multiple stream processing, live preview, ...
+ * added linux support
+
+ffmpegyag 0.4.7
+
+ * bugfix release
+
+ffmpegyag 0.4.2
+
+ * added subtitle processing
+ * added some basic verification checks for commandline
+ * fixed error on invalid pts
+ * fixed decoding of preview video (flush buffer on each frame)
+ * fixed combobox / choicebox events
+ * fixed logfile bug
+ * preparation for frame type detection
+ * preparations for import export of joblist by context menu
+
+ffmpegyag 0.3.2
+
+ * added log file support with ffmpeg.exe output for each video in joblist
+
+ffmpegyag 0.3.0
+
+ * alpha test release
