@@ -18,8 +18,8 @@ void* GLXDevice::CreateWidget(const char* title, int width, int height, bool ful
 {
     display = XOpenDisplay(NULL);
     Window x_window_root = DefaultRootWindow(display);
-    GLint glxAttr[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, /*GLX_DOUBLEBUFFER,*/ None};
-    XVisualInfo* x_visual_info = glXChooseVisual(display, 0, glxAttr); // double buffering is very slow
+    GLint glxAttr[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
+    XVisualInfo* x_visual_info = glXChooseVisual(display, 0, glxAttr);
     XSetWindowAttributes swa;
     swa.colormap = XCreateColormap(display, x_window_root, x_visual_info->visual, AllocNone);
     swa.event_mask = ExposureMask | KeyPressMask;

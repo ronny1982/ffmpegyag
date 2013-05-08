@@ -212,20 +212,15 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     wxFont StaticText18Font(14,wxDEFAULT,wxFONTSTYLE_NORMAL,wxBOLD,false,wxEmptyString,wxFONTENCODING_DEFAULT);
     StaticText18->SetFont(StaticText18Font);
     FlexGridSizer4->Add(StaticText18, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    // speed hack: disable doublebuffer
     int GLCanvasAttributes_1[] = {
         WX_GL_RGBA,
-// TODO: windows currently requires double buffering
-#ifdef __WINDOWS__
         WX_GL_DOUBLEBUFFER,
-#endif
         WX_GL_DEPTH_SIZE,      0,
         WX_GL_STENCIL_SIZE,    0,
         0, 0 };
     GLCanvasPreview = new wxGLCanvas(this, ID_GLCANVAS1, wxDefaultPosition, wxDefaultSize, 0, _T("ID_GLCANVAS1"), GLCanvasAttributes_1);
     GLCanvasPreview->SetMinSize(wxSize(280,140));
     GLCanvasPreview->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW));
-//    GLCanvasPreview->SetDoubleBuffered(false);
     FlexGridSizer4->Add(GLCanvasPreview, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrlTime = new wxTextCtrl(this, ID_TEXTCTRL1, _("00:00:00.000 / 00:00:00.000 []"), wxDefaultPosition, wxDefaultSize, wxTE_CENTRE, wxDefaultValidator, _T("ID_TEXTCTRL1"));
     TextCtrlTime->Disable();
