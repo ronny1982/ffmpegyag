@@ -1875,16 +1875,9 @@ void AVConvGUIFrame::RenderFrame(VideoFrame* Texture, TexturePanelMap* Mapper, F
         }
     }
 
+    // in linux open terminal and type: export vblank_mode=0
+    // to disable vsync and get max. framerate
     RenderDevice->SwapBuffers();
-/*
-    // BOTTLENECK (when double buffering is enabled)
-    // TODO: windows currently requires double buffering
-    #ifdef __WINDOWS__
-    GLCanvasPreview->SwapBuffers(); // makes glFlush / glFinish obsolete
-    #endif
-    // glFlush(); // submit all gl commands in buffer for execution and continue
-    glFinish(); // submit all gl commands in buffer for execution and wait until completed
-*/
 }
 
 void AVConvGUIFrame::CloseVideo()
