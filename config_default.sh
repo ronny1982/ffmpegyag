@@ -4,17 +4,17 @@ PKGNAME="ffmpegyag"
 PKGVERSION="0.7.3"
 PKGSECTION="video"
 PKGAUTHOR="Ronny Wegener <wegener.ronny@gmail.com>"
-PKGHOMEAGE="http://ffmpegyag.googlecode.com"
+PKGHOMEPAGE="http://ffmpegyag.googlecode.com"
 PKGDEPENDS="ffmpeg"
 PKGDESCRIPTION="FFmpeg GUI based on wxGTK
  FFmpegYAG is a GUI for the popular FFmpeg audio/video encoding tool.
-
+ .
  Main features:
-
+ .
  + batch encoding
  + realtime preview
  + multi-stream processing
- + file/segment splitting"
+ + file/segment processing"
 
 SRCPATTERN="*.cpp"
 SRCDIR="src"
