@@ -11,18 +11,6 @@
 #include <wx/arrimpl.cpp>
 WX_DEFINE_OBJARRAY(SelectedStreamIndexArray);
 
-#ifdef __LINUX__
-#include <sys/time.h>
-int64_t TimeSpecMilliDiff(struct timespec StartTime, struct timespec EndTime)
-{
-    return (int64_t)(1000*(EndTime.tv_sec - StartTime.tv_sec) + (EndTime.tv_nsec - StartTime.tv_nsec)/1000000);
-}
-#endif
-#ifdef __WINDOWS__
-//#include <time.h>
-//#include <windows.h>
-#endif
-
 enum wxbuildinfoformat {
     short_f, long_f };
 
@@ -2014,15 +2002,7 @@ void AVConvGUIFrame::PlaybackMedia()
         thread->Run();
 
         // init clock
-        #ifdef __LINUX__
-        struct timespec StartTime;
-        struct timespec ClockTime;
-        clock_gettime(CLOCK_REALTIME, &StartTime);
-        #endif
-        #ifdef __WINDOWS__
-        // TODO: GetTickCount() has only resolution of ~16ms
         wxLongLong StartTime = wxGetLocalTimeMillis();
-        #endif
 
         while(IsPlaying)
         {
@@ -2032,14 +2012,7 @@ void AVConvGUIFrame::PlaybackMedia()
             }
 
             // update clock
-            #ifdef __LINUX__
-            clock_gettime(CLOCK_REALTIME, &ClockTime);
-            ReferenceClock = ReferenceStart + TimeSpecMilliDiff(StartTime, ClockTime);
-            #endif
-            #ifdef __WINDOWS__
-            // TODO: GetTickCount() has only resolution of ~16ms
             ReferenceClock = ReferenceStart + (int64_t)((wxGetLocalTimeMillis() - StartTime).ToLong());
-            #endif
 
             if(AudioFrameBuffer)
             {
@@ -2069,14 +2042,7 @@ void AVConvGUIFrame::PlaybackMedia()
             }
 
             // update clock
-            #ifdef __LINUX__
-            clock_gettime(CLOCK_REALTIME, &ClockTime);
-            ReferenceClock = ReferenceStart + TimeSpecMilliDiff(StartTime, ClockTime);
-            #endif
-            #ifdef __WINDOWS__
-            // TODO: GetTickCount() has only resolution of ~16ms
             ReferenceClock = ReferenceStart + (int64_t)((wxGetLocalTimeMillis() - StartTime).ToLong());
-            #endif
 
             if(VideoFrameBuffer)
             {
@@ -2111,13 +2077,6 @@ void AVConvGUIFrame::PlaybackMedia()
             wxYield();
         }
 
-        /* obsolete
-        while(thread->IsRunning())
-        {
-            wxMilliSleep(5);
-        }
-        thread->Delete();
-        */
         thread->Wait(); // same as thread->Delete(), but wait until thread is finished
         wxDELETE(thread);
 
