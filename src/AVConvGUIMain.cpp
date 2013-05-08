@@ -2030,7 +2030,7 @@ void AVConvGUIFrame::PlaybackMedia()
             {
                 SliderFrame->SetFocus();
             }
-/*
+
             // update clock
             #ifdef __LINUX__
             clock_gettime(CLOCK_REALTIME, &ClockTime);
@@ -2040,18 +2040,18 @@ void AVConvGUIFrame::PlaybackMedia()
             // TODO: GetTickCount() has only resolution of ~16ms
             ReferenceClock = ReferenceStart + (int64_t)((wxGetLocalTimeMillis() - StartTime).ToLong());
             #endif
-*/
+
             if(AudioFrameBuffer)
             {
                 if(!AudioFrameBuffer->IsEmpty())
                 {
                     AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull(false);
-if(true)
-//                    if(ReferenceClock >= Pulse->Timecode - 80) // preload audio frames 80ms
+//if(true)
+                    if(ReferenceClock >= Pulse->Timecode - 80) // preload audio frames 80ms
                     {
                         Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
-if(false) // disable sound for render benchmark (because this is a non async function that will wait until sound can be played)
-//                        if(1)
+//if(false) // disable sound for render benchmark (because this is a non async function that will wait until sound can be played)
+                        if(1)
                         {
                             RenderSound(Pulse, Segment);
                         }
@@ -2067,7 +2067,7 @@ if(false) // disable sound for render benchmark (because this is a non async fun
                     }
                 }
             }
-/*
+
             // update clock
             #ifdef __LINUX__
             clock_gettime(CLOCK_REALTIME, &ClockTime);
@@ -2077,18 +2077,18 @@ if(false) // disable sound for render benchmark (because this is a non async fun
             // TODO: GetTickCount() has only resolution of ~16ms
             ReferenceClock = ReferenceStart + (int64_t)((wxGetLocalTimeMillis() - StartTime).ToLong());
             #endif
-*/
+
             if(VideoFrameBuffer)
             {
                 if(!VideoFrameBuffer->IsEmpty())
                 {
                     VideoFrame* Texture = (VideoFrame*)VideoFrameBuffer->Pull(false);
-if(true)
-//                    if(ReferenceClock >= Texture->Timecode)
+//if(true)
+                    if(ReferenceClock >= Texture->Timecode)
                     {
                         Texture = (VideoFrame*)VideoFrameBuffer->Pull();
-if(true)
-//                        if(ReferenceClock <= Texture->Timecode + Texture->Duration)
+//if(true)
+                        if(ReferenceClock <= Texture->Timecode + Texture->Duration)
                         {
                             RenderFrame(Texture, RenderMapper, Segment);
                         }
