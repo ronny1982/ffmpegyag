@@ -980,6 +980,14 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                                 tex->FillFrame(pVideoFrameTarget->data[0]);
                                 while(*DoStream &&  VideoFrameBuffer && VideoFrameBuffer->IsFull())
                                 {
+                                    // when audio buffer becomes low (<25%), increase video buffer size
+                                    // so we can continue (and hopefully load new audio packets)
+                                    if(AudioFrameBuffer && (AudioFrameBuffer->GetSize() / AudioFrameBuffer->GetCount() > 4))
+                                    {
+                                        // increase video buffer by 50%
+                                        VideoFrameBuffer->Resize(VideoFrameBuffer->GetSize()*3/2);
+printf("VideoBuffer inreased to %lu\n", (long)VideoFrameBuffer->GetSize());
+                                    }
                                     wxMilliSleep(10);
                                 }
                                 if(VideoFrameBuffer)
@@ -1027,6 +1035,14 @@ for(int i=0; i<128; i+=4)
 */
                             while(*DoStream && AudioFrameBuffer && AudioFrameBuffer->IsFull())
                             {
+                                // when video buffer becomes low (<25%), increase audio buffer size
+                                // so we can continue (and hopefully load new video packets)
+                                if(VideoFrameBuffer && (VideoFrameBuffer->GetSize() / VideoFrameBuffer->GetCount() > 4))
+                                {
+                                    // increase audio buffer by 50%
+                                    AudioFrameBuffer->Resize(AudioFrameBuffer->GetSize()*3/2);
+printf("AudioBuffer inreased to %lu\n", (long)AudioFrameBuffer->GetSize());
+                                }
                                 wxMilliSleep(10);
                             }
                             if(AudioFrameBuffer)

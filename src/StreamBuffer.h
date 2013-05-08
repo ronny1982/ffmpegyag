@@ -24,13 +24,18 @@ class StreamBuffer
 
     public: bool IsEmpty();
     public: bool IsFull();
+    // returns the max. number of elements allowed in the queue
+    public: size_t GetSize();
+    // change the numbr of allowed items in the buffer
+    // making buffer smaller will not affect current number of items currently in queue,
+    // they will still be available for pull
+    public: void Resize(size_t NewSize);
     // append data to the queue -> data will be freed by Pull() recipient
     public: void Push(void* Data);
     // return pointer to the next data in queue
     // if Detach = true: detach data from the queue -> data needs to be freed by recipient
     // if Detach = false: keep data in queue -> data might be pulled and freed in the meantime by another recipient !!!
     public: void* Pull(bool Detach = true);
-    // returns pointer to the data, without deteaching it
     // returns the current number of elements in the queue
     public: size_t GetCount();
 };

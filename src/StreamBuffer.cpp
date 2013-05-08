@@ -41,6 +41,16 @@ bool StreamBuffer::IsFull()
     return true;
 }
 
+size_t StreamBuffer::GetSize()
+{
+    return Size;
+}
+
+void StreamBuffer::Resize(size_t NewSize)
+{
+    Size = NewSize;
+}
+
 void StreamBuffer::Push(void* Data)
 {
     if(!IsFull())
