@@ -11,10 +11,10 @@ PKGDESCRIPTION="FFmpeg GUI based on wxGTK
  .
  Main features:
  .
- + batch encoding
- + realtime preview
- + multi-stream processing
- + file/segment processing"
+ + batch encoding for multiple tasks
+ + realtime preview of video/audio
+ + multi-stream processing for video/audio/subtitles
+ + trim file to segments, with optional fade in/out filters"
 
 SRCPATTERN="*.cpp"
 SRCDIR="src"

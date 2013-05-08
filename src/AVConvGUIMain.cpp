@@ -2059,7 +2059,6 @@ void AVConvGUIFrame::PlaybackMedia()
                             RenderFrame(Texture, RenderMapper, Segment);
                         }
                         TextCtrlTime->SetValue(Libav::MilliToSMPTE(Texture->Timecode) + wxT(" / ") + Libav::MilliToSMPTE(efl->VideoStreams[VideoStreamIndex]->Duration) + wxT(" [") + Texture->PicType + wxT("]"));
-                        // TODO: check if this triggers render frame on windows
                         SliderFrame->SetValue(efl->GetFrameFromTimestampV(VideoStreamIndex, Texture->Timestamp));
                         wxDELETE(Texture);
                     }
