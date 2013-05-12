@@ -982,7 +982,7 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
                                 {
                                     // when audio buffer becomes low (<25%), increase video buffer size
                                     // so we can continue (and hopefully load new audio packets)
-                                    if(AudioFrameBuffer && (AudioFrameBuffer->GetSize() / AudioFrameBuffer->GetCount() > 4))
+                                    if(AudioFrameBuffer && (AudioFrameBuffer->GetCount() == 0 || AudioFrameBuffer->GetSize() / AudioFrameBuffer->GetCount() > 4))
                                     {
                                         // increase video buffer by 50%
                                         VideoFrameBuffer->Resize(VideoFrameBuffer->GetSize()*3/2);
@@ -1037,7 +1037,7 @@ for(int i=0; i<128; i+=4)
                             {
                                 // when video buffer becomes low (<25%), increase audio buffer size
                                 // so we can continue (and hopefully load new video packets)
-                                if(VideoFrameBuffer && (VideoFrameBuffer->GetSize() / VideoFrameBuffer->GetCount() > 4))
+                                if(VideoFrameBuffer && (VideoFrameBuffer->GetCount() == 0 || VideoFrameBuffer->GetSize() / VideoFrameBuffer->GetCount() > 4))
                                 {
                                     // increase audio buffer by 50%
                                     AudioFrameBuffer->Resize(AudioFrameBuffer->GetSize()*3/2);

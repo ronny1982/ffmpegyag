@@ -7,7 +7,7 @@ PKGAUTHOR="Ronny Wegener <wegener.ronny@gmail.com>"
 PKGHOMEPAGE="http://ffmpegyag.googlecode.com"
 PKGDEPENDS="ffmpeg"
 PKGDESCRIPTION="FFmpeg GUI based on wxGTK
- FFmpegYAG is a GUI for the popular FFmpeg audio/video encoding tool.
+ FFmpegYAG is an advanced GUI for the popular FFmpeg audio/video encoding tool
  .
  Main features:
  .
