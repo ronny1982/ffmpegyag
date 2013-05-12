@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=FFmpegYAG
+GenericName=FFmpegYAG - FFmpeg GUI
+Exec=ffmpegyag
+Icon=ffmpegyag
+Type=Application
+Categories=GTK;AudioVideo;

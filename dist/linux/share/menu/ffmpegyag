@@ -1,0 +1,6 @@
+?package(ffmpegyag): needs="X11" \
+                    section="Applications/Video" \
+                    title="FFmpegYAG" \
+                    longtitle="FFmpegYAG - FFmpeg GUI" \
+                    icon="/usr/share/pixmaps/ffmpegyag.xpm" \
+                    command="/usr/bin/ffmpegyag"
