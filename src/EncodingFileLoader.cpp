@@ -599,10 +599,36 @@ long EncodingFileLoader::SeekKeyFrameIndex(long VideoStreamIndex, long FrameInde
     return FrameIndex;
 }
 
-bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long KeyFrameIndex)
+// set the file pointer to the closest keyframe before the given timestamp
+bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStreamIndex, long KeyFrameIndex)
 {
-    unsigned int StreamID = VideoStreams[VideoStreamIndex]->ID;
-    IndexEntry* info = VideoStreams[VideoStreamIndex]->IndexEntries[KeyFrameIndex];
+    unsigned int StreamID;
+    IndexEntry* info;
+
+    if(VideoStreamIndex > -1)
+    {
+        StreamID = VideoStreams[VideoStreamIndex]->ID;
+        info = VideoStreams[VideoStreamIndex]->IndexEntries[KeyFrameIndex];
+
+        if(AudioStreamIndex > -1)
+        {
+            IndexEntry* aInfo = GetIndexEntryFromTimestampA(AudioStreamIndex, info->Timestamp);
+            if(info->Position > aInfo->Position)
+            {
+                StreamID = AudioStreams[AudioStreamIndex]->ID;
+                info = aInfo;
+            }
+        }
+    }
+    else if(AudioStreamIndex > -1)
+    {
+        StreamID = AudioStreams[AudioStreamIndex]->ID;
+        info = AudioStreams[AudioStreamIndex]->IndexEntries[KeyFrameIndex];
+    }
+    else
+    {
+        return false;
+    }
 
     // use index based search, if index is available or byte position of frame unavailable
     if(pFormatCtx->streams[StreamID]->nb_index_entries > 0 || info->Position < 0)
@@ -690,6 +716,49 @@ long EncodingFileLoader::GetFrameFromTimestampV(long VideoStreamIndex, int64_t T
     return result;
 }
 
+long EncodingFileLoader::GetFrameFromTimestampA(long AudioStreamIndex, int64_t Timestamp)
+{
+    long result = 0;
+
+    size_t StartIndex = 0;
+    size_t DivideIndex= 0;
+    size_t EndIndex = 0;
+
+    if(pFormatCtx && AudioStreamIndex < (long)AudioStreams.GetCount())
+    {
+        if(AudioStreams[AudioStreamIndex]->IndexEntries.GetCount() > 0)
+        {
+            StartIndex = 0;
+            EndIndex = AudioStreams[AudioStreamIndex]->IndexEntries.GetCount() - 1;
+
+            // divide & conquer until partition can not divided anymore
+            while(StartIndex+1 < EndIndex)
+            {
+                DivideIndex = (StartIndex + EndIndex) / 2;
+                if(Timestamp < AudioStreams[AudioStreamIndex]->IndexEntries[DivideIndex]->Timestamp)
+                {
+                    EndIndex = DivideIndex;
+                }
+                else
+                {
+                    StartIndex = DivideIndex;
+                }
+            }
+
+            // return index of closest timestamp (works even if requested timestamp lies outside of interval)
+            if(Timestamp - AudioStreams[AudioStreamIndex]->IndexEntries[StartIndex]->Timestamp < AudioStreams[AudioStreamIndex]->IndexEntries[EndIndex]->Timestamp - Timestamp )
+            {
+                result = (long)StartIndex;
+            }
+            else
+            {
+                result = (long)EndIndex;
+            }
+        }
+    }
+    return result;
+}
+
 long EncodingFileLoader::GetFrameFromTimeV(long VideoStreamIndex, int64_t Time)
 {
     return GetFrameFromTimestampV(VideoStreamIndex, GetTimestampFromTimeV(VideoStreamIndex, Time));
@@ -720,6 +789,12 @@ int64_t EncodingFileLoader::GetTimestampFromTimeV(long VideoStreamIndex, int64_t
         return Time * (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.den / (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.num / (int64_t)1000 + VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp;
     }
     return (int64_t)0;
+}
+
+// returns the byte position for a given timestamp in an audio stream
+IndexEntry* EncodingFileLoader::GetIndexEntryFromTimestampA(long AudioStreamIndex, int64_t Timestamp)
+{
+    return AudioStreams[AudioStreamIndex]->IndexEntries[GetFrameFromTimestampA(AudioStreamIndex, Timestamp)];
 }
 
 VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat)
@@ -767,7 +842,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
         if(GOPBuffer.GetID() != KeyframeIndex)
         {
             FlushBuffer();
-            if(!SetStreamPosition(VideoStreamIndex, KeyframeIndex))
+            if(!SetStreamPosition(VideoStreamIndex, -1, KeyframeIndex))
             {
                 Locked = false;
                 return NULL;
@@ -902,6 +977,22 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
             }
         }
 
+        if(VideoStreamIndex > -1)
+        {
+            // use KeyFrameIndex of video stream
+            SetStreamPosition(VideoStreamIndex, AudioStreamIndex, SeekKeyFrameIndex(VideoStreamIndex, FrameIndex));
+        }
+        else if(AudioStreamIndex > -1)
+        {
+            // TODO: add support for audio playback only
+            // use FrameIndex of audio stream
+            //SetStreamPosition(VideoStreamIndex, AudioStreamIndex, ???);
+        }
+        else
+        {
+            return;
+        }
+
         AVFrame *pVideoFrameSource = avcodec_alloc_frame();
         AVFrame *pVideoFrameTarget = avcodec_alloc_frame();
         AVFrame *pAudioFrameSource = avcodec_alloc_frame();
@@ -919,7 +1010,6 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
 
             int64_t FrameTimestamp = 0;
 
-            SetStreamPosition(VideoStreamIndex, SeekKeyFrameIndex(VideoStreamIndex, FrameIndex));
             // NOTE: flush buffers after search, also reset GOPBuffer to indicate that file position has changed
             FlushBuffer();
             while(Locked && *DoStream)

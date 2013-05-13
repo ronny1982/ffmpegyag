@@ -33,14 +33,17 @@ class EncodingFileLoader
     public: void FlushBuffer();
     // returns the estimaded frame number of a stream
     private: int64_t GetStreamEstimatedFrameCount(unsigned int StreamIndex);
-    // set the file pointer to the closest keyframe before the given index
+    // return the closest keyframe before the given index
     private: long SeekKeyFrameIndex(long VideoStreamIndex, long FrameIndex);
-    // set the file pointer to the closest keyframe before the given index
-    private: bool SetStreamPosition(long VideoStreamIndex, long KeyFrameIndex);
+    // set the file pointer to the given KeyFrameIndex¹ (considering video and audio stream)
+    // ¹when VideoStreamIndex > -1 && AudioStreamIndex > -1 then KeyFrameIndex must be from VideoStream!
+    private: bool SetStreamPosition(long VideoStreamIndex, long AudioStreamIndex, long KeyFrameIndex);
     // returns the time (milliseconds) for a given frame number in a video stream
     public: int64_t GetTimeFromFrameV(long VideoStreamIndex, long FrameIndex);
     // returns the frame number for a given timestamp in a video stream
     public: long GetFrameFromTimestampV(long VideoStreamIndex, int64_t Timestamp);
+    // returns the frame number for a given timestamp in an audio stream
+    public: long GetFrameFromTimestampA(long AudioStreamIndex, int64_t Timestamp);
     // returns the frame number for a given time (milliseconds) in a video stream
     public: long GetFrameFromTimeV(long VideoStreamIndex, int64_t Time);
     // returns the time (milliseconds) for a given timestamp in a video stream
@@ -49,6 +52,8 @@ class EncodingFileLoader
     private: int64_t GetTimeFromTimestampA(long AudioStreamIndex, int64_t Timestamp);
     // returns the timestamp for a given time in milliseconds in a video stream
     private: int64_t GetTimestampFromTimeV(long VideoStreamIndex, int64_t Time);
+    // returns the byte position for a given timestamp in an audio stream
+    public: IndexEntry* GetIndexEntryFromTimestampA(long AudioStreamIndex, int64_t Timestamp);
     // returns the raw image data of the selected stream and frame number
     // do not delete VideoFrame*, this pointer is freed by GOPBuffer
     public: VideoFrame* GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat = PIX_FMT_RGB24);
