@@ -29,6 +29,7 @@
 #include <wx/image.h>
 #include <wx/mstream.h>
 #include <wx/icon.h>
+#include <wx/aboutdlg.h>
 
 #include "resource.h"
 #include "EncodingTask.h"
@@ -100,6 +101,7 @@ class AVConvGUIFrame: public wxFrame
         //*)
         void OnProcessTerinate(wxProcessEvent& event);
         void OnMainWindowRClick(wxMouseEvent& event);
+        void OnMenuMainClick(wxCommandEvent& event);
         void OnMenuPresetsClick(wxCommandEvent& event);
         void OnListCtrlSegmentsRClick(wxMouseEvent& event);
         void OnMenuSegmentFiltersClick(wxCommandEvent& event);
@@ -184,6 +186,8 @@ class AVConvGUIFrame: public wxFrame
         static const long ID_AudioFadeOutStart;
         static const long ID_AudioFadeOutEnd;
         static const long ID_AudioFadeOutReset;
+        static const long ID_MenuHelp;
+        static const long ID_MenuAbout;
 
         //(*Declarations(AVConvGUIFrame)
         wxComboBox* ComboBoxFileFormat;

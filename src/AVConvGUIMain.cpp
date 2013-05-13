@@ -114,6 +114,8 @@ const long AVConvGUIFrame::ID_AudioFadeOut = wxNewId();
 const long AVConvGUIFrame::ID_AudioFadeOutStart = wxNewId();
 const long AVConvGUIFrame::ID_AudioFadeOutEnd = wxNewId();
 const long AVConvGUIFrame::ID_AudioFadeOutReset = wxNewId();
+const long AVConvGUIFrame::ID_MenuHelp = wxNewId();
+const long AVConvGUIFrame::ID_MenuAbout = wxNewId();
 
 BEGIN_EVENT_TABLE(AVConvGUIFrame,wxFrame)
     //(*EventTable(AVConvGUIFrame)
@@ -548,13 +550,11 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     MenuAudioFadeOut->Append(ID_AudioFadeOutReset, _("Reset"));
     MenuSegmentFilters->AppendSubMenu(MenuAudioFadeOut, _("Audio Fade-Out"));
     MenuMain = new wxMenu(_("Main Menu"));
-    MenuMain->Append(-1, _("Save Script"))->Enable(false);
     MenuMain->AppendSeparator();
     MenuMain->AppendSubMenu(MenuPresets, _("Load Preset"));
     MenuMain->AppendSeparator();
-    MenuMain->Append(-1, _("Help"))->Enable(false);
-    MenuMain->Append(-1, _("About"))->Enable(false);
-    MenuMain->Append(-1, _("Exit"))->Enable(false);
+    MenuMain->Append(ID_MenuHelp, _("Help (Online)"));
+    MenuMain->Append(ID_MenuAbout, _("About"));
     Center();
 
     Connect(ID_LISTCTRL1,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&AVConvGUIFrame::OnListCtrlTasksItemSelect);
@@ -598,6 +598,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     GLCanvasPreview->Connect(wxEVT_SIZE,(wxObjectEventFunction)&AVConvGUIFrame::OnGLCanvasPreviewResize,0,this);
     SliderFrame->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyDown, NULL, this);
     SliderFrame->Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&AVConvGUIFrame::OnSliderFrameKeyUp, NULL, this);
+    MenuMain->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuMainClick, NULL, this);
     MenuPresets->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuPresetsClick, NULL, this);
     Connect(wxEVT_RIGHT_DOWN,(wxObjectEventFunction)&AVConvGUIFrame::OnMainWindowRClick);
     MenuSegmentFilters->Connect(wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&AVConvGUIFrame::OnMenuSegmentFiltersClick, NULL, this);
@@ -2922,6 +2923,26 @@ void AVConvGUIFrame::OnComboBoxSubtitleCodecSelect(wxCommandEvent& event)
     }
 
     //wxMessageBox(wxT("Subtitle Codec Changed"));
+}
+
+void AVConvGUIFrame::OnMenuMainClick(wxCommandEvent& event)
+{
+    if(event.GetId() == ID_MenuHelp)
+    {
+        wxLaunchDefaultBrowser(wxT("http://code.google.com/p/ffmpegyag/wiki/index?tm=6"));
+    }
+
+    if(event.GetId() == ID_MenuAbout)
+    {
+        wxAboutDialogInfo about;
+        about.SetName(wxT("FFmpegYAG"));
+        about.SetVersion(wxT("0.7.3"));
+        about.SetDescription(wxT("An advanced GUI for the popular\nFFmpeg audio/video encoding tool."));
+        about.SetWebSite(wxT("http://ffmpegyag.googlecode.com"));
+        about.SetCopyright(wxT("(C) 2013 Ronny Wegener <wegener.ronny@gmail.com>"));
+
+        wxAboutBox(about);
+    }
 }
 
 void AVConvGUIFrame::OnMenuPresetsClick(wxCommandEvent& event)
