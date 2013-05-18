@@ -114,6 +114,7 @@ const long AVConvGUIFrame::ID_AudioFadeOut = wxNewId();
 const long AVConvGUIFrame::ID_AudioFadeOutStart = wxNewId();
 const long AVConvGUIFrame::ID_AudioFadeOutEnd = wxNewId();
 const long AVConvGUIFrame::ID_AudioFadeOutReset = wxNewId();
+const long AVConvGUIFrame::ID_PresetSave = wxNewId();
 const long AVConvGUIFrame::ID_MenuHelp = wxNewId();
 const long AVConvGUIFrame::ID_MenuAbout = wxNewId();
 
@@ -516,6 +517,8 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1->Fit(this);
     FlexGridSizer1->SetSizeHints(this);
     MenuPresets = new wxMenu();
+    MenuPresets->Append(ID_PresetSave, _("Save Current"));
+    MenuPresets->AppendSeparator();
     MenuSegmentFilters = new wxMenu();
     MenuSegmentFilters->Append(ID_GotoSegmentStart, _("[< to Start"));
     MenuSegmentFilters->Append(ID_GotoSegmentEnd, _(">] to End"));
@@ -550,8 +553,9 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     MenuAudioFadeOut->Append(ID_AudioFadeOutReset, _("Reset"));
     MenuSegmentFilters->AppendSubMenu(MenuAudioFadeOut, _("Audio Fade-Out"));
     MenuMain = new wxMenu(_("Main Menu"));
+    MenuMain->Append(-1, _("..."))->Enable(false);
     MenuMain->AppendSeparator();
-    MenuMain->AppendSubMenu(MenuPresets, _("Load Preset"));
+    MenuMain->AppendSubMenu(MenuPresets, _("Presets"));
     MenuMain->AppendSeparator();
     MenuMain->Append(ID_MenuHelp, _("Help (Online)"));
     MenuMain->Append(ID_MenuAbout, _("About"));
@@ -2947,62 +2951,86 @@ void AVConvGUIFrame::OnMenuMainClick(wxCommandEvent& event)
 
 void AVConvGUIFrame::OnMenuPresetsClick(wxCommandEvent& event)
 {
-    wxArrayString PresetSettings = AVConvSettings::LoadPreset(MenuPresets->GetLabel(event.GetId()));
-
-    wxCommandEvent ce;
-
-    wxString Value;
-    for(size_t i=0; i<PresetSettings.GetCount(); i++)
+    if(event.GetId() == ID_PresetSave)
     {
-        if(PresetSettings[i].StartsWith(wxT("file_format="), &Value))
+        wxTextEntryDialog win(NULL, wxT("Please enter the name of the preset.\nExisting preset will be overwritten!\n\n"), wxT("Save Preset"));
+        win.SetValue(wxT("preset-name"));
+        if(win.ShowModal() == wxID_OK&& !win.GetValue().IsEmpty())
         {
-            ComboBoxFileFormat->SetValue(Value);
-            OnComboBoxFileFormatSelect(ce);
+            wxArrayString PresetSettings;
+            PresetSettings.Add(wxT("file_format=") + ComboBoxFileFormat->GetValue());
+            PresetSettings.Add(wxT("video_codec=") + ComboBoxVideoCodec->GetValue());
+            PresetSettings.Add(wxT("video_bitrate=") + ComboBoxVideoBitrate->GetValue());
+            PresetSettings.Add(wxT("video_framesize=") + ComboBoxVideoFrameSize->GetValue());
+            PresetSettings.Add(wxT("video_aspectratio=") + ComboBoxVideoAspectRatio->GetValue());
+            PresetSettings.Add(wxT("audio_codec=") + ComboBoxAudioCodec->GetValue());
+            PresetSettings.Add(wxT("audio_bitrate=") + ComboBoxAudioBitrate->GetValue());
+            PresetSettings.Add(wxT("audio_frequency=") + ComboBoxAudioFrequency->GetValue());
+            PresetSettings.Add(wxT("audio_channels=") + ComboBoxAudioChannels->GetValue());
+            PresetSettings.Add(wxT("subtitle_codec=") + ComboBoxSubtitleCodec->GetValue());
+
+            AVConvSettings::SavePreset(win.GetValue(), PresetSettings);
         }
-        if(PresetSettings[i].StartsWith(wxT("video_codec="), &Value))
+    }
+    else
+    {
+        wxArrayString PresetSettings = AVConvSettings::LoadPreset(MenuPresets->GetLabel(event.GetId()));
+
+        wxCommandEvent ce;
+
+        wxString Value;
+        for(size_t i=0; i<PresetSettings.GetCount(); i++)
         {
-            ComboBoxVideoCodec->SetValue(Value);
-            OnComboBoxVideoCodecSelect(ce);
-        }
-        if(PresetSettings[i].StartsWith(wxT("video_bitrate="), &Value))
-        {
-            ComboBoxVideoBitrate->SetValue(Value);
-            OnComboBoxVideoBitrateSelect(ce);
-        }
-        if(PresetSettings[i].StartsWith(wxT("video_framesize="), &Value))
-        {
-            ComboBoxVideoFrameSize->SetValue(Value);
-            OnComboBoxVideoFrameSizeSelect(ce);
-        }
-        if(PresetSettings[i].StartsWith(wxT("video_aspectratio="), &Value))
-        {
-            ComboBoxVideoAspectRatio->SetValue(Value);
-            OnComboBoxVideoAspectRatioSelect(ce);
-        }
-        if(PresetSettings[i].StartsWith(wxT("audio_codec="), &Value))
-        {
-            ComboBoxAudioCodec->SetValue(Value);
-            OnComboBoxAudioCodecSelect(ce);
-        }
-        if(PresetSettings[i].StartsWith(wxT("audio_bitrate="), &Value))
-        {
-            ComboBoxAudioBitrate->SetValue(Value);
-            OnComboBoxAudioBitrateSelect(ce);
-        }
-        if(PresetSettings[i].StartsWith(wxT("audio_frequency="), &Value))
-        {
-            ComboBoxAudioFrequency->SetValue(Value);
-            OnComboBoxAudioFrequencySelect(ce);
-        }
-        if(PresetSettings[i].StartsWith(wxT("audio_channels="), &Value))
-        {
-            ComboBoxAudioChannels->SetValue(Value);
-            OnComboBoxAudioChannelsSelect(ce);
-        }
-        if(PresetSettings[i].StartsWith(wxT("subtitle_codec="), &Value))
-        {
-            ComboBoxSubtitleCodec->SetValue(Value);
-            OnComboBoxSubtitleCodecSelect(ce);
+            if(PresetSettings[i].StartsWith(wxT("file_format="), &Value))
+            {
+                ComboBoxFileFormat->SetValue(Value);
+                OnComboBoxFileFormatSelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("video_codec="), &Value))
+            {
+                ComboBoxVideoCodec->SetValue(Value);
+                OnComboBoxVideoCodecSelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("video_bitrate="), &Value))
+            {
+                ComboBoxVideoBitrate->SetValue(Value);
+                OnComboBoxVideoBitrateSelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("video_framesize="), &Value))
+            {
+                ComboBoxVideoFrameSize->SetValue(Value);
+                OnComboBoxVideoFrameSizeSelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("video_aspectratio="), &Value))
+            {
+                ComboBoxVideoAspectRatio->SetValue(Value);
+                OnComboBoxVideoAspectRatioSelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("audio_codec="), &Value))
+            {
+                ComboBoxAudioCodec->SetValue(Value);
+                OnComboBoxAudioCodecSelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("audio_bitrate="), &Value))
+            {
+                ComboBoxAudioBitrate->SetValue(Value);
+                OnComboBoxAudioBitrateSelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("audio_frequency="), &Value))
+            {
+                ComboBoxAudioFrequency->SetValue(Value);
+                OnComboBoxAudioFrequencySelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("audio_channels="), &Value))
+            {
+                ComboBoxAudioChannels->SetValue(Value);
+                OnComboBoxAudioChannelsSelect(ce);
+            }
+            if(PresetSettings[i].StartsWith(wxT("subtitle_codec="), &Value))
+            {
+                ComboBoxSubtitleCodec->SetValue(Value);
+                OnComboBoxSubtitleCodecSelect(ce);
+            }
         }
     }
 }
@@ -3012,7 +3040,7 @@ void AVConvGUIFrame::OnMainWindowRClick(wxMouseEvent& event)
     if(!IsPlaying)
     {
         int id = 0;
-        while(MenuPresets->GetMenuItemCount() > 0)
+        while(MenuPresets->GetMenuItemCount() > 2)
         {
             MenuPresets->Delete(id);
             id++;

@@ -15,7 +15,9 @@ class AVConvSettings
     // (prefer application directory templates over user directory templates when same name was found)
     public: static wxArrayString GetPresets();
     // returns a list of parameters for a given preset, the seperator of parameters is '='
-    public: static wxArrayString LoadPreset(wxString Preset);
+    public: static wxArrayString LoadPreset(wxString PresetName);
+    // save the settings in a file corresponding to the preset name (user datadirectory)
+    public: static void SavePreset(wxString PresetName, wxArrayString PresetSettings);
 };
 
 #endif // AVCONVSETTINGS_H

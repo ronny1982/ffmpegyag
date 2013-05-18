@@ -186,6 +186,7 @@ class AVConvGUIFrame: public wxFrame
         static const long ID_AudioFadeOutStart;
         static const long ID_AudioFadeOutEnd;
         static const long ID_AudioFadeOutReset;
+        static const long ID_PresetSave;
         static const long ID_MenuHelp;
         static const long ID_MenuAbout;
 
