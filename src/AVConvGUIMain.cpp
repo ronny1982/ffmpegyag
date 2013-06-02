@@ -623,6 +623,7 @@ AVConvGUIFrame::AVConvGUIFrame(wxWindow* parent,wxWindowID id)
     ComboBoxSubtitleCodec->SetValue(wxT("copy"));
     EnableDisableAVFormatControls();
 
+printf("create renderdevice\n");
 //{
     // UNIT_TEST for GLX
     #ifdef __LINUX__
@@ -1669,6 +1670,11 @@ void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 
 bool AVConvGUIFrame::InitializeVideo()
 {
+if(!GLCanvasPreview->GetContext())
+{
+printf("canvas null\n");
+    //return false;
+}
     if(RenderDevice)
     {
         // TODO: when using GLX we need to convert wxGLCamvas to XWindow
@@ -1678,11 +1684,11 @@ bool AVConvGUIFrame::InitializeVideo()
             int CanvasHeight;// = GLCanvasPreview->GetSize().y;
             GLCanvasPreview->GetClientSize(&CanvasWidth, &CanvasHeight);
             wxColour bc = GLCanvasPreview->GetBackgroundColour();
-
-            RenderDevice->MakeCurrent();
-            RenderDevice->SetViewport(0, 0, CanvasWidth, CanvasHeight);
+printf("A\n");
+            RenderDevice->MakeCurrent();printf("B\n");
+            RenderDevice->SetViewport(0, 0, CanvasWidth, CanvasHeight);printf("C\n");
             RenderDevice->SetClearColour(float(bc.Red())/255.0f, float(bc.Green())/255.0f, float(bc.Blue())/255.0f, 0.0f);
-
+printf("B\n");
             // update the rendering mapper (video_texture -> gl_panel) depending on current task, videostream, aspectratio, framesize, crop,...
             if(SelectedTaskIndices.GetCount() == 1 && SelectedVideoStreamIndices.GetCount() == 1)
             {
@@ -1761,6 +1767,7 @@ bool AVConvGUIFrame::InitializeVideo()
 
 void AVConvGUIFrame::RenderSingleFrame()
 {
+printf("render single frame\n");
     if(!IsPlaying && InitializeVideo())
     {
         FileSegment* Segment = NULL;
@@ -2120,6 +2127,7 @@ void AVConvGUIFrame::OnGLCanvasPreviewResize(wxSizeEvent& event)
 
 void AVConvGUIFrame::OnResize(wxSizeEvent& event)
 {
+printf("resize window\n");
     this->Layout();
 
     // prevent flickering when changing column size...

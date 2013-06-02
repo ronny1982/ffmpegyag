@@ -44,6 +44,7 @@ void Libav::Init()
 
     if(ConverterFiles.GetCount() > 1)
     {
+printf("init wxdialog\n");
         wxSingleChoiceDialog win(NULL, wxT("Multiple video converters have been found in the application directory.\nPlease select your prefered video converter:"), wxT("Select Video Converter"), ConverterLabels);
         win.SetSelection(0);
         if(win.ShowModal() == wxID_OK)
