@@ -2,17 +2,49 @@
 
 void AVConvSettings::Init()
 {
-    if(!wxDir::Exists(wxStandardPaths::Get().GetUserDataDir()))
+    wxString path = GetConfigurationPath();
+
+    if(!wxDirExists(path))
     {
-        wxMkdir(wxStandardPaths::Get().GetUserDataDir());
+        wxMkdir(path);
     }
+}
+
+wxString AVConvSettings::GetConfigurationPath()
+{
+    #ifdef PORTABLE
+        #ifdef __LINUX__
+            return wxStandardPaths::Get().GetExecutablePath().BeforeLast('/');
+        #endif
+        #ifdef __WINDOWS__
+            return wxStandardPaths::Get().GetExecutablePath().BeforeLast('\\');
+        #endif
+    #else
+        #ifdef __LINUX__
+            wxString EnvironmentFilePath;
+            wxGetEnv(wxT("XDG_CONFIG_HOME"), &EnvironmentFilePath);
+            EnvironmentFilePath = EnvironmentFilePath.BeforeFirst(':');
+            if(EnvironmentFilePath.IsEmpty())
+            {
+                EnvironmentFilePath = wxStandardPaths::Get().GetUserConfigDir() + wxT("/.config/ffmpegyag");
+            }
+            else
+            {
+                EnvironmentFilePath +=  wxT("/ffmpegyag");
+            }
+            return EnvironmentFilePath;
+        #endif
+        #ifdef __WINDOWS__
+            return wxStandardPaths::Get().GetUserDataDir();
+        #endif
+    #endif
 }
 
 wxArrayString AVConvSettings::GetPresets()
 {
     wxArrayString PresetFiles;
     wxDir::GetAllFiles(wxStandardPaths::Get().GetExecutablePath().BeforeLast(wxFileName::GetPathSeparator()), &PresetFiles, wxT("*.fyt"));
-    wxDir::GetAllFiles(wxStandardPaths::Get().GetUserDataDir(), &PresetFiles, wxT("*.fyt"));
+    wxDir::GetAllFiles(GetConfigurationPath(), &PresetFiles, wxT("*.fyt"));
     for(size_t f=0; f<PresetFiles.GetCount(); f++)
     {
         PresetFiles[f] = PresetFiles[f].BeforeLast('.').AfterLast(wxFileName::GetPathSeparator());
@@ -27,7 +59,7 @@ wxArrayString AVConvSettings::LoadPreset(wxString PresetName)
     wxArrayString PresetFiles;
     // presets in executable directory has higher priority (when same name) then in home directory, so load them first
     wxDir::GetAllFiles(wxStandardPaths::Get().GetExecutablePath().BeforeLast(wxFileName::GetPathSeparator()), &PresetFiles, PresetName + wxT(".fyt"));
-    wxDir::GetAllFiles(wxStandardPaths::Get().GetUserDataDir(), &PresetFiles, PresetName + wxT(".fyt"));
+    wxDir::GetAllFiles(GetConfigurationPath(), &PresetFiles, PresetName + wxT(".fyt"));
     if(PresetFiles.GetCount() > 0)
     {
         wxTextFile PresetFile;
@@ -51,7 +83,7 @@ void AVConvSettings::SavePreset(wxString PresetName, wxArrayString PresetSetting
     wxArrayString PresetFiles;
     // presets in executable directory has higher priority (when same name) then in home directory, so load them first
     wxDir::GetAllFiles(wxStandardPaths::Get().GetExecutablePath().BeforeLast(wxFileName::GetPathSeparator()), &PresetFiles, PresetName + wxT(".fyt"));
-    wxDir::GetAllFiles(wxStandardPaths::Get().GetUserDataDir(), &PresetFiles, PresetName + wxT(".fyt"));
+    wxDir::GetAllFiles(GetConfigurationPath(), &PresetFiles, PresetName + wxT(".fyt"));
 
     wxTextFile PresetFile;
     if(PresetFiles.GetCount() > 0)
@@ -63,7 +95,7 @@ void AVConvSettings::SavePreset(wxString PresetName, wxArrayString PresetSetting
     else
     {
         // create preset in userdata directory
-        PresetFile.Create(wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + PresetName + wxT(".fyt"));
+        PresetFile.Create(GetConfigurationPath() + wxFileName::GetPathSeparator() + PresetName + wxT(".fyt"));
     }
     for(long i=0; i<(long)PresetSettings.GetCount(); i++)
     {

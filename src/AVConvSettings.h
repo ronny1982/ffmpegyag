@@ -2,6 +2,7 @@
 #define AVCONVSETTINGS_H
 
 #include <wx/arrstr.h>
+#include <wx/utils.h>
 #include <wx/dir.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
@@ -11,6 +12,8 @@ class AVConvSettings
 {
     // initialize all static members with valid values
     public: static void Init();
+    // the path where the configuration settings should be stored
+    public: static wxString GetConfigurationPath();
     // returns a list of all available ffmpegyag presets (*.fyt) found in the application directory / user directory
     // (prefer application directory templates over user directory templates when same name was found)
     public: static wxArrayString GetPresets();

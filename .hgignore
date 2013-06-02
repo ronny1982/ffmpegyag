@@ -3,6 +3,7 @@ syntax: glob
 *.depend
 *.res
 *.deb
+*.dsc
 *.tar.gz
 config_debug.sh
 make-*
