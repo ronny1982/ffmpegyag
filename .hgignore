@@ -4,6 +4,7 @@ syntax: glob
 *.res
 *.deb
 *.dsc
+*.changes
 *.tar.gz
 config_debug.sh
 make-*
