@@ -374,7 +374,7 @@ write_makefile_rule_dist_dgz()
     $ECHO_ESC "\t@echo '  * \$(PKGNAME) update, details on URL: \$(PKGHOMEPAGE)' >> debian/changelog" >> $MAKEFILE
     $ECHO_ESC "\t@echo '' >> debian/changelog" >> $MAKEFILE
     $ECHO_ESC "\t@echo ' -- \$(PKGAUTHOR)  \$(shell date -R -u)' >> debian/changelog" >> $MAKEFILE
-    $ECHO_ESC "\t@echo '8' > debian/compat" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '9' > debian/compat" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Source: \$(PKGNAME)' > debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Maintainer: \$(PKGAUTHOR)' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Section: \$(PKGSECTION)' >> debian/control" >> $MAKEFILE
