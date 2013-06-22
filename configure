@@ -380,7 +380,7 @@ write_makefile_rule_dist_dgz()
     $ECHO_ESC "\t@echo 'Section: \$(PKGSECTION)' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Priority: optional' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Standards-Version: 3.9.3' >> debian/control" >> $MAKEFILE
-    $ECHO_ESC "\t@echo 'Build-Depends: debhelper (>= 9), \$(RESOLVE_DEV_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> debian/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Build-Depends: debhelper (>= 9.2), \$(RESOLVE_DEV_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo '' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Package: \$(PKGNAME)' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Architecture: any' >> debian/control" >> $MAKEFILE
@@ -444,7 +444,7 @@ write_makefile_rule_dist_dsc()
     $ECHO_ESC "\t@echo 'Maintainer: \$(PKGAUTHOR)' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Homepage: \$(PKGHOMEPAGE)' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Standards-Version: 3.9.3' >> \$(DSCFILE)" >> $MAKEFILE
-    $ECHO_ESC "\t@echo 'Build-Depends: debhelper (>= 9), \$(RESOLVE_DEV_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> \$(DSCFILE)" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Build-Depends: debhelper (>= 9.2), \$(RESOLVE_DEV_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Package-List:' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo ' \$(PKGNAME) deb \$(PKGSECTION) optional' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Checksums-Sha1:' >> \$(DSCFILE)" >> $MAKEFILE
