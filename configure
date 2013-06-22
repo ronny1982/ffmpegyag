@@ -265,7 +265,7 @@ write_makefile_configuration()
     $ECHO_ESC "PKGAUTHOR = $PKGAUTHOR" >> $MAKEFILE
     $ECHO_ESC "PKGHOMEPAGE = $PKGHOMEPAGE" >> $MAKEFILE
     $ECHO_ESC "PKGDEPENDS = $(echo $PKGDEPENDS | sed -e 's|([^)]*)||g;s|,||g;s|  | |g')" >> $MAKEFILE
-    $ECHO_ESC "PKGDESCRIPTION = $PKGDESCRIPTION" | sed 's|$|\\n\\|'>> $MAKEFILE
+    $ECHO_ESC "PKGDESCRIPTION = $PKGDESCRIPTION" | sed 's|$|\\n\\|' >> $MAKEFILE
     $ECHO_ESC " ." >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "SRCPATTERN = $SRCPATTERN" >> $MAKEFILE
@@ -380,7 +380,7 @@ write_makefile_rule_dist_dgz()
     $ECHO_ESC "\t@echo 'Section: \$(PKGSECTION)' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Priority: optional' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Standards-Version: 3.9.3' >> debian/control" >> $MAKEFILE
-    $ECHO_ESC "\t@echo 'Build-Depends: debhelper (>= 8), \$(RESOLVE_DEV_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> debian/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Build-Depends: debhelper (>= 9), \$(RESOLVE_DEV_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo '' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Package: \$(PKGNAME)' >> debian/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Architecture: any' >> debian/control" >> $MAKEFILE
@@ -442,8 +442,9 @@ write_makefile_rule_dist_dsc()
     $ECHO_ESC "\t@echo 'Architecture: any' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Version: \$(PKGVERSION)' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Maintainer: \$(PKGAUTHOR)' >> \$(DSCFILE)" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Homepage: \$(PKGHOMEPAGE)' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Standards-Version: 3.9.3' >> \$(DSCFILE)" >> $MAKEFILE
-    $ECHO_ESC "\t@echo 'Build-Depends: debhelper (>= 8), \$(RESOLVE_DEV_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> \$(DSCFILE)" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Build-Depends: debhelper (>= 9), \$(RESOLVE_DEV_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Package-List:' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo ' \$(PKGNAME) deb \$(PKGSECTION) optional' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Checksums-Sha1:' >> \$(DSCFILE)" >> $MAKEFILE
@@ -452,6 +453,10 @@ write_makefile_rule_dist_dsc()
     $ECHO_ESC "\t@echo ' \$(shell sha256sum \$(DGZPKG) | cut -b-64) \$(shell du -b \$(DGZPKG) | sed -e 's|\s*\$(DGZPKG)||g') \$(DGZPKG)' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Files:' >> \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo ' \$(shell md5sum \$(DGZPKG) | cut -b-32) \$(shell du -b \$(DGZPKG) | sed -e 's|\s*\$(DGZPKG)||g') \$(DGZPKG)' >> \$(DSCFILE)" >> $MAKEFILE
+# sign file with gpg (requires a gpg key already generated)
+# entering passphrase is required
+$ECHO_ESC "\t@gpg -a --clearsign \$(DSCFILE)" >> $MAKEFILE
+$ECHO_ESC "\t@mv -f \$(DSCFILE).asc \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "\t-@lintian --profile debian \$(DSCFILE)" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
 }
@@ -472,8 +477,7 @@ write_makefile_rule_dist_chg()
     $ECHO_ESC "\t@echo 'Maintainer: \$(PKGAUTHOR)' >> \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Changed-By: \$(PKGAUTHOR)' >> \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Description: ' >> \$(CHGFILE)" >> $MAKEFILE
-    # TODO: get the first line from PKGDESCRIPTION
-    $ECHO_ESC "\t@echo ' \$(PKGNAME) - no description available' >> \$(CHGFILE)" >> $MAKEFILE
+    $ECHO_ESC "\t@echo ' \$(PKGNAME) - $($ECHO_ESC "$PKGDESCRIPTION" | head -n 1)' >> \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Changes: ' >> \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo ' \$(PKGNAME) (\$(PKGVERSION)) unstable; urgency=low' >> \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo ' .' >> \$(CHGFILE)" >> $MAKEFILE
@@ -488,6 +492,10 @@ write_makefile_rule_dist_chg()
     $ECHO_ESC "\t@echo 'Files:' >> \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo ' \$(shell md5sum \$(DSCFILE) | cut -b-32) \$(shell du -b \$(DSCFILE) | sed -e 's|\s*\$(DSCFILE)||g') \$(PKGSECTION) optional \$(DSCFILE)' >> \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "\t@echo ' \$(shell md5sum \$(DGZPKG) | cut -b-32) \$(shell du -b \$(DGZPKG) | sed -e 's|\s*\$(DGZPKG)||g') \$(PKGSECTION) optional \$(DGZPKG)' >> \$(CHGFILE)" >> $MAKEFILE
+# sign file with gpg (requires a gpg key already generated)
+# entering passphrase is required
+$ECHO_ESC "\t@gpg -a --clearsign \$(CHGFILE)" >> $MAKEFILE
+$ECHO_ESC "\t@mv -f \$(CHGFILE).asc \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "\t-@lintian --profile debian \$(CHGFILE)" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
 }
