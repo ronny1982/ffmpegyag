@@ -106,14 +106,14 @@ void AudioFrame::FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* Filte
     }
 
     // this audio packet lies completely inside the filter range
-    if(Timecode >= *FilterTimeFrom && *FilterTimeTo <= Endtime)
+    if(Timecode >= *FilterTimeFrom && Endtime <= *FilterTimeTo)
     {
         *p1 = 0;
         *p2 = SampleCount;
         return; // Inside
     }
 
-    if(Timecode < *FilterTimeFrom && Endtime > *FilterTimeFrom)
+    if(Timecode <= *FilterTimeFrom && Endtime >= *FilterTimeFrom)
     {
         *p1 = SampleCount * (*FilterTimeFrom - Timecode) / Duration;
         if(Endtime <= *FilterTimeTo)
@@ -125,7 +125,7 @@ void AudioFrame::FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* Filte
         return; // Intersects @From & @To
     }
 
-    if(Timecode < *FilterTimeTo && Endtime > *FilterTimeTo)
+    if(Timecode <= *FilterTimeTo && Endtime >= *FilterTimeTo)
     {
         *p2 = SampleCount * (*FilterTimeTo - Timecode) / Duration;
         if(Timecode >= *FilterTimeFrom)
@@ -136,6 +136,10 @@ void AudioFrame::FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* Filte
         *p1 = SampleCount * (*FilterTimeFrom - Timecode) / Duration;
         return; // Intersects @From & @To
     }
+
+    printf("ERROR AudioFrame::FilterFrameIntersection(...): No appropriate audio packet pivots found!\n");
+    *p1 = 0;
+    *p2 = SampleCount;
 }
 
 void AudioFrame::MuteClipped(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
@@ -145,13 +149,13 @@ void AudioFrame::MuteClipped(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
         size_t PivotFrom;
         size_t PivotTo;
         FilterFrameIntersection(FilterTimeFrom, FilterTimeTo, &PivotFrom, &PivotTo);
-// TODO: memset error, when range = 0 ???
+
         // mute sound between [0...PivotFrom]
         memset(Data, 0, PivotFrom * SampleSize);
 
         // keep sound between [PivotFrom...PivotTo]
         //memset(...)
-// TODO: memset error, when range = 0 ???
+
         // mute sound between [PivotTo...SampleCount]
         memset(Data + (PivotTo * SampleSize), 0, (SampleCount - PivotTo) * SampleSize);
     }
