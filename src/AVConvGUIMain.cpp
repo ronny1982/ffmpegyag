@@ -1669,7 +1669,7 @@ void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 
 bool AVConvGUIFrame::InitializeVideo()
 {
-    // FIXME: sometimes (on selection dialog for ffmpeg application) RenderDevice
+    // FIXME (ronny#high#): sometimes (on selection dialog for ffmpeg application) RenderDevice
     // seems to be corrupted so we need to add additional check for GLCanvasPreview
     if(RenderDevice && GLCanvasPreview->GetContext())
     {
