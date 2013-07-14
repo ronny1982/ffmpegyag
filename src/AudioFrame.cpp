@@ -76,6 +76,8 @@ void AudioFrame::FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* Filte
 {
     int64_t Endtime = Timecode + Duration;
 
+    // TODO (ronny#medium#): verify all conditions for correctness, unit testing?
+
     if(Endtime < *FilterTimeFrom)
     {
         *p1 = SampleCount;
@@ -103,7 +105,8 @@ void AudioFrame::FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* Filte
         return; // Outside After
     }
 
-    if(Timecode >= *FilterTimeFrom && Endtime <= *FilterTimeTo)
+    // this audio packet lies completely inside the filter range
+    if(Timecode >= *FilterTimeFrom && *FilterTimeTo <= Endtime)
     {
         *p1 = 0;
         *p2 = SampleCount;
@@ -142,13 +145,13 @@ void AudioFrame::MuteClipped(int64_t* FilterTimeFrom, int64_t* FilterTimeTo)
         size_t PivotFrom;
         size_t PivotTo;
         FilterFrameIntersection(FilterTimeFrom, FilterTimeTo, &PivotFrom, &PivotTo);
-
+// TODO: memset error, when range = 0 ???
         // mute sound between [0...PivotFrom]
         memset(Data, 0, PivotFrom * SampleSize);
 
         // keep sound between [PivotFrom...PivotTo]
         //memset(...)
-
+// TODO: memset error, when range = 0 ???
         // mute sound between [PivotTo...SampleCount]
         memset(Data + (PivotTo * SampleSize), 0, (SampleCount - PivotTo) * SampleSize);
     }
