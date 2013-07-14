@@ -20,7 +20,6 @@ VideoDevice::~VideoDevice()
 
 VideoDevice* VideoDevice::Create(VideoDeviceType Type)
 {
-    printf("create video device\n");
     if(Type == VideoDeviceGL)
     {
         #ifdef __LINUX__

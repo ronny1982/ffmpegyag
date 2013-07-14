@@ -40,6 +40,7 @@ bool WXGLDevice::Init(void* Widget)
     {
         return true;
     }
+    widget = NULL;
     return false;
 }
 
@@ -50,7 +51,10 @@ void WXGLDevice::Release()
 
 void WXGLDevice::MakeCurrent()
 {
-    widget->SetCurrent();
+    if(widget && widget->GetContext())
+    {
+        widget->SetCurrent();
+    }
 }
 
 void WXGLDevice::SwapBuffers()
