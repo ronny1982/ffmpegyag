@@ -1905,6 +1905,7 @@ bool AVConvGUIFrame::InitializeAudio()
 
 void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
 {
+printf("render sound\n");
     if(Pulse)
     {
         if(Segment)
@@ -1915,6 +1916,7 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
             // mute
             if(Segment->Time.From > 0 || Segment->Time.From < Segment->Time.To)
             {
+printf("mute sound\n");
                 if(Pulse->Timecode < Segment->Time.From || Pulse->Timecode + Pulse->Duration > Segment->Time.To)
                 {
                     //From = Segment->Time.From;
@@ -1932,6 +1934,7 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
                 // fade in
                 if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
                 {
+printf("fade-in sound\n");
                     From = Segment->Time.From + Segment->AudioFadeIn.From;
                     To = Segment->Time.From + Segment->AudioFadeIn.To;
                     Pulse->Fade(&From, &To, FadeIn, FadeQuadratic);
@@ -1940,18 +1943,25 @@ void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
                 // fade out
                 if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
                 {
+printf("fade-out sound\n");
                     From = Segment->Time.From + Segment->AudioFadeOut.From;
                     To = Segment->Time.From + Segment->AudioFadeOut.To;
                     Pulse->Fade(&From, &To, FadeOut, FadeQuadratic);
                 }
             }
         }
+printf("mix-down sound\n");
         Pulse->MixDown();
 
         // NOTE: do not use Pulse->Data
         // create copy that will be written to alsa (alsa will free it)
         unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
         memcpy(data, Pulse->Data, Pulse->DataSize);
+printf("play sound\n");
+
+// FIXME: sometimes when audio device (alsa) finished playback,
+// before next packets are append, the device is turned off and
+// all following packets will be ignored
         SoundDevice->Play(data, Pulse->SampleCount);
     }
 }
@@ -2025,7 +2035,7 @@ void AVConvGUIFrame::PlaybackMedia()
                 {
                     AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull(false);
 //if(true)
-                    if(ReferenceClock >= Pulse->Timecode - 80) // preload audio frames 80ms
+                    if(ReferenceClock >= Pulse->Timecode - 160) // preload audio frames 160ms
                     {
                         Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
 //if(false) // disable sound for render benchmark (because this is a non async function that will wait until sound can be played)
