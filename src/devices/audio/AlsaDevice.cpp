@@ -30,6 +30,8 @@ bool AlsaDevice::Init(unsigned int SampleRate, unsigned int ChannelCount, AVSamp
     snd_pcm_hw_params_free(HardwareParameters);
     snd_pcm_prepare(Device);
     return true;
+
+    // TODO: check SND_PCM_NONBLOCK behavious, so the parent loop can continue streaming video frames...
 }
 
 void AlsaDevice::Release()

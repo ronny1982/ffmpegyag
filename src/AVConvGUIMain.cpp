@@ -2016,6 +2016,25 @@ void AVConvGUIFrame::PlaybackMedia()
         thread->Create();
         thread->Run();
 
+        // TODO: wait in a while loop until the video buffer got at least 5 frames
+        // delay can be caused by start reading from the i-frame instead from current position
+        if(VideoFrameBuffer)
+        {
+            while(VideoFrameBuffer->IsEmpty())
+            {
+                printf("Waiting for Buffer fill...\n");
+                wxMilliSleep(250);
+            }
+        }
+        if(AudioFrameBuffer)
+        {
+            while(AudioFrameBuffer->IsEmpty())
+            {
+                printf("Waiting for Buffer fill...\n");
+                wxMilliSleep(250);
+            }
+        }
+
         // init clock
         wxLongLong StartTime = wxGetLocalTimeMillis();
 
@@ -2037,13 +2056,18 @@ void AVConvGUIFrame::PlaybackMedia()
 //if(true)
                     if(ReferenceClock >= Pulse->Timecode - 160) // preload audio frames 160ms
                     {
-                        Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
-//if(false) // disable sound for render benchmark (because this is a non async function that will wait until sound can be played)
-                        if(1)
+                        // FIXME: if the audio buffer is full, do nothing (prevent block through sound device)
+                        // this will continue processing video data...
+                        if(/*false*/ true)
                         {
-                            RenderSound(Pulse, Segment);
+                            Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
+//if(false) // disable sound for render benchmark (because this is a non async function that will wait until sound can be played)
+                            if(1)
+                            {
+                                RenderSound(Pulse, Segment);
+                            }
+                            wxDELETE(Pulse);
                         }
-                        wxDELETE(Pulse);
                     }
                     Pulse = NULL;
                 }
