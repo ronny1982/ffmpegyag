@@ -45,7 +45,39 @@ void AlsaDevice::Release()
 
 void AlsaDevice::Play(unsigned char* FrameData, size_t SampleCount)
 {
-    snd_pcm_writei(Device, FrameData, SampleCount);
+    // snd_pcm_status(...)
+    // faster: snd_pcm_state(...)
+    snd_pcm_state_t status = snd_pcm_state(Device);
+
+    if(status == SND_PCM_STATE_OPEN){printf("Open\n");}
+    if(status == SND_PCM_STATE_SETUP){printf("Setup installed\n");}
+    if(status == SND_PCM_STATE_PREPARED){printf("Prepared and ready to start\n");}
+    if(status == SND_PCM_STATE_RUNNING){printf("Running\n");}
+    if(status == SND_PCM_STATE_XRUN)
+    {
+        printf("Stopped: underrun (playback) or overrun (capture) detected\n");
+        // FIXME: if audio device was released because of buffer underrun or something else, re-init
+        //snd_pcm_resume
+        //snd_pcm_recover
+        //snd_pcm_prepare(Device)
+    }
+    if(status == SND_PCM_STATE_DRAINING){printf("Draining: running (playback) or stopped (capture)\n");}
+    if(status == SND_PCM_STATE_PAUSED){printf("Paused\n");}
+    if(status == SND_PCM_STATE_SUSPENDED){printf("Hardware is suspended\n");}
+    if(status == SND_PCM_STATE_DISCONNECTED){printf("Hardware is disconnected\n");}
+
+    snd_pcm_sframes_t result = snd_pcm_writei(Device, FrameData, SampleCount);
+
+    /*
+        results:
+        -EBADFD     PCM is not in the right state (SND_PCM_STATE_PREPARED or SND_PCM_STATE_RUNNING)
+        -EPIPE      an underrun occurred
+        -ESTRPIPE   a suspend event occurred (stream is suspended and waiting for an application recovery)
+     */
+    if(result < 0)
+    {
+        printf("ALASA: Can not write samples to device\n");
+    }
 }
 
 snd_pcm_format_t AlsaDevice::GetAlsaFormat(AVSampleFormat Format)
