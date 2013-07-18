@@ -611,7 +611,7 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
 
         if(AudioStreamIndex > -1)
         {
-            IndexEntry* aInfo = GetIndexEntryFromTimestampA(AudioStreamIndex, info->Timestamp);
+            IndexEntry* aInfo = GetIndexEntryFromTimestampA(AudioStreamIndex, GetTimestampFromTimeA(AudioStreamIndex, GetTimeFromTimestampV(VideoStreamIndex, info->Timestamp)));
             // compare file positions
             if(info->Position > aInfo->Position)
             {
@@ -787,6 +787,15 @@ int64_t EncodingFileLoader::GetTimestampFromTimeV(long VideoStreamIndex, int64_t
     if(pFormatCtx && VideoStreamIndex < (long)VideoStreams.GetCount())
     {
         return Time * (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.den / (int64_t)pFormatCtx->streams[VideoStreams[VideoStreamIndex]->ID]->time_base.num / (int64_t)1000 + VideoStreams[VideoStreamIndex]->IndexEntries[0]->Timestamp;
+    }
+    return (int64_t)0;
+}
+
+int64_t EncodingFileLoader::GetTimestampFromTimeA(long AudioStreamIndex, int64_t Time)
+{
+    if(pFormatCtx && AudioStreamIndex < (long)AudioStreams.GetCount())
+    {
+        return Time * (int64_t)pFormatCtx->streams[AudioStreams[AudioStreamIndex]->ID]->time_base.den / (int64_t)pFormatCtx->streams[AudioStreams[AudioStreamIndex]->ID]->time_base.num / (int64_t)1000 + AudioStreams[AudioStreamIndex]->IndexEntries[0]->Timestamp;
     }
     return (int64_t)0;
 }
