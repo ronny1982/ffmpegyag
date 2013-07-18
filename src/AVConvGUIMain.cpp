@@ -1649,6 +1649,7 @@ void AVConvGUIFrame::OnSliderFrameKeyDown(wxKeyEvent& event)
 
 void AVConvGUIFrame::OnSliderFrameKeyUp(wxKeyEvent& event)
 {
+    // FIXME: when hitting space fast while playback is still buffering, the playback get's locked and can't be stopped
     if(event.GetKeyCode() == WXK_SPACE)
     {
         ListCtrlTasks->Enable();
@@ -1669,7 +1670,7 @@ void AVConvGUIFrame::OnFrameScroll(wxScrollEvent& event)
 
 bool AVConvGUIFrame::InitializeVideo()
 {
-    // FIXME (ronny#high#): sometimes (on selection dialog for ffmpeg application) RenderDevice
+    // FIXME: sometimes (on selection dialog for ffmpeg application) RenderDevice
     // seems to be corrupted so we need to add additional check for GLCanvasPreview
     if(RenderDevice && GLCanvasPreview->GetContext())
     {
@@ -1958,10 +1959,6 @@ printf("mix-down sound\n");
         unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
         memcpy(data, Pulse->Data, Pulse->DataSize);
 printf("play sound\n");
-
-// FIXME: sometimes when audio device (alsa) finished playback,
-// before next packets are append, the device is turned off and
-// all following packets will be ignored
         SoundDevice->Play(data, Pulse->SampleCount);
     }
 }
@@ -2016,24 +2013,28 @@ void AVConvGUIFrame::PlaybackMedia()
         thread->Create();
         thread->Run();
 
-        // TODO: wait in a while loop until the video buffer got at least 5 frames
-        // delay can be caused by start reading from the i-frame instead from current position
+        // wait in a while loop until the buffers hold data
+        // delay can be caused by i.e. start reading from the previous i-frame
+        StatusBar->SetStatusText(wxT("Buffering"), 0);
         if(VideoFrameBuffer)
         {
-            while(VideoFrameBuffer->IsEmpty())
+            while(IsPlaying && VideoFrameBuffer->IsEmpty())
             {
-                printf("Waiting for Buffer fill...\n");
-                wxMilliSleep(250);
+                StatusBar->SetStatusText(StatusBar->GetStatusText(0) + wxT("."), 0);
+                wxMilliSleep(25);
+                wxYield();
             }
         }
         if(AudioFrameBuffer)
         {
-            while(AudioFrameBuffer->IsEmpty())
+            while(IsPlaying && AudioFrameBuffer->IsEmpty())
             {
-                printf("Waiting for Buffer fill...\n");
-                wxMilliSleep(250);
+                StatusBar->SetStatusText(StatusBar->GetStatusText(0) + wxT("."), 0);
+                wxMilliSleep(25);
+                wxYield();
             }
         }
+        StatusBar->SetStatusText(wxEmptyString, 0);
 
         // init clock
         wxLongLong StartTime = wxGetLocalTimeMillis();
