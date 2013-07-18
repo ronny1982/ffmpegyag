@@ -631,7 +631,7 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
     }
 
     // use index based search, if index is available or byte position of frame unavailable
-    if(true || pFormatCtx->streams[StreamID]->nb_index_entries > 0 || info->Position < 0)
+    if(pFormatCtx->streams[StreamID]->nb_index_entries > 0 || info->Position < 0)
     {
         if(av_seek_frame(pFormatCtx, StreamID, info->Timestamp, AVSEEK_FLAG_BACKWARD) > -1)
         {
@@ -641,18 +641,12 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
     else
     {
 printf("WARNING: Using Byte Search\n");
-        // FIXME: byte positions sometimes wrong -> av_read_frame failed (i.e. Shuffle Girls Mahalkita.mkv, Bakemonogatari.mkv)
+        // FIXME: byte positions sometimes wrong -> av_read_frame failed i.e. "shuffle girl.flv"
         // works fine in thor.m2ts
-        if(av_seek_frame(pFormatCtx, StreamID, info->Position, AVSEEK_FLAG_BYTE) > -1)
+        if(avformat_seek_file(pFormatCtx, StreamID, info->Position, info->Position, info->Position, AVSEEK_FLAG_BYTE) > -1)
         {
             return true;
         }
-        /*
-        if(avio_seek(pFormatCtx->pb, info->Position, SEEK_SET) > -1)
-        {
-            return true;
-        }
-        */
     }
 
     return false;
