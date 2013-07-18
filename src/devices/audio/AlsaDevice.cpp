@@ -58,10 +58,8 @@ void AlsaDevice::Play(unsigned char* FrameData, size_t SampleCount)
     if(status == SND_PCM_STATE_XRUN)
     {
         printf("Alsa Stopped: underrun (playback) or overrun (capture) detected\n");
-        // FIXME: if audio device was released because of buffer underrun or something else, re-init
-        //snd_pcm_resume
-        //snd_pcm_recover
-        //snd_pcm_prepare(Device)
+        // FIXME: when re-prepare the device cause the buffer stream was interrupted, there will be small gaps in playback
+        snd_pcm_prepare(Device);
     }
     //if(status == SND_PCM_STATE_DRAINING){printf("Draining: running (playback) or stopped (capture)\n");}
     //if(status == SND_PCM_STATE_PAUSED){printf("Paused\n");}
