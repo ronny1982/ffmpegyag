@@ -2018,7 +2018,7 @@ void AVConvGUIFrame::PlaybackMedia()
         StatusBar->SetStatusText(wxT("Buffering"), 0);
         if(VideoFrameBuffer)
         {
-            while(IsPlaying && VideoFrameBuffer->IsEmpty())
+            while(IsPlaying && VideoFrameBuffer->IsEmpty() && thread->IsRunning())
             {
                 StatusBar->SetStatusText(StatusBar->GetStatusText(0) + wxT("."), 0);
                 wxMilliSleep(25);
@@ -2027,7 +2027,7 @@ void AVConvGUIFrame::PlaybackMedia()
         }
         if(AudioFrameBuffer)
         {
-            while(IsPlaying && AudioFrameBuffer->IsEmpty())
+            while(IsPlaying && AudioFrameBuffer->IsEmpty() && thread->IsRunning())
             {
                 StatusBar->SetStatusText(StatusBar->GetStatusText(0) + wxT("."), 0);
                 wxMilliSleep(25);

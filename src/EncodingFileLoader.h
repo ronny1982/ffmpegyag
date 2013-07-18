@@ -54,7 +54,9 @@ class EncodingFileLoader
     private: int64_t GetTimestampFromTimeV(long VideoStreamIndex, int64_t Time);
     // returns the timestamp for a given time in milliseconds in an audio stream
     private: int64_t GetTimestampFromTimeA(long AudioStreamIndex, int64_t Time);
-    // returns the byte position for a given timestamp in an audio stream
+    // returns the index entry for a given timestamp in an video stream
+    public: IndexEntry* GetIndexEntryFromTimestampV(long VideoStreamIndex, int64_t Timestamp);
+    // returns the index entry for a given timestamp in an audio stream
     public: IndexEntry* GetIndexEntryFromTimestampA(long AudioStreamIndex, int64_t Timestamp);
     // returns the raw image data of the selected stream and frame number
     // do not delete VideoFrame*, this pointer is freed by GOPBuffer

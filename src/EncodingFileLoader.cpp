@@ -631,7 +631,7 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
     }
 
     // use index based search, if index is available or byte position of frame unavailable
-    if(pFormatCtx->streams[StreamID]->nb_index_entries > 0 || info->Position < 0)
+    if(true || pFormatCtx->streams[StreamID]->nb_index_entries > 0 || info->Position < 0)
     {
         if(av_seek_frame(pFormatCtx, StreamID, info->Timestamp, AVSEEK_FLAG_BACKWARD) > -1)
         {
@@ -640,7 +640,8 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
     }
     else
     {
-        // FIXME: byte positions sometimes wrong -> av_read_frame failed (i.e. Bakemonogatari.mkv)
+printf("WARNING: Using Byte Search\n");
+        // FIXME: byte positions sometimes wrong -> av_read_frame failed (i.e. Shuffle Girls Mahalkita.mkv, Bakemonogatari.mkv)
         // works fine in thor.m2ts
         if(av_seek_frame(pFormatCtx, StreamID, info->Position, AVSEEK_FLAG_BYTE) > -1)
         {
@@ -800,7 +801,11 @@ int64_t EncodingFileLoader::GetTimestampFromTimeA(long AudioStreamIndex, int64_t
     return (int64_t)0;
 }
 
-// returns the byte position for a given timestamp in an audio stream
+IndexEntry* EncodingFileLoader::GetIndexEntryFromTimestampV(long VideoStreamIndex, int64_t Timestamp)
+{
+    return VideoStreams[VideoStreamIndex]->IndexEntries[GetFrameFromTimestampV(VideoStreamIndex, Timestamp)];
+}
+
 IndexEntry* EncodingFileLoader::GetIndexEntryFromTimestampA(long AudioStreamIndex, int64_t Timestamp)
 {
     return AudioStreams[AudioStreamIndex]->IndexEntries[GetFrameFromTimestampA(AudioStreamIndex, Timestamp)];
