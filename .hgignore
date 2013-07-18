@@ -6,6 +6,7 @@ syntax: glob
 *.dsc
 *.changes
 *.tar.gz
+*.orig
 config_debug.sh
 make-*
 makefile*
