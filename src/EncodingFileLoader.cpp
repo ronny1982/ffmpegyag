@@ -609,20 +609,16 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
         StreamID = VideoStreams[VideoStreamIndex]->ID;
         info = VideoStreams[VideoStreamIndex]->IndexEntries[KeyFrameIndex];
 
-        // FIXME: using audio keyframe timestamp is broken, disable this and always use video
-        // often occured in agnis philosophy.mp4
-        /*
         if(AudioStreamIndex > -1)
         {
             IndexEntry* aInfo = GetIndexEntryFromTimestampA(AudioStreamIndex, info->Timestamp);
-
-            if(info->Timestamp > aInfo->Timestamp)
+            // compare file positions
+            if(info->Position > aInfo->Position)
             {
                 StreamID = AudioStreams[AudioStreamIndex]->ID;
                 info = aInfo;
             }
         }
-        */
     }
     else if(AudioStreamIndex > -1)
     {
