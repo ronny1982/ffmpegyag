@@ -1906,7 +1906,7 @@ bool AVConvGUIFrame::InitializeAudio()
 
 void AVConvGUIFrame::RenderSound(AudioFrame* Pulse, FileSegment* Segment)
 {
-printf("render sound\n");
+//printf("render sound\n");
     if(Pulse)
     {
         if(Segment)
@@ -1917,7 +1917,7 @@ printf("render sound\n");
             // mute
             if(Segment->Time.From > 0 || Segment->Time.From < Segment->Time.To)
             {
-printf("mute sound\n");
+//printf("mute sound\n");
                 if(Pulse->Timecode < Segment->Time.From || Pulse->Timecode + Pulse->Duration > Segment->Time.To)
                 {
                     //From = Segment->Time.From;
@@ -1935,7 +1935,7 @@ printf("mute sound\n");
                 // fade in
                 if(Segment->AudioFadeIn.From > 0 || Segment->AudioFadeIn.From < Segment->AudioFadeIn.To)
                 {
-printf("fade-in sound\n");
+//printf("fade-in sound\n");
                     From = Segment->Time.From + Segment->AudioFadeIn.From;
                     To = Segment->Time.From + Segment->AudioFadeIn.To;
                     Pulse->Fade(&From, &To, FadeIn, FadeQuadratic);
@@ -1944,21 +1944,21 @@ printf("fade-in sound\n");
                 // fade out
                 if(Segment->AudioFadeOut.From > 0 || Segment->AudioFadeOut.From < Segment->AudioFadeOut.To)
                 {
-printf("fade-out sound\n");
+//printf("fade-out sound\n");
                     From = Segment->Time.From + Segment->AudioFadeOut.From;
                     To = Segment->Time.From + Segment->AudioFadeOut.To;
                     Pulse->Fade(&From, &To, FadeOut, FadeQuadratic);
                 }
             }
         }
-printf("mix-down sound\n");
+//printf("mix-down sound\n");
         Pulse->MixDown();
 
         // NOTE: do not use Pulse->Data
         // create copy that will be written to alsa (alsa will free it)
         unsigned char* data = (unsigned char*)malloc(Pulse->DataSize);
         memcpy(data, Pulse->Data, Pulse->DataSize);
-printf("play sound\n");
+//printf("play sound\n");
         SoundDevice->Play(data, Pulse->SampleCount);
     }
 }

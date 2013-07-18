@@ -599,7 +599,6 @@ long EncodingFileLoader::SeekKeyFrameIndex(long VideoStreamIndex, long FrameInde
     return FrameIndex;
 }
 
-// set the file pointer to the closest keyframe before the given timestamp
 bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStreamIndex, long KeyFrameIndex)
 {
     unsigned int StreamID;
@@ -610,15 +609,20 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
         StreamID = VideoStreams[VideoStreamIndex]->ID;
         info = VideoStreams[VideoStreamIndex]->IndexEntries[KeyFrameIndex];
 
+        // FIXME: using audio keyframe timestamp is broken, disable this and always use video
+        // often occured in agnis philosophy.mp4
+        /*
         if(AudioStreamIndex > -1)
         {
             IndexEntry* aInfo = GetIndexEntryFromTimestampA(AudioStreamIndex, info->Timestamp);
-            if(info->Position > aInfo->Position)
+
+            if(info->Timestamp > aInfo->Timestamp)
             {
                 StreamID = AudioStreams[AudioStreamIndex]->ID;
                 info = aInfo;
             }
         }
+        */
     }
     else if(AudioStreamIndex > -1)
     {
