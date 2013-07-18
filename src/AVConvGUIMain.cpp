@@ -2054,20 +2054,16 @@ void AVConvGUIFrame::PlaybackMedia()
                 {
                     AudioFrame* Pulse = (AudioFrame*)AudioFrameBuffer->Pull(false);
 //if(true)
-                    if(ReferenceClock >= Pulse->Timecode - 160) // preload audio frames 160ms
+                    if(ReferenceClock >= Pulse->Timecode/* - 80*/) // load audio frames even if they started 80ms before current reference clock
                     {
-                        // FIXME: if the audio buffer is full, do nothing (prevent block through sound device)
-                        // this will continue processing video data...
-                        if(/*false*/ true)
+                        Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
+
+                        // Only play audio frame if it is within the reference clock, this should prevent RenderSound() waiting/blocking caused by full audio device buffer
+                        if(ReferenceClock <= Pulse->Timecode + Pulse->Duration/* + 5*/) // add 5ms variance to prevent gaps between frames
                         {
-                            Pulse = (AudioFrame*)AudioFrameBuffer->Pull();
-//if(false) // disable sound for render benchmark (because this is a non async function that will wait until sound can be played)
-                            if(1)
-                            {
-                                RenderSound(Pulse, Segment);
-                            }
-                            wxDELETE(Pulse);
+                            RenderSound(Pulse, Segment);
                         }
+                        wxDELETE(Pulse);
                     }
                     Pulse = NULL;
                 }
