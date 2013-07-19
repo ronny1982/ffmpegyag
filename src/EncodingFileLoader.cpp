@@ -640,7 +640,15 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
     }
     else
     {
-printf("WARNING: Using Byte Search\n");
+printf("WARNING: Using Byte Search (");
+if(AudioStreamIndex > -1 && StreamID == AudioStreams[AudioStreamIndex]->ID)
+{
+    printf("Audio Stream)\n");
+}
+else
+{
+    printf("Video Stream)\n");
+}
         // FIXME: byte positions sometimes wrong -> av_read_frame failed i.e. "shuffle girl.flv"
         // works fine in thor.m2ts
         if(avformat_seek_file(pFormatCtx, StreamID, info->Position, info->Position, info->Position, AVSEEK_FLAG_BYTE) > -1)
