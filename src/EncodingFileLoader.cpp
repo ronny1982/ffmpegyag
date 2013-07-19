@@ -615,8 +615,19 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
             // compare file positions
             if(info->Position > aInfo->Position)
             {
-                StreamID = AudioStreams[AudioStreamIndex]->ID;
-                info = aInfo;
+                // check if byte position search will be used
+                if(pFormatCtx->streams[AudioStreams[AudioStreamIndex]->ID]->nb_index_entries > 0 || aInfo->Position < 0)
+                {
+                    StreamID = AudioStreams[AudioStreamIndex]->ID;
+                    info = aInfo;
+                    //printf("Frame Search will be used for Audio Stream\n");
+                }
+                else
+                {
+                    // byte search for audio currently not working -> find closest video frame to the given audio frame
+                    info = GetIndexEntryFromTimestampV(VideoStreamIndex, GetTimestampFromTimeV(VideoStreamIndex, GetTimeFromTimestampA(AudioStreamIndex, aInfo->Timestamp)));
+                    //printf("Byte Search will be used for Audio Stream\n");
+                }
             }
         }
     }
@@ -640,15 +651,16 @@ bool EncodingFileLoader::SetStreamPosition(long VideoStreamIndex, long AudioStre
     }
     else
     {
-printf("WARNING: Using Byte Search (");
+/*
 if(AudioStreamIndex > -1 && StreamID == AudioStreams[AudioStreamIndex]->ID)
 {
-    printf("Audio Stream)\n");
+    printf("WARNING: Using Byte Search for Audio Stream\n");
 }
 else
 {
-    printf("Video Stream)\n");
+    printf("WARNING: Using Byte Search for Video Stream\n");
 }
+*/
         // FIXME: byte positions sometimes wrong -> av_read_frame failed i.e. "shuffle girl.flv"
         // works fine in thor.m2ts
         if(avformat_seek_file(pFormatCtx, StreamID, info->Position, info->Position, info->Position, AVSEEK_FLAG_BYTE) > -1)
