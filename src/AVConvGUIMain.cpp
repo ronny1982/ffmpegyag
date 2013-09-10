@@ -3402,7 +3402,7 @@ void AVConvGUIFrame::OnButtonEncodeClick(wxCommandEvent& event)
                     if(Line.StartsWith(wxT("frame=")) || Line.StartsWith(wxT("size=")))
                     {
                         Line.Replace(wxT(" "), wxEmptyString, true); // frame=279fps=20q=-1.0Lsize=2701kBtime=11.36bitrate=1948.6kbits/sdup=0...
-
+// FIXME: parsing with Mid() fails on ffmpeg 2.0.1 output
                         // assume size is between "size=" and "time="
                         pos_start = Line.find(wxT("size="), pos_end) + 5;
                         pos_end = Line.find(wxT("time="), pos_start);
