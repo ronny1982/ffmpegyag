@@ -42,5 +42,8 @@ LDLIBS="
     -lavformat
     -lavcodec
     -lswscale
+    -lavutil
     -lasound
+    -lGL
+    -lX11
     "

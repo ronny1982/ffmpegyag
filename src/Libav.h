@@ -52,7 +52,8 @@ enum AVMediaFlags
 
 WX_DECLARE_STRING_HASH_MAP(wxString, StringHashMap);
 WX_DECLARE_HASH_MAP(PixelFormat, wxString, wxIntegerHash, wxIntegerEqual, PixelFormatHashMap);
-WX_DECLARE_HASH_MAP(AVCodecID, AVMediaFlags, wxIntegerHash, wxIntegerEqual, CodecIDHashMap);
+// FIXME: ffmpeg uses 'AVCodecID', libav uses 'CodecID'
+WX_DECLARE_HASH_MAP(CodecID, AVMediaFlags, wxIntegerHash, wxIntegerEqual, CodecIDHashMap);
 WX_DECLARE_STRING_HASH_MAP(AVMediaFlags, MediaFlagHashMap);
 
 class Libav
