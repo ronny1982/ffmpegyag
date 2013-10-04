@@ -23,17 +23,16 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=3
+current_page=8
 FILE_NAME_0=7680;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.h;0;4
-FILE_NAME_1=158968;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
+FILE_NAME_1=158765;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
 FILE_NAME_2=2186;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.h;0;4
 FILE_NAME_3=4136;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.cpp;0;4
 FILE_NAME_4=0;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingTask.cpp;0;4
-FILE_NAME_5=1655;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FLibav.h;0;4
+FILE_NAME_5=505;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FLibav.h;0;4
 FILE_NAME_6=0;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FVideoFrame.cpp;0;4
 FILE_NAME_7=69;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FVideoFrame.h;0;4
-FILE_NAME_8=2747;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FLibav.cpp;0;4
-FILE_NAME_9=2374;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Faudio%2FAlsaDevice.cpp;0;4
+FILE_NAME_8=2374;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2Fdevices%2Faudio%2FAlsaDevice.cpp;0;4
 
 [VTE]
 last_dir=/home/ronny/Documents/development/ffmpegyag
