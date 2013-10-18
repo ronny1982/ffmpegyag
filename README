@@ -38,6 +38,8 @@
     # change into ffmpegyag directory
     # run configure (with --prefix=DIR if you want to install in a directory other than /usr/local)
     ./configure --prefix=/usr
+    # OR (if you want to use clang instead of gcc):
+    ./configure --config-clang --prefix=/usr
     make
     # run as root or installation will fail
     sudo make install
@@ -49,13 +51,12 @@
     # NOTE: create a source package for redistribution
     make tgz
 
-    # NOTE: create a debian source package for redistribution
-    make dsc
-
     # NOTE: create a debian binary package for redistribution
     # (configure with prefix /usr to prevent lintian errors)
     # (run as root for correct ownership of files)
     ./configure --prefix=/usr
+    # OR (if you want to use clang instead of gcc):
+    ./configure --config-clang --prefix=/usr
     sudo make deb
 
 #############
