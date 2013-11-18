@@ -48,7 +48,7 @@ void WGLDevice::MakeCurrent()
 
 void WGLDevice::SwapBuffers()
 {
-    wglSwapuffer(widget, context);
-    GLDevice::SwapBuffers();
+    //wglSwapuffer(widget, context);
+    //GLDevice::SwapBuffers();
 }
 #endif // WINDOWS
