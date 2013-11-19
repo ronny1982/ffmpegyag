@@ -43,7 +43,7 @@ wxString AVConvSettings::GetConfigurationPath()
 wxArrayString AVConvSettings::GetPresets()
 {
     wxArrayString PresetFiles;
-    wxDir::GetAllFiles(wxStandardPaths::Get().GetExecutablePath().BeforeLast(wxFileName::GetPathSeparator()), &PresetFiles, wxT("*.fyt"));
+    wxDir::GetAllFiles(wxStandardPaths::Get().GetExecutablePath().BeforeLast(wxFileName::GetPathSeparator()) + wxFileName::GetPathSeparator() + wxT("presets"), &PresetFiles, wxT("*.fyt"));
     wxDir::GetAllFiles(GetConfigurationPath(), &PresetFiles, wxT("*.fyt"));
     for(size_t f=0; f<PresetFiles.GetCount(); f++)
     {
