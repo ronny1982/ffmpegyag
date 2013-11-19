@@ -26,8 +26,8 @@ void Libav::Init()
     wxArrayString ConverterLabels;
     wxDir::GetAllFiles(ConverterApplication.GetPath(), &ConverterFiles, wxT("ffmpeg*"), wxDIR_FILES);
     wxDir::GetAllFiles(ConverterApplication.GetPath(), &ConverterFiles, wxT("avconv*"), wxDIR_FILES);
-    // TODO: when on linux and none is found, try bin path' '/bin', '/usr/bin', '/usr/local/bin'
 
+    // remove ffmpegyag itself from the list
     for(long f=0; f<(long)ConverterFiles.GetCount(); f++)
     {
         if(ConverterFiles[f].IsSameAs(ConverterApplication.GetFullPath()))
@@ -35,11 +35,38 @@ void Libav::Init()
             ConverterFiles.RemoveAt(f);
             f--;
         }
-        else
+    }
+
+    #ifdef __LINUX__
+
+        // search linux system paths, when no converter in the application directory was found
+        if(ConverterFiles.GetCount() < 1)
         {
-            //ConverterLabels.Add(wxFileName(ConverterFillastes[f]).GetFullName);
-            ConverterLabels.Add(ConverterFiles[f].AfterLast(wxFileName::GetPathSeparator()));
+            //wxDir::GetAllFiles(wxT("/bin"), &ConverterFiles, wxT("ffmpeg*"), wxDIR_FILES);
+            //wxDir::GetAllFiles(wxT("/bin"), &ConverterFiles, wxT("avconv*"), wxDIR_FILES);
+            wxDir::GetAllFiles(wxT("/usr/bin"), &ConverterFiles, wxT("ffmpeg*"), wxDIR_FILES);
+            wxDir::GetAllFiles(wxT("/usr/bin"), &ConverterFiles, wxT("avconv*"), wxDIR_FILES);
+            //wxDir::GetAllFiles(wxT("/usr/local/bin"), &ConverterFiles, wxT("ffmpeg*"), wxDIR_FILES);
+            //wxDir::GetAllFiles(wxT("/usr/local/bin"), &ConverterFiles, wxT("avconv*"), wxDIR_FILES);
+
+            // remove ffmpegyag itself from the list
+            for(long f=0; f<(long)ConverterFiles.GetCount(); f++)
+            {
+                if(ConverterFiles[f].AfterLast(wxFileName::GetPathSeparator()).IsSameAs(ConverterApplication.GetFullName()))
+                {
+                    ConverterFiles.RemoveAt(f);
+                    f--;
+                }
+            }
         }
+
+    #endif // LINUX
+
+    // add found applications to a selection list for the user to choose
+    for(long f=0; f<(long)ConverterFiles.GetCount(); f++)
+    {
+        ConverterLabels.Add(ConverterFiles[f]);
+        //ConverterLabels.Add(ConverterFiles[f].AfterLast(wxFileName::GetPathSeparator()));
     }
 
     if(ConverterFiles.GetCount() > 1)
@@ -65,7 +92,7 @@ void Libav::Init()
     if(ConverterFiles.GetCount() < 1)
     {
         ConverterApplication.SetName(wxT("ffmpeg")); // keep same extension as this application!
-        wxTextEntryDialog win(NULL, wxT("No video converter has been found in the application directory.\nPlease enter a custom video converter:"), wxT("Enter Video Converter"));
+        wxTextEntryDialog win(NULL, wxT("No video converter has been found in the application or system directory.\nPlease enter a custom video converter:"), wxT("Enter Video Converter"));
         win.SetValue(ConverterApplication.GetFullPath());
         if(win.ShowModal() == wxID_OK)
         {
