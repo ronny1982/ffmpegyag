@@ -14,6 +14,6 @@ Makefile*
 *.bat
 *.cmd
 obj
-dist/linux/bin/ffmpegyag
-dist/msw/bin/ffmpegyag.exe
+build/linux/bin/ffmpegyag
+build/msw/bin/ffmpegyag.exe
 test/out*
