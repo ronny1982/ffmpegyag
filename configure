@@ -363,7 +363,7 @@ write_makefile_rule_dist_tgz()
 
 write_makefile_rule_dist_deb()
 {
-    $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell cat /etc/*release | grep DISTRIB_ID | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell cat /etc/*release | grep DISTRIB_RELEASE | cut -d '=' -f 2).deb" >> $MAKEFILE
+    $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell cat /etc/*release | grep '^ID=' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell cat /etc/*release | grep 'VERSION_ID=' | cut -d '\"' -f 2).deb" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "deb: all" >> $MAKEFILE
     $ECHO_ESC "\t@mkdir -p deb/\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX)) 2> /dev/null" >> $MAKEFILE
