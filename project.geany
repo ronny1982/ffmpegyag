@@ -23,9 +23,9 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=5
+current_page=1
 FILE_NAME_0=10165;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.h;0;4
-FILE_NAME_1=143005;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
+FILE_NAME_1=138812;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FAVConvGUIMain.cpp;0;4
 FILE_NAME_2=1005;C;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.h;0;4
 FILE_NAME_3=43481;C++;0;16;0;1;0;%2Fhome%2Fronny%2FDocuments%2Fdevelopment%2Fffmpegyag%2Fsrc%2FEncodingFileLoader.cpp;0;4
 FILE_NAME_4=2961;C;0;16;0;1;0;.%2Fsrc%2FLibav.h;0;4
@@ -46,8 +46,8 @@ NF_02_LB=Make Object
 NF_02_CM=make %d/%f.o BUILD=default
 NF_02_WD=%p
 EX_00_LB=_Execute
-EX_00_CM=%p/dist/linux/bin/ffmpegyag
-EX_00_WD=%p/dist/linux/bin
+EX_00_CM=%p/build/linux/bin/ffmpegyag
+EX_00_WD=%p/build/linux/bin
 filetypes=C++;C;
 C++FT_00_LB=_Compile
 C++FT_00_CM=make %d/%f.o BUILD=default

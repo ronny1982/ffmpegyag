@@ -2964,7 +2964,7 @@ void AVConvGUIFrame::OnMenuMainClick(wxCommandEvent& event)
 {
     if(event.GetId() == ID_MenuHelp)
     {
-        wxLaunchDefaultBrowser(wxT("http://code.google.com/p/ffmpegyag/wiki/index?tm=6"));
+        wxLaunchDefaultBrowser(wxT("http://sourceforge.net/p/ffmpegyag/doc/"));
     }
 
     if(event.GetId() == ID_MenuAbout)
@@ -2973,7 +2973,7 @@ void AVConvGUIFrame::OnMenuMainClick(wxCommandEvent& event)
         about.SetName(wxT("FFmpegYAG"));
         about.SetVersion(wxT("0.7.3"));
         about.SetDescription(wxT("An advanced GUI for the popular\nFFmpeg audio/video encoding tool."));
-        about.SetWebSite(wxT("http://ffmpegyag.googlecode.com"));
+        about.SetWebSite(wxT("http://sourceforge.net/projects/ffmpegyag/"));
         about.SetCopyright(wxT("(C) 2013 Ronny Wegener <wegener.ronny@gmail.com>"));
 
         wxAboutBox(about);
