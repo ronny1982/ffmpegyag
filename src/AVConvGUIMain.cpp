@@ -2971,7 +2971,7 @@ void AVConvGUIFrame::OnMenuMainClick(wxCommandEvent& event)
     {
         wxAboutDialogInfo about;
         about.SetName(wxT("FFmpegYAG"));
-        about.SetVersion(wxT("0.7.3"));
+        about.SetVersion(wxT("0.7.4"));
         about.SetDescription(wxT("An advanced GUI for the popular\nFFmpeg audio/video encoding tool."));
         about.SetWebSite(wxT("http://sourceforge.net/projects/ffmpegyag/"));
         about.SetCopyright(wxT("(C) 2013 Ronny Wegener <wegener.ronny@gmail.com>"));
