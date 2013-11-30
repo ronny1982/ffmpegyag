@@ -6,7 +6,7 @@
 # overwrite settings from config-default
 RCPATTERN="app.rc"
 RCDIR="res"
-DISTROOT="dist/msw"
+DISTROOT="build/msw"
 BINFILE="$DISTROOT/bin/$PKGNAME.exe"
 
 CC="mingw32-g++.exe"

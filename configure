@@ -7,11 +7,16 @@ Usage: ./configure [options]
 
 Options:
 
-  -h, --help                display this help and exit
-      --config-NAME         use the configuration script config_NAME.sh
-                            to generate the Makefile
-                            i.e. '--config-x86-linux-gcc' will generate a
-                            makefile based on 'config_x86-linux-gcc.sh'
+  -h, --help                Display this help and exit.
+  -i, --init                Initialize a new project structure with
+                            default configuration and source files.
+                            The project will be titled hello-world.
+                            All project settings can be changed in the
+                            generated 'config_default.sh' script.
+      --config-NAME         Use the configuration script config_NAME.sh
+                            to generate the Makefile.
+                            Example: '--config-x86-linux-gcc' will generate
+                            a makefile based on 'config_x86-linux-gcc.sh'
                             [--config-default]"
     for CONFIGSCRIPT in $(find -maxdepth 1 -type f -name 'config_*.sh')
     do
@@ -21,7 +26,7 @@ Options:
         #fi
     done
     echo "
-      --prefix=\"DIRECTORY\"  install distribution files in DIRECTORY
+      --prefix=\"DIRECTORY\"  Install distribution files in DIRECTORY
                             [/usr/local]
 "
 
@@ -30,6 +35,193 @@ Options:
   # http://www.gnu.org/software/automake/manual/html_node/Cross_002dCompilation.html
 
   exit
+}
+
+initialize()
+{
+    PROJECT=hello-world
+
+    rm -r -f build include lib obj res src config_*.sh Make* make*
+
+    mkdir -p build/linux/bin
+    mkdir -p build/msw
+    mkdir -p include
+    mkdir -p lib/linux
+    mkdir -p lib/msw
+    mkdir -p obj
+    mkdir -p res
+    mkdir -p src
+
+    echo "#include <stdio.h>
+
+int main();" > src/main.h
+
+    echo "#include \"main.h\"
+
+int main()
+{
+    printf(\"Hello World\\n\");
+    return 0;
+}" > src/main.cpp
+
+    echo "AAA ICON \"app.ico\"" > res/icons.rc
+
+    echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
+<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">
+<assemblyIdentity
+    version=\"0.64.1.0\"
+    processorArchitecture=\"x86\"
+    name=\"Controls\"
+    type=\"win32\"
+/>
+<description>wxWindows application</description>
+<dependency>
+    <dependentAssembly>
+        <assemblyIdentity
+            type=\"win32\"
+            name=\"Microsoft.Windows.Common-Controls\"
+            version=\"6.0.0.0\"
+            processorArchitecture=\"X86\"
+            publicKeyToken=\"6595b64144ccf1df\"
+            language=\"*\"
+        />
+    </dependentAssembly>
+</dependency>
+</assembly>" > res/app.manifest
+
+    echo "#include \"icons.rc\"
+
+// embed a version 6 manifest file to use ComCtl32.dll (modern WinXP+ gui style)
+1 MANIFEST \"app.manifest\"" > res/app.rc
+
+    # FIXME: \x00 not printed to file...
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x42' $'\x5A' $'\x68' $'\x36' $'\x31' $'\x41' $'\x59' $'\x26' $'\x53' $'\x59' $'\xF1' $'\x0C' $'\x91' $'\x07' $'\x00' $'\x01' > res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x3E' $'\xFF' $'\xD5' $'\xFE' $'\x5C' $'\x6A' $'\xA0' $'\x5D' $'\x43' $'\x7B' $'\x80' $'\x4C' $'\x00' $'\x00' $'\x20' $'\x68' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x61' $'\xDE' $'\x20' $'\x40' $'\x11' $'\x01' $'\x00' $'\x40' $'\x00' $'\x00' $'\x40' $'\x00' $'\x09' $'\xB0' $'\x01' $'\x4C' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x24' $'\x09' $'\x22' $'\x9A' $'\xA6' $'\xD4' $'\xF6' $'\xA9' $'\xB5' $'\x3D' $'\x04' $'\x64' $'\xCD' $'\x10' $'\xD1' $'\x81' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x1A' $'\x61' $'\x33' $'\x4F' $'\x48' $'\x60' $'\x00' $'\x1A' $'\x00' $'\x03' $'\x26' $'\x80' $'\x00' $'\x03' $'\x40' $'\x22' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x48' $'\xA3' $'\x53' $'\xD4' $'\x1A' $'\x00' $'\x00' $'\x00' $'\x34' $'\x0D' $'\x00' $'\x11' $'\xB6' $'\xF9' $'\xC8' $'\xF1' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xF0' $'\x81' $'\xFB' $'\x5C' $'\x25' $'\x3B' $'\x2B' $'\x9F' $'\x73' $'\x3D' $'\x6C' $'\x11' $'\x7A' $'\xE6' $'\x20' $'\xC1' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xFE' $'\xC2' $'\xA6' $'\xE8' $'\x92' $'\x72' $'\x76' $'\x11' $'\xA6' $'\x5A' $'\x80' $'\xCD' $'\x14' $'\x32' $'\xB2' $'\x42' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x00' $'\x42' $'\x44' $'\x72' $'\x43' $'\x2B' $'\x0B' $'\xC0' $'\xA8' $'\x48' $'\x6A' $'\xC7' $'\x48' $'\x34' $'\x52' $'\x54' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x4C' $'\x31' $'\xA0' $'\x17' $'\x1F' $'\xC8' $'\x01' $'\xF9' $'\x60' $'\xA5' $'\x7F' $'\x6B' $'\x13' $'\xB4' $'\x95' $'\x7D' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x1F' $'\xB6' $'\xE4' $'\x7C' $'\xC4' $'\x30' $'\x6B' $'\xA9' $'\xBF' $'\x14' $'\xDB' $'\xD8' $'\xAC' $'\x80' $'\xF5' $'\x86' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x42' $'\xC1' $'\xCD' $'\x37' $'\x61' $'\x33' $'\x19' $'\xED' $'\xA5' $'\x39' $'\xC9' $'\x73' $'\xCC' $'\x42' $'\xCE' $'\x17' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xCF' $'\xE5' $'\x99' $'\x0D' $'\x5C' $'\x7D' $'\x20' $'\x8D' $'\x08' $'\x65' $'\x77' $'\x17' $'\xE6' $'\xFE' $'\x9A' $'\xCE' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x63' $'\xB0' $'\xA1' $'\xC3' $'\x3C' $'\xD3' $'\x85' $'\xA6' $'\x14' $'\x4E' $'\x6D' $'\x1C' $'\xA6' $'\x0E' $'\xB8' $'\x54' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xE3' $'\xBB' $'\x98' $'\xD0' $'\x54' $'\xAE' $'\xD3' $'\x71' $'\x42' $'\x34' $'\x34' $'\x3C' $'\x9D' $'\xE8' $'\x28' $'\x86' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xD1' $'\x06' $'\x41' $'\x21' $'\x6F' $'\x10' $'\x4C' $'\xA5' $'\xDB' $'\xAC' $'\xDC' $'\xF7' $'\x96' $'\x16' $'\x6E' $'\x32' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x59' $'\x3B' $'\x65' $'\xAA' $'\x52' $'\x94' $'\x4E' $'\xDF' $'\x08' $'\x47' $'\x02' $'\x2F' $'\x6A' $'\x49' $'\x95' $'\xAD' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x06' $'\x0A' $'\x17' $'\x10' $'\x02' $'\xEE' $'\x82' $'\x59' $'\x52' $'\x85' $'\x4A' $'\x4B' $'\x00' $'\x59' $'\xA0' $'\x0A' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x84' $'\x52' $'\x90' $'\x4A' $'\x02' $'\xC4' $'\x06' $'\x5A' $'\x88' $'\xA9' $'\x50' $'\xA0' $'\x61' $'\x52' $'\x29' $'\x00' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xB5' $'\xA7' $'\x24' $'\x41' $'\x28' $'\x03' $'\x2F' $'\xBA' $'\xBF' $'\xD7' $'\x03' $'\x67' $'\xFB' $'\x15' $'\xFF' $'\x17' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c $'\x72' $'\x45' $'\x38' $'\x50' $'\x90' $'\xF1' $'\x0C' $'\x91' $'\x07' >> res/app.ico.tar.bz2
+
+    tar -xjf res/app.ico.tar.bz2 -O > res/app.ico
+    rm -f res/app.ico.tar.bz2
+
+    echo "#!/bin/sh
+
+# package settings (tgz, deb)
+PKGNAME=\"$PROJECT\"
+PKGVERSION=\"1.0\"
+PKGSECTION=\"accessories\"
+PKGAUTHOR=\"nobody <nobody@mail.com>\"
+PKGHOMEPAGE=\"http://\"
+PKGDEPENDS=\"\"
+PKGDESCRIPTION=\"Title of Hello World
+ detailed description of hello world
+ each line is indented by a space
+ blank lines require a dot after the space
+ .
+ features:
+ .
+ - alpha
+ - beta
+ - gamma\"
+
+# source files (space seperated) which should be searched in the source directory and beeing compiled (i.e. *.c *.cxx *.cpp main.cpp)
+SRCPATTERN=\"*.c main.cpp\"
+# directory which contains all source and header files
+SRCDIR=\"src\"
+# resource files (*windows only, must end with '.rc', space seperated) which should be searched in the resource directory and beeing compiled (i.e. *.rc app.rc)
+RCPATTERN=\"\"
+# directory which contains all windows resource files (*windows only)
+RCDIR=\"\"
+# directory where the generated object files should be stored
+OBJDIR=\"obj\"
+# directory which contains files for re-distribution (system root level based)
+DISTROOT=\"build/linux\"
+# path and name of the generated binary file (usually inside a sub-directory of the distribution root)
+BINFILE=\"\$DISTROOT/bin/$PROJECT\"
+
+# compiler to use
+CC=\"g++\"
+# compiler flags, search directories (prefix: -I)
+CFLAGS=\"
+    -c
+    -Wall
+    -O2
+    -Iinclude
+    \"
+
+# windows resource compiler to use
+RC=\"\"
+# resource compiler flags, search directories (prefix: -I)
+RCFLAGS=\"\"
+
+# linker to use
+LD=\"g++\"
+# linker flags
+LDFLAGS=\"
+    -s
+    \"
+# linker libraries: directly (path/*.a), search directories (prefix: -L), libraries (prefix -l)
+LDLIBS=\"
+    -Llib/linux
+    \"" > config_default.sh
+
+    echo "#!/bin/sh
+
+# import setings from config-default
+. ./config_default.sh
+
+# overwrite settings from config-default
+RCPATTERN=\"app.rc\"
+RCDIR=\"res\"
+DISTROOT=\"build/msw\"
+BINFILE=\"\$DISTROOT/bin/$PROJECT.exe\"
+
+CC=\"mingw32-g++.exe\"
+CFLAGS=\"
+    -c
+    -Wall
+    -O2
+    -Iinclude
+    \"
+
+RC=\"windres.exe\"
+RCFLAGS=\"
+    -J rc
+    -O coff
+    -F pe-i386
+    \"
+
+LD=\"mingw32-g++.exe\"
+LDFLAGS=\"
+    -s
+    -static-libgcc
+    -static-libstdc++
+    \"
+LDLIBS=\"
+    -Llib/msw
+    \"" > config_mingw.sh
+
+    echo "Initialization of project '$PROJECT' complete."
+    echo "You can now change project settings in the generated"
+    echo "configuration files: 'congig_*.sh'"
+
+    exit
 }
 
 check_command()
@@ -457,6 +649,10 @@ do
         -h)             show_help
                         ;;
         --help)         show_help
+                        ;;
+        -i)             initialize
+                        ;;
+        --init)         initialize
                         ;;
         --config-*)     CONFIGSCRIPT=$(pwd)/$(echo $ARG | sed 's|--config-|config_|g').sh
                         ;;
