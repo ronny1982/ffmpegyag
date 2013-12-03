@@ -2,22 +2,22 @@
 
 show_help()
 {
-  echo "
-Usage: ./configure [options]
-
-Options:
-
-  -h, --help                Display this help and exit.
-  -i, --init                Initialize a new project structure with
-                            default configuration and source files.
-                            The project will be titled hello-world.
-                            All project settings can be changed in the
-                            generated 'config_default.sh' script.
-      --config-NAME         Use the configuration script config_NAME.sh
-                            to generate the Makefile.
-                            Example: '--config-x86-linux-gcc' will generate
-                            a makefile based on 'config_x86-linux-gcc.sh'
-                            [--config-default]"
+    echo ""
+    echo "Usage: ./configure [options]"
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "  -h, --help                Display this help and exit."
+    echo "  -i, --init                Initialize a new project structure with"
+    echo "                            default configuration and source files."
+    echo "                            The project will be titled hello-world."
+    echo "                            All project settings can be changed in the"
+    echo "                            generated 'config_default.sh' script."
+    echo "      --config-NAME         Use the configuration script config_NAME.sh"
+    echo "                            to generate the Makefile."
+    echo "                            Example: '--config-x86-linux-gcc' will generate"
+    echo "                            a makefile based on 'config_x86-linux-gcc.sh'"
+    echo "                            [--config-default]"
     for CONFIGSCRIPT in $(find -maxdepth 1 -type f -name 'config_*.sh')
     do
         #if [ $CONFIGSCRIPT != "./config_default.sh" ]
@@ -25,16 +25,16 @@ Options:
             echo "      $(echo $CONFIGSCRIPT | sed 's|.*config_|--config-|g;s|\.sh||g')"
         #fi
     done
-    echo "
-      --prefix=\"DIRECTORY\"  Install distribution files in DIRECTORY
-                            [/usr/local]
-"
+    echo ""
+    echo "      --prefix=DIRECTORY    Install distribution files in DIRECTORY"
+    echo "                            [/usr/local]"
+    echo ""
 
-  # http://www.gnu.org/prep/standards/html_node/Configuration.html
-  # http://www.sourceware.org/autobook/autobook/autobook_17.html#SEC17
-  # http://www.gnu.org/software/automake/manual/html_node/Cross_002dCompilation.html
+    # http://www.gnu.org/prep/standards/html_node/Configuration.html
+    # http://www.sourceware.org/autobook/autobook/autobook_17.html#SEC17
+    # http://www.gnu.org/software/automake/manual/html_node/Cross_002dCompilation.html
 
-  exit
+    exit
 }
 
 initialize()
@@ -52,170 +52,175 @@ initialize()
     mkdir -p res
     mkdir -p src
 
-    echo "#include <stdio.h>
+    echo "#include <stdio.h>" > src/main.h
+    echo "" >> src/main.h
+    echo "int main(int argc, char** argv);" >> src/main.h
 
-int main();" > src/main.h
-
-    echo "#include \"main.h\"
-
-int main()
-{
-    printf(\"Hello World\\n\");
-    return 0;
-}" > src/main.cpp
+    echo "#include \"main.h\"" > src/main.cpp
+    echo "" >> src/main.cpp
+    echo "int main(int argc, char** argv)" >> src/main.cpp
+    echo "{" >> src/main.cpp
+    echo "    printf(\"Hello World\\n\");" >> src/main.cpp
+    echo "    // argv[0] is the execution command of this application" >> src/main.cpp
+    echo "    for(int i=1; i<argc; i++)" >> src/main.cpp
+    echo "    {" >> src/main.cpp
+    echo "        printf(\"Arg[%i]: %s\n\", i, argv[i]);" >> src/main.cpp
+    echo "    }" >> src/main.cpp
+    echo "    return 0;" >> src/main.cpp
+    echo "}" >> src/main.cpp
 
     echo "AAA ICON \"app.ico\"" > res/icons.rc
 
-    echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
-<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">
-<assemblyIdentity
-    version=\"0.64.1.0\"
-    processorArchitecture=\"x86\"
-    name=\"Controls\"
-    type=\"win32\"
-/>
-<description>wxWindows application</description>
-<dependency>
-    <dependentAssembly>
-        <assemblyIdentity
-            type=\"win32\"
-            name=\"Microsoft.Windows.Common-Controls\"
-            version=\"6.0.0.0\"
-            processorArchitecture=\"X86\"
-            publicKeyToken=\"6595b64144ccf1df\"
-            language=\"*\"
-        />
-    </dependentAssembly>
-</dependency>
-</assembly>" > res/app.manifest
+    echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > res/app.manifest
+    echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> res/app.manifest
+    echo "<assemblyIdentity" >> res/app.manifest
+    echo "    version=\"0.64.1.0\"" >> res/app.manifest
+    echo "    processorArchitecture=\"x86\"" >> res/app.manifest
+    echo "    name=\"Controls\"" >> res/app.manifest
+    echo "    type=\"win32\"" >> res/app.manifest
+    echo "/>" >> res/app.manifest
+    echo "<description>wxWindows application</description>" >> res/app.manifest
+    echo "<dependency>" >> res/app.manifest
+    echo "    <dependentAssembly>" >> res/app.manifest
+    echo "        <assemblyIdentity" >> res/app.manifest
+    echo "            type=\"win32\"" >> res/app.manifest
+    echo "            name=\"Microsoft.Windows.Common-Controls\"" >> res/app.manifest
+    echo "            version=\"6.0.0.0\"" >> res/app.manifest
+    echo "            processorArchitecture=\"X86\"" >> res/app.manifest
+    echo "            publicKeyToken=\"6595b64144ccf1df\"" >> res/app.manifest
+    echo "            language=\"*\"" >> res/app.manifest
+    echo "        />" >> res/app.manifest
+    echo "    </dependentAssembly>" >> res/app.manifest
+    echo "</dependency>" >> res/app.manifest
+    echo "</assembly>" >> res/app.manifest
 
-    echo "#include \"icons.rc\"
+    echo "#include \"icons.rc\"" > res/app.rc
+    echo "" >> res/app.rc
+    echo "// embed a version 6 manifest file to use ComCtl32.dll (modern WinXP+ gui style)" >> res/app.rc
+    echo "1 MANIFEST \"app.manifest\"" >> res/app.rc
 
-// embed a version 6 manifest file to use ComCtl32.dll (modern WinXP+ gui style)
-1 MANIFEST \"app.manifest\"" > res/app.rc
+    # FIXME: this is not working in mingw/msys the $'\x00' char is not printed to file
+    printf \
+    %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c \
+    $'\x42' $'\x5A' $'\x68' $'\x36' $'\x31' $'\x41' $'\x59' $'\x26' $'\x53' $'\x59' $'\xF1' $'\x0C' $'\x91' $'\x07' $'\x00' $'\x01' \
+    $'\x3E' $'\xFF' $'\xD5' $'\xFE' $'\x5C' $'\x6A' $'\xA0' $'\x5D' $'\x43' $'\x7B' $'\x80' $'\x4C' $'\x00' $'\x00' $'\x20' $'\x68' \
+    $'\x61' $'\xDE' $'\x20' $'\x40' $'\x11' $'\x01' $'\x00' $'\x40' $'\x00' $'\x00' $'\x40' $'\x00' $'\x09' $'\xB0' $'\x01' $'\x4C' \
+    $'\x24' $'\x09' $'\x22' $'\x9A' $'\xA6' $'\xD4' $'\xF6' $'\xA9' $'\xB5' $'\x3D' $'\x04' $'\x64' $'\xCD' $'\x10' $'\xD1' $'\x81' \
+    $'\x1A' $'\x61' $'\x33' $'\x4F' $'\x48' $'\x60' $'\x00' $'\x1A' $'\x00' $'\x03' $'\x26' $'\x80' $'\x00' $'\x03' $'\x40' $'\x22' \
+    $'\x48' $'\xA3' $'\x53' $'\xD4' $'\x1A' $'\x00' $'\x00' $'\x00' $'\x34' $'\x0D' $'\x00' $'\x11' $'\xB6' $'\xF9' $'\xC8' $'\xF1' \
+    $'\xF0' $'\x81' $'\xFB' $'\x5C' $'\x25' $'\x3B' $'\x2B' $'\x9F' $'\x73' $'\x3D' $'\x6C' $'\x11' $'\x7A' $'\xE6' $'\x20' $'\xC1' \
+    $'\xFE' $'\xC2' $'\xA6' $'\xE8' $'\x92' $'\x72' $'\x76' $'\x11' $'\xA6' $'\x5A' $'\x80' $'\xCD' $'\x14' $'\x32' $'\xB2' $'\x42' \
+    $'\x00' $'\x42' $'\x44' $'\x72' $'\x43' $'\x2B' $'\x0B' $'\xC0' $'\xA8' $'\x48' $'\x6A' $'\xC7' $'\x48' $'\x34' $'\x52' $'\x54' \
+    $'\x4C' $'\x31' $'\xA0' $'\x17' $'\x1F' $'\xC8' $'\x01' $'\xF9' $'\x60' $'\xA5' $'\x7F' $'\x6B' $'\x13' $'\xB4' $'\x95' $'\x7D' \
+    $'\x1F' $'\xB6' $'\xE4' $'\x7C' $'\xC4' $'\x30' $'\x6B' $'\xA9' $'\xBF' $'\x14' $'\xDB' $'\xD8' $'\xAC' $'\x80' $'\xF5' $'\x86' \
+    $'\x42' $'\xC1' $'\xCD' $'\x37' $'\x61' $'\x33' $'\x19' $'\xED' $'\xA5' $'\x39' $'\xC9' $'\x73' $'\xCC' $'\x42' $'\xCE' $'\x17' \
+    $'\xCF' $'\xE5' $'\x99' $'\x0D' $'\x5C' $'\x7D' $'\x20' $'\x8D' $'\x08' $'\x65' $'\x77' $'\x17' $'\xE6' $'\xFE' $'\x9A' $'\xCE' \
+    $'\x63' $'\xB0' $'\xA1' $'\xC3' $'\x3C' $'\xD3' $'\x85' $'\xA6' $'\x14' $'\x4E' $'\x6D' $'\x1C' $'\xA6' $'\x0E' $'\xB8' $'\x54' \
+    $'\xE3' $'\xBB' $'\x98' $'\xD0' $'\x54' $'\xAE' $'\xD3' $'\x71' $'\x42' $'\x34' $'\x34' $'\x3C' $'\x9D' $'\xE8' $'\x28' $'\x86' \
+    $'\xD1' $'\x06' $'\x41' $'\x21' $'\x6F' $'\x10' $'\x4C' $'\xA5' $'\xDB' $'\xAC' $'\xDC' $'\xF7' $'\x96' $'\x16' $'\x6E' $'\x32' \
+    $'\x59' $'\x3B' $'\x65' $'\xAA' $'\x52' $'\x94' $'\x4E' $'\xDF' $'\x08' $'\x47' $'\x02' $'\x2F' $'\x6A' $'\x49' $'\x95' $'\xAD' \
+    $'\x06' $'\x0A' $'\x17' $'\x10' $'\x02' $'\xEE' $'\x82' $'\x59' $'\x52' $'\x85' $'\x4A' $'\x4B' $'\x00' $'\x59' $'\xA0' $'\x0A' \
+    $'\x84' $'\x52' $'\x90' $'\x4A' $'\x02' $'\xC4' $'\x06' $'\x5A' $'\x88' $'\xA9' $'\x50' $'\xA0' $'\x61' $'\x52' $'\x29' $'\x00' \
+    $'\xB5' $'\xA7' $'\x24' $'\x41' $'\x28' $'\x03' $'\x2F' $'\xBA' $'\xBF' $'\xD7' $'\x03' $'\x67' $'\xFB' $'\x15' $'\xFF' $'\x17' \
+    $'\x72' $'\x45' $'\x38' $'\x50' $'\x90' $'\xF1' $'\x0C' $'\x91' $'\x07' | tar -xjf - -O > res/app.ico
 
-    # FIXME: \x00 not printed to file...
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x42' $'\x5A' $'\x68' $'\x36' $'\x31' $'\x41' $'\x59' $'\x26' $'\x53' $'\x59' $'\xF1' $'\x0C' $'\x91' $'\x07' $'\x00' $'\x01' > res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x3E' $'\xFF' $'\xD5' $'\xFE' $'\x5C' $'\x6A' $'\xA0' $'\x5D' $'\x43' $'\x7B' $'\x80' $'\x4C' $'\x00' $'\x00' $'\x20' $'\x68' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x61' $'\xDE' $'\x20' $'\x40' $'\x11' $'\x01' $'\x00' $'\x40' $'\x00' $'\x00' $'\x40' $'\x00' $'\x09' $'\xB0' $'\x01' $'\x4C' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x24' $'\x09' $'\x22' $'\x9A' $'\xA6' $'\xD4' $'\xF6' $'\xA9' $'\xB5' $'\x3D' $'\x04' $'\x64' $'\xCD' $'\x10' $'\xD1' $'\x81' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x1A' $'\x61' $'\x33' $'\x4F' $'\x48' $'\x60' $'\x00' $'\x1A' $'\x00' $'\x03' $'\x26' $'\x80' $'\x00' $'\x03' $'\x40' $'\x22' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x48' $'\xA3' $'\x53' $'\xD4' $'\x1A' $'\x00' $'\x00' $'\x00' $'\x34' $'\x0D' $'\x00' $'\x11' $'\xB6' $'\xF9' $'\xC8' $'\xF1' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xF0' $'\x81' $'\xFB' $'\x5C' $'\x25' $'\x3B' $'\x2B' $'\x9F' $'\x73' $'\x3D' $'\x6C' $'\x11' $'\x7A' $'\xE6' $'\x20' $'\xC1' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xFE' $'\xC2' $'\xA6' $'\xE8' $'\x92' $'\x72' $'\x76' $'\x11' $'\xA6' $'\x5A' $'\x80' $'\xCD' $'\x14' $'\x32' $'\xB2' $'\x42' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x00' $'\x42' $'\x44' $'\x72' $'\x43' $'\x2B' $'\x0B' $'\xC0' $'\xA8' $'\x48' $'\x6A' $'\xC7' $'\x48' $'\x34' $'\x52' $'\x54' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x4C' $'\x31' $'\xA0' $'\x17' $'\x1F' $'\xC8' $'\x01' $'\xF9' $'\x60' $'\xA5' $'\x7F' $'\x6B' $'\x13' $'\xB4' $'\x95' $'\x7D' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x1F' $'\xB6' $'\xE4' $'\x7C' $'\xC4' $'\x30' $'\x6B' $'\xA9' $'\xBF' $'\x14' $'\xDB' $'\xD8' $'\xAC' $'\x80' $'\xF5' $'\x86' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x42' $'\xC1' $'\xCD' $'\x37' $'\x61' $'\x33' $'\x19' $'\xED' $'\xA5' $'\x39' $'\xC9' $'\x73' $'\xCC' $'\x42' $'\xCE' $'\x17' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xCF' $'\xE5' $'\x99' $'\x0D' $'\x5C' $'\x7D' $'\x20' $'\x8D' $'\x08' $'\x65' $'\x77' $'\x17' $'\xE6' $'\xFE' $'\x9A' $'\xCE' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x63' $'\xB0' $'\xA1' $'\xC3' $'\x3C' $'\xD3' $'\x85' $'\xA6' $'\x14' $'\x4E' $'\x6D' $'\x1C' $'\xA6' $'\x0E' $'\xB8' $'\x54' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xE3' $'\xBB' $'\x98' $'\xD0' $'\x54' $'\xAE' $'\xD3' $'\x71' $'\x42' $'\x34' $'\x34' $'\x3C' $'\x9D' $'\xE8' $'\x28' $'\x86' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xD1' $'\x06' $'\x41' $'\x21' $'\x6F' $'\x10' $'\x4C' $'\xA5' $'\xDB' $'\xAC' $'\xDC' $'\xF7' $'\x96' $'\x16' $'\x6E' $'\x32' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x59' $'\x3B' $'\x65' $'\xAA' $'\x52' $'\x94' $'\x4E' $'\xDF' $'\x08' $'\x47' $'\x02' $'\x2F' $'\x6A' $'\x49' $'\x95' $'\xAD' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x06' $'\x0A' $'\x17' $'\x10' $'\x02' $'\xEE' $'\x82' $'\x59' $'\x52' $'\x85' $'\x4A' $'\x4B' $'\x00' $'\x59' $'\xA0' $'\x0A' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x84' $'\x52' $'\x90' $'\x4A' $'\x02' $'\xC4' $'\x06' $'\x5A' $'\x88' $'\xA9' $'\x50' $'\xA0' $'\x61' $'\x52' $'\x29' $'\x00' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xB5' $'\xA7' $'\x24' $'\x41' $'\x28' $'\x03' $'\x2F' $'\xBA' $'\xBF' $'\xD7' $'\x03' $'\x67' $'\xFB' $'\x15' $'\xFF' $'\x17' >> res/app.ico.tar.bz2
-printf %c%c%c%c%c%c%c%c%c $'\x72' $'\x45' $'\x38' $'\x50' $'\x90' $'\xF1' $'\x0C' $'\x91' $'\x07' >> res/app.ico.tar.bz2
+    echo "#!/bin/sh" > config_default.sh
+    echo "" >> config_default.sh
+    echo "# package settings (tgz, deb)" >> config_default.sh
+    echo "PKGNAME=\"$PROJECT\"" >> config_default.sh
+    echo "PKGVERSION=\"1.0\"" >> config_default.sh
+    echo "PKGSECTION=\"misc\"" >> config_default.sh
+    echo "PKGAUTHOR=\"nobody <nobody@mail.com>\"" >> config_default.sh
+    echo "PKGHOMEPAGE=\"http://\"" >> config_default.sh
+    echo "PKGDEPENDS=\"\"" >> config_default.sh
+    echo "PKGDESCRIPTION=\"Title of Hello World" >> config_default.sh
+    echo " detailed description of hello world" >> config_default.sh
+    echo " each line is indented by a space" >> config_default.sh
+    echo " maximum length of a line is 80 characters" >> config_default.sh
+    echo " blank lines require a dot after the space" >> config_default.sh
+    echo " ." >> config_default.sh
+    echo " lists starts with '*' or '-'" >> config_default.sh
+    echo " ." >> config_default.sh
+    echo " * alpha" >> config_default.sh
+    echo " * beta" >> config_default.sh
+    echo " * gamma\"" >> config_default.sh
+    echo "" >> config_default.sh
+    echo "# source files (space seperated) which should be searched in the source directory and beeing compiled (i.e. *.c *.cxx *.cpp main.cpp)" >> config_default.sh
+    echo "SRCPATTERN=\"*.c main.cpp\"" >> config_default.sh
+    echo "# directory which contains all source and header files" >> config_default.sh
+    echo "SRCDIR=\"src\"" >> config_default.sh
+    echo "# resource files (*windows only, must end with '.rc', space seperated) which should be searched in the resource directory and beeing compiled (i.e. *.rc app.rc)" >> config_default.sh
+    echo "RCPATTERN=\"\"" >> config_default.sh
+    echo "# directory which contains all windows resource files (*windows only)" >> config_default.sh
+    echo "RCDIR=\"\"" >> config_default.sh
+    echo "# directory where the generated object files should be stored" >> config_default.sh
+    echo "OBJDIR=\"obj\"" >> config_default.sh
+    echo "# directory which contains files for re-distribution (system root level based)" >> config_default.sh
+    echo "DISTROOT=\"build/linux\"" >> config_default.sh
+    echo "# path and name of the generated binary file (usually inside a sub-directory of the distribution root)" >> config_default.sh
+    echo "BINFILE=\"\$DISTROOT/bin/$PROJECT\"" >> config_default.sh
+    echo "" >> config_default.sh
+    echo "# compiler to use" >> config_default.sh
+    echo "CC=\"g++\"" >> config_default.sh
+    echo "# compiler flags, search directories (prefix: -I)" >> config_default.sh
+    echo "CFLAGS=\"" >> config_default.sh
+    echo "    -c" >> config_default.sh
+    echo "    -Wall" >> config_default.sh
+    echo "    -O2" >> config_default.sh
+    echo "    -Iinclude" >> config_default.sh
+    echo "    \"" >> config_default.sh
+    echo "" >> config_default.sh
+    echo "# windows resource compiler to use" >> config_default.sh
+    echo "RC=\"\"" >> config_default.sh
+    echo "# resource compiler flags, search directories (prefix: -I)" >> config_default.sh
+    echo "RCFLAGS=\"\"" >> config_default.sh
+    echo "" >> config_default.sh
+    echo "# linker to use" >> config_default.sh
+    echo "LD=\"g++\"" >> config_default.sh
+    echo "# linker flags" >> config_default.sh
+    echo "LDFLAGS=\"" >> config_default.sh
+    echo "    -s" >> config_default.sh
+    echo "    \"" >> config_default.sh
+    echo "# linker libraries: directly (path/*.a), search directories (prefix: -L), libraries (prefix -l)" >> config_default.sh
+    echo "LDLIBS=\"" >> config_default.sh
+    echo "    -Llib/linux" >> config_default.sh
+    echo "    \"" >> config_default.sh
 
-    tar -xjf res/app.ico.tar.bz2 -O > res/app.ico
-    rm -f res/app.ico.tar.bz2
-
-    echo "#!/bin/sh
-
-# package settings (tgz, deb)
-PKGNAME=\"$PROJECT\"
-PKGVERSION=\"1.0\"
-PKGSECTION=\"accessories\"
-PKGAUTHOR=\"nobody <nobody@mail.com>\"
-PKGHOMEPAGE=\"http://\"
-PKGDEPENDS=\"\"
-PKGDESCRIPTION=\"Title of Hello World
- detailed description of hello world
- each line is indented by a space
- blank lines require a dot after the space
- .
- features:
- .
- - alpha
- - beta
- - gamma\"
-
-# source files (space seperated) which should be searched in the source directory and beeing compiled (i.e. *.c *.cxx *.cpp main.cpp)
-SRCPATTERN=\"*.c main.cpp\"
-# directory which contains all source and header files
-SRCDIR=\"src\"
-# resource files (*windows only, must end with '.rc', space seperated) which should be searched in the resource directory and beeing compiled (i.e. *.rc app.rc)
-RCPATTERN=\"\"
-# directory which contains all windows resource files (*windows only)
-RCDIR=\"\"
-# directory where the generated object files should be stored
-OBJDIR=\"obj\"
-# directory which contains files for re-distribution (system root level based)
-DISTROOT=\"build/linux\"
-# path and name of the generated binary file (usually inside a sub-directory of the distribution root)
-BINFILE=\"\$DISTROOT/bin/$PROJECT\"
-
-# compiler to use
-CC=\"g++\"
-# compiler flags, search directories (prefix: -I)
-CFLAGS=\"
-    -c
-    -Wall
-    -O2
-    -Iinclude
-    \"
-
-# windows resource compiler to use
-RC=\"\"
-# resource compiler flags, search directories (prefix: -I)
-RCFLAGS=\"\"
-
-# linker to use
-LD=\"g++\"
-# linker flags
-LDFLAGS=\"
-    -s
-    \"
-# linker libraries: directly (path/*.a), search directories (prefix: -L), libraries (prefix -l)
-LDLIBS=\"
-    -Llib/linux
-    \"" > config_default.sh
-
-    echo "#!/bin/sh
-
-# import setings from config-default
-. ./config_default.sh
-
-# overwrite settings from config-default
-RCPATTERN=\"app.rc\"
-RCDIR=\"res\"
-DISTROOT=\"build/msw\"
-BINFILE=\"\$DISTROOT/bin/$PROJECT.exe\"
-
-CC=\"mingw32-g++.exe\"
-CFLAGS=\"
-    -c
-    -Wall
-    -O2
-    -Iinclude
-    \"
-
-RC=\"windres.exe\"
-RCFLAGS=\"
-    -J rc
-    -O coff
-    -F pe-i386
-    \"
-
-LD=\"mingw32-g++.exe\"
-LDFLAGS=\"
-    -s
-    -static-libgcc
-    -static-libstdc++
-    \"
-LDLIBS=\"
-    -Llib/msw
-    \"" > config_mingw.sh
+    echo "#!/bin/sh" > config_mingw.sh
+    echo "" >> config_mingw.sh
+    echo "# import setings from config-default" >> config_mingw.sh
+    echo ". ./config_default.sh" >> config_mingw.sh
+    echo "" >> config_mingw.sh
+    echo "# overwrite settings from config-default" >> config_mingw.sh
+    echo "RCPATTERN=\"app.rc\"" >> config_mingw.sh
+    echo "RCDIR=\"res\"" >> config_mingw.sh
+    echo "DISTROOT=\"build/msw\"" >> config_mingw.sh
+    echo "BINFILE=\"\$DISTROOT/bin/$PROJECT.exe\"" >> config_mingw.sh
+    echo "" >> config_mingw.sh
+    echo "CC=\"mingw32-g++.exe\"" >> config_mingw.sh
+    echo "CFLAGS=\"" >> config_mingw.sh
+    echo "    -c" >> config_mingw.sh
+    echo "    -Wall" >> config_mingw.sh
+    echo "    -O2" >> config_mingw.sh
+    echo "    -Iinclude" >> config_mingw.sh
+    echo "    \"" >> config_mingw.sh
+    echo "" >> config_mingw.sh
+    echo "RC=\"windres.exe\"" >> config_mingw.sh
+    echo "RCFLAGS=\"" >> config_mingw.sh
+    echo "    -J rc" >> config_mingw.sh
+    echo "    -O coff" >> config_mingw.sh
+    echo "    -F pe-i386" >> config_mingw.sh
+    echo "    \"" >> config_mingw.sh
+    echo "" >> config_mingw.sh
+    echo "LD=\"mingw32-g++.exe\"" >> config_mingw.sh
+    echo "LDFLAGS=\"" >> config_mingw.sh
+    echo "    -s" >> config_mingw.sh
+    echo "    -static-libgcc" >> config_mingw.sh
+    echo "    -static-libstdc++" >> config_mingw.sh
+    echo "    \"" >> config_mingw.sh
+    echo "LDLIBS=\"" >> config_mingw.sh
+    echo "    -Llib/msw" >> config_mingw.sh
+    echo "    \"" >> config_mingw.sh
 
     echo "Initialization of project '$PROJECT' complete."
     echo "You can now change project settings in the generated"
@@ -457,8 +462,7 @@ write_makefile_configuration()
     $ECHO_ESC "PKGAUTHOR = $PKGAUTHOR" >> $MAKEFILE
     $ECHO_ESC "PKGHOMEPAGE = $PKGHOMEPAGE" >> $MAKEFILE
     $ECHO_ESC "PKGDEPENDS = $(echo $PKGDEPENDS | sed -e 's|([^)]*)||g;s|,||g;s|  | |g')" >> $MAKEFILE
-    $ECHO_ESC "PKGDESCRIPTION = $PKGDESCRIPTION" | sed 's|$|\\n\\|' >> $MAKEFILE
-    $ECHO_ESC " ." >> $MAKEFILE
+    $ECHO_ESC "PKGDESCRIPTION = $PKGDESCRIPTION" | sed ':a;N;$!ba;s|\n|\\n\\\n|g' >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "SRCPATTERN = $SRCPATTERN" >> $MAKEFILE
     $ECHO_ESC "SRCDIR = $SRCDIR" >> $MAKEFILE
@@ -510,8 +514,9 @@ write_makefile_rule_build()
     $ECHO_ESC "\t@echo " >> $MAKEFILE
     $ECHO_ESC "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
     $ECHO_ESC "\t\$(RC) \$(RCFLAGS) -o \$@ -i \$<" >> $MAKEFILE
-    # TODO: create a correct dependency file from an rc file... (depends on includes, icons, manifests, ...)
-    $ECHO_ESC "\t-@\$(CC) \$(CFLAGS) -MM -MT \$@ \$< > \$(OBJDIR)/\$*.d" >> $MAKEFILE
+    $ECHO_ESC "\t@cp \$< \$<.cpp" >> $MAKEFILE
+    $ECHO_ESC "\t-@\$(CC) \$(CFLAGS) -MM -MT \$@ \$<.cpp | sed 's|\$<.cpp|\$<|g' > \$(OBJDIR)/\$*.d" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f \$<.cpp" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "\$(CURDIR)/\$(OBJDIR)/%.o \$(CURDIR)/\$(SRCDIR)/%.o \$(SRCDIR)/%.o: \$(OBJDIR)/%.o" >> $MAKEFILE
     $ECHO_ESC "\$(OBJDIR)/%.o: \$(SRCDIR)/%" >> $MAKEFILE
@@ -566,7 +571,6 @@ write_makefile_rule_dist_deb()
     $ECHO_ESC "\t@mkdir -p deb/\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX)) 2> /dev/null" >> $MAKEFILE
     $ECHO_ESC "\t@mkdir -p deb/DEBIAN 2> /dev/null" >> $MAKEFILE
     $ECHO_ESC "\t@cp -r \$(DISTROOT)/* deb/\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX))" >> $MAKEFILE
-    $ECHO_ESC "\t@md5sum \$(shell find \$(DISTROOT) -type f) | sed 's|\$(DISTROOT)|\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX))|g' > deb/DEBIAN/md5sums" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Package: \$(PKGNAME)' > deb/DEBIAN/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Version: \$(PKGVERSION)' >> deb/DEBIAN/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Section: \$(PKGSECTION)' >> deb/DEBIAN/control" >> $MAKEFILE
@@ -576,17 +580,23 @@ write_makefile_rule_dist_deb()
     $ECHO_ESC "\t@echo 'Maintainer: \$(PKGAUTHOR)' >> deb/DEBIAN/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Priority: optional' >> deb/DEBIAN/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'Homepage: \$(PKGHOMEPAGE)' >> deb/DEBIAN/control" >> $MAKEFILE
-    $ECHO_ESC "\t@echo 'Description: \$(PKGDESCRIPTION)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Description: \$(PKGDESCRIPTION)' | sed 's|^ -|  -|g;s|^ \\*|  \\*|g' >> deb/DEBIAN/control" >> $MAKEFILE
     $ECHO_ESC "\t@echo '#!/bin/sh' > deb/DEBIAN/postinst" >> $MAKEFILE
-    $ECHO_ESC "\t@echo '' >> deb/DEBIAN/postinst" >> $MAKEFILE
-    $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-menus ] ; then update-menus ; fi' >> deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'set -e' >> deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@if [ -f \$(DISTROOT)/share/menu/\$(PKGNAME) ]; then echo 'if [ -x /usr/bin/update-menus ] ; then update-menus ; fi' >> deb/DEBIAN/postinst; fi;" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-mime ] ; then update-mime ; fi' >> deb/DEBIAN/postinst" >> $MAKEFILE
     $ECHO_ESC "\t@chmod 0755 deb/DEBIAN/postinst" >> $MAKEFILE
     $ECHO_ESC "\t@echo '#!/bin/sh' > deb/DEBIAN/postrm" >> $MAKEFILE
-    $ECHO_ESC "\t@echo '' >> deb/DEBIAN/postrm" >> $MAKEFILE
-    $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-menus ] ; then update-menus ; fi' >> deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'set -e' >> deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@if [ -f \$(DISTROOT)/share/menu/\$(PKGNAME) ]; then echo 'if [ -x /usr/bin/update-menus ] ; then update-menus ; fi' >> deb/DEBIAN/postrm; fi;" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-mime ] ; then update-mime ; fi' >> deb/DEBIAN/postrm" >> $MAKEFILE
     $ECHO_ESC "\t@chmod 0755 deb/DEBIAN/postrm" >> $MAKEFILE
+    # TODO: check for COPYRIGHT file in project root and copy to DISTROOT
+    $ECHO_ESC "\t@if [ ! -f \$(DISTROOT)/share/doc/\$(PKGNAME)/copyright ]; then mkdir -p deb\$(PREFIX)/share/doc/\$(PKGNAME); echo 'Copyright \$(shell date +%Y)' > deb\$(PREFIX)/share/doc/\$(PKGNAME)/copyright; fi;" >> $MAKEFILE
+    # TODO: check for CHANGELOG file in project root and copy to DISTROOT
+    $ECHO_ESC "\t@if [ ! -f \$(DISTROOT)/share/doc/\$(PKGNAME)/changelog ]; then mkdir -p deb\$(PREFIX)/share/doc/\$(PKGNAME); echo '' > deb\$(PREFIX)/share/doc/\$(PKGNAME)/changelog; gzip -f -9 deb\$(PREFIX)/share/doc/\$(PKGNAME)/changelog; fi;" >> $MAKEFILE
+    $ECHO_ESC "\t@if [ ! -f \$(DISTROOT)/share/man/man1/\$(PKGNAME).1.gz ]; then mkdir -p deb\$(PREFIX)/share/man/man1; echo '.TH \$(PKGNAME) 1 LOCAL\\\n.SH NAME\\\n\$(PKGNAME) - ...' > deb\$(PREFIX)/share/man/man1/\$(PKGNAME).1; gzip -f -9 deb\$(PREFIX)/share/man/man1/\$(PKGNAME).1; fi;" >> $MAKEFILE
+    $ECHO_ESC "\t@find deb -type f -not -path 'deb/DEBIAN/*' -print0 | xargs -0 md5sum | sed 's|deb/||g' > deb/DEBIAN/md5sums" >> $MAKEFILE
     $ECHO_ESC "\t@rm -f \$(DEBPKG)" >> $MAKEFILE
     $ECHO_ESC "\t@dpkg-deb -v -b deb \$(DEBPKG)" >> $MAKEFILE
     $ECHO_ESC "\t@rm -f -r deb" >> $MAKEFILE
