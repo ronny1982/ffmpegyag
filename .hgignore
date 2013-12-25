@@ -3,6 +3,7 @@ syntax: glob
 *.depend
 *.res
 *.deb
+*.rpm
 *.dsc
 *.changes
 *.tar.gz

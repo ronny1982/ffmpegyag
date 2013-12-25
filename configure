@@ -8,9 +8,11 @@ show_help()
     echo "Options:"
     echo ""
     echo "  -h, --help                Display this help and exit."
-    echo "  -i, --init                Initialize a new project structure with"
+    echo "  -i, --init [NAME]         Initialize a new project structure with"
     echo "                            default configuration and source files."
-    echo "                            The project will be titled hello-world."
+    echo "                            The project's optional title will be NAME"
+    echo "                            and can only contain: A-Z, a-z, 0-9, -, _"
+    echo "                            Default Name: 'hello-world'"
     echo "                            All project settings can be changed in the"
     echo "                            generated 'config_default.sh' script."
     echo "      --config-NAME         Use the configuration script config_NAME.sh"
@@ -39,10 +41,17 @@ show_help()
 
 initialize()
 {
-    PROJECT=hello-world
+    if [ "$1" ]
+    then
+        PROJECT=$1
+    else
+        PROJECT=hello-world
+    fi
 
+    # remove existing file
     rm -r -f build include lib obj res src config_*.sh Make* make*
 
+    # create project directory structure
     mkdir -p build/linux/bin
     mkdir -p build/msw
     mkdir -p include
@@ -52,10 +61,12 @@ initialize()
     mkdir -p res
     mkdir -p src
 
+    # create a default application header file
     echo "#include <stdio.h>" > src/main.h
     echo "" >> src/main.h
     echo "int main(int argc, char** argv);" >> src/main.h
 
+    # create a default application source file
     echo "#include \"main.h\"" > src/main.cpp
     echo "" >> src/main.cpp
     echo "int main(int argc, char** argv)" >> src/main.cpp
@@ -69,61 +80,30 @@ initialize()
     echo "    return 0;" >> src/main.cpp
     echo "}" >> src/main.cpp
 
-    echo "AAA ICON \"app.ico\"" > res/icons.rc
-
-    echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > res/app.manifest
-    echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> res/app.manifest
-    echo "<assemblyIdentity" >> res/app.manifest
-    echo "    version=\"0.64.1.0\"" >> res/app.manifest
-    echo "    processorArchitecture=\"x86\"" >> res/app.manifest
-    echo "    name=\"Controls\"" >> res/app.manifest
-    echo "    type=\"win32\"" >> res/app.manifest
-    echo "/>" >> res/app.manifest
-    echo "<description>wxWindows application</description>" >> res/app.manifest
-    echo "<dependency>" >> res/app.manifest
-    echo "    <dependentAssembly>" >> res/app.manifest
-    echo "        <assemblyIdentity" >> res/app.manifest
-    echo "            type=\"win32\"" >> res/app.manifest
-    echo "            name=\"Microsoft.Windows.Common-Controls\"" >> res/app.manifest
-    echo "            version=\"6.0.0.0\"" >> res/app.manifest
-    echo "            processorArchitecture=\"X86\"" >> res/app.manifest
-    echo "            publicKeyToken=\"6595b64144ccf1df\"" >> res/app.manifest
-    echo "            language=\"*\"" >> res/app.manifest
-    echo "        />" >> res/app.manifest
-    echo "    </dependentAssembly>" >> res/app.manifest
-    echo "</dependency>" >> res/app.manifest
+    # create a msw manifest file
+    echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > res/app.manifest
+    echo "<assembly manifestVersion=\"1.0\" xmlns=\"urn:schemas-microsoft-com:asm.v1\">" >> res/app.manifest
+    echo "    <assemblyIdentity version=\"1.0.0.0\" name=\"$PROJECT.app\"/>" >> res/app.manifest
+    echo "    <dependency>" >> res/app.manifest
+    echo "        <dependentAssembly>" >> res/app.manifest
+    echo "            <assemblyIdentity type=\"win32\" name=\"Microsoft.Windows.Common-Controls\" version=\"6.0.0.0\" processorArchitecture=\"*\" publicKeyToken=\"6595b64144ccf1df\" language=\"*\"/>" >> res/app.manifest
+    echo "        </dependentAssembly>" >> res/app.manifest
+    echo "    </dependency>" >> res/app.manifest
     echo "</assembly>" >> res/app.manifest
 
+    # create a msw application resource file
     echo "#include \"icons.rc\"" > res/app.rc
     echo "" >> res/app.rc
     echo "// embed a version 6 manifest file to use ComCtl32.dll (modern WinXP+ gui style)" >> res/app.rc
     echo "1 MANIFEST \"app.manifest\"" >> res/app.rc
 
-    # FIXME: this is not working in mingw/msys the $'\x00' char is not printed to file
-    printf \
-    %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c \
-    $'\x42' $'\x5A' $'\x68' $'\x36' $'\x31' $'\x41' $'\x59' $'\x26' $'\x53' $'\x59' $'\xF1' $'\x0C' $'\x91' $'\x07' $'\x00' $'\x01' \
-    $'\x3E' $'\xFF' $'\xD5' $'\xFE' $'\x5C' $'\x6A' $'\xA0' $'\x5D' $'\x43' $'\x7B' $'\x80' $'\x4C' $'\x00' $'\x00' $'\x20' $'\x68' \
-    $'\x61' $'\xDE' $'\x20' $'\x40' $'\x11' $'\x01' $'\x00' $'\x40' $'\x00' $'\x00' $'\x40' $'\x00' $'\x09' $'\xB0' $'\x01' $'\x4C' \
-    $'\x24' $'\x09' $'\x22' $'\x9A' $'\xA6' $'\xD4' $'\xF6' $'\xA9' $'\xB5' $'\x3D' $'\x04' $'\x64' $'\xCD' $'\x10' $'\xD1' $'\x81' \
-    $'\x1A' $'\x61' $'\x33' $'\x4F' $'\x48' $'\x60' $'\x00' $'\x1A' $'\x00' $'\x03' $'\x26' $'\x80' $'\x00' $'\x03' $'\x40' $'\x22' \
-    $'\x48' $'\xA3' $'\x53' $'\xD4' $'\x1A' $'\x00' $'\x00' $'\x00' $'\x34' $'\x0D' $'\x00' $'\x11' $'\xB6' $'\xF9' $'\xC8' $'\xF1' \
-    $'\xF0' $'\x81' $'\xFB' $'\x5C' $'\x25' $'\x3B' $'\x2B' $'\x9F' $'\x73' $'\x3D' $'\x6C' $'\x11' $'\x7A' $'\xE6' $'\x20' $'\xC1' \
-    $'\xFE' $'\xC2' $'\xA6' $'\xE8' $'\x92' $'\x72' $'\x76' $'\x11' $'\xA6' $'\x5A' $'\x80' $'\xCD' $'\x14' $'\x32' $'\xB2' $'\x42' \
-    $'\x00' $'\x42' $'\x44' $'\x72' $'\x43' $'\x2B' $'\x0B' $'\xC0' $'\xA8' $'\x48' $'\x6A' $'\xC7' $'\x48' $'\x34' $'\x52' $'\x54' \
-    $'\x4C' $'\x31' $'\xA0' $'\x17' $'\x1F' $'\xC8' $'\x01' $'\xF9' $'\x60' $'\xA5' $'\x7F' $'\x6B' $'\x13' $'\xB4' $'\x95' $'\x7D' \
-    $'\x1F' $'\xB6' $'\xE4' $'\x7C' $'\xC4' $'\x30' $'\x6B' $'\xA9' $'\xBF' $'\x14' $'\xDB' $'\xD8' $'\xAC' $'\x80' $'\xF5' $'\x86' \
-    $'\x42' $'\xC1' $'\xCD' $'\x37' $'\x61' $'\x33' $'\x19' $'\xED' $'\xA5' $'\x39' $'\xC9' $'\x73' $'\xCC' $'\x42' $'\xCE' $'\x17' \
-    $'\xCF' $'\xE5' $'\x99' $'\x0D' $'\x5C' $'\x7D' $'\x20' $'\x8D' $'\x08' $'\x65' $'\x77' $'\x17' $'\xE6' $'\xFE' $'\x9A' $'\xCE' \
-    $'\x63' $'\xB0' $'\xA1' $'\xC3' $'\x3C' $'\xD3' $'\x85' $'\xA6' $'\x14' $'\x4E' $'\x6D' $'\x1C' $'\xA6' $'\x0E' $'\xB8' $'\x54' \
-    $'\xE3' $'\xBB' $'\x98' $'\xD0' $'\x54' $'\xAE' $'\xD3' $'\x71' $'\x42' $'\x34' $'\x34' $'\x3C' $'\x9D' $'\xE8' $'\x28' $'\x86' \
-    $'\xD1' $'\x06' $'\x41' $'\x21' $'\x6F' $'\x10' $'\x4C' $'\xA5' $'\xDB' $'\xAC' $'\xDC' $'\xF7' $'\x96' $'\x16' $'\x6E' $'\x32' \
-    $'\x59' $'\x3B' $'\x65' $'\xAA' $'\x52' $'\x94' $'\x4E' $'\xDF' $'\x08' $'\x47' $'\x02' $'\x2F' $'\x6A' $'\x49' $'\x95' $'\xAD' \
-    $'\x06' $'\x0A' $'\x17' $'\x10' $'\x02' $'\xEE' $'\x82' $'\x59' $'\x52' $'\x85' $'\x4A' $'\x4B' $'\x00' $'\x59' $'\xA0' $'\x0A' \
-    $'\x84' $'\x52' $'\x90' $'\x4A' $'\x02' $'\xC4' $'\x06' $'\x5A' $'\x88' $'\xA9' $'\x50' $'\xA0' $'\x61' $'\x52' $'\x29' $'\x00' \
-    $'\xB5' $'\xA7' $'\x24' $'\x41' $'\x28' $'\x03' $'\x2F' $'\xBA' $'\xBF' $'\xD7' $'\x03' $'\x67' $'\xFB' $'\x15' $'\xFF' $'\x17' \
-    $'\x72' $'\x45' $'\x38' $'\x50' $'\x90' $'\xF1' $'\x0C' $'\x91' $'\x07' | tar -xjf - -O > res/app.ico
+    # create a msw icons resource file
+    echo "AAA ICON \"app.ico\"" > res/icons.rc
 
+    # create a msw icon
+    echo -n -e '\x42\x5A\x68\x36\x31\x41\x59\x26\x53\x59\xF1\x0C\x91\x07\x00\x01\x3E\xFF\xD5\xFE\x5C\x6A\xA0\x5D\x43\x7B\x80\x4C\x00\x00\x20\x68\x61\xDE\x20\x40\x11\x01\x00\x40\x00\x00\x40\x00\x09\xB0\x01\x4C\x24\x09\x22\x9A\xA6\xD4\xF6\xA9\xB5\x3D\x04\x64\xCD\x10\xD1\x81\x1A\x61\x33\x4F\x48\x60\x00\x1A\x00\x03\x26\x80\x00\x03\x40\x22\x48\xA3\x53\xD4\x1A\x00\x00\x00\x34\x0D\x00\x11\xB6\xF9\xC8\xF1\xF0\x81\xFB\x5C\x25\x3B\x2B\x9F\x73\x3D\x6C\x11\x7A\xE6\x20\xC1\xFE\xC2\xA6\xE8\x92\x72\x76\x11\xA6\x5A\x80\xCD\x14\x32\xB2\x42\x00\x42\x44\x72\x43\x2B\x0B\xC0\xA8\x48\x6A\xC7\x48\x34\x52\x54\x4C\x31\xA0\x17\x1F\xC8\x01\xF9\x60\xA5\x7F\x6B\x13\xB4\x95\x7D\x1F\xB6\xE4\x7C\xC4\x30\x6B\xA9\xBF\x14\xDB\xD8\xAC\x80\xF5\x86\x42\xC1\xCD\x37\x61\x33\x19\xED\xA5\x39\xC9\x73\xCC\x42\xCE\x17\xCF\xE5\x99\x0D\x5C\x7D\x20\x8D\x08\x65\x77\x17\xE6\xFE\x9A\xCE\x63\xB0\xA1\xC3\x3C\xD3\x85\xA6\x14\x4E\x6D\x1C\xA6\x0E\xB8\x54\xE3\xBB\x98\xD0\x54\xAE\xD3\x71\x42\x34\x34\x3C\x9D\xE8\x28\x86\xD1\x06\x41\x21\x6F\x10\x4C\xA5\xDB\xAC\xDC\xF7\x96\x16\x6E\x32\x59\x3B\x65\xAA\x52\x94\x4E\xDF\x08\x47\x02\x2F\x6A\x49\x95\xAD\x06\x0A\x17\x10\x02\xEE\x82\x59\x52\x85\x4A\x4B\x00\x59\xA0\x0A\x84\x52\x90\x4A\x02\xC4\x06\x5A\x88\xA9\x50\xA0\x61\x52\x29\x00\xB5\xA7\x24\x41\x28\x03\x2F\xBA\xBF\xD7\x03\x67\xFB\x15\xFF\x17\x72\x45\x38\x50\x90\xF1\x0C\x91\x07' | tar -xjf - -O > res/app.ico
+
+    # create default configuration file (for linux)
     echo "#!/bin/sh" > config_default.sh
     echo "" >> config_default.sh
     echo "# package settings (tgz, deb)" >> config_default.sh
@@ -133,8 +113,8 @@ initialize()
     echo "PKGAUTHOR=\"nobody <nobody@mail.com>\"" >> config_default.sh
     echo "PKGHOMEPAGE=\"http://\"" >> config_default.sh
     echo "PKGDEPENDS=\"\"" >> config_default.sh
-    echo "PKGDESCRIPTION=\"Title of Hello World" >> config_default.sh
-    echo " detailed description of hello world" >> config_default.sh
+    echo "PKGDESCRIPTION=\"Title of $PROJECT" >> config_default.sh
+    echo " detailed description of $PROJECT" >> config_default.sh
     echo " each line is indented by a space" >> config_default.sh
     echo " maximum length of a line is 80 characters" >> config_default.sh
     echo " blank lines require a dot after the space" >> config_default.sh
@@ -186,6 +166,7 @@ initialize()
     echo "    -Llib/linux" >> config_default.sh
     echo "    \"" >> config_default.sh
 
+    # create msw configuration file (for msys/mingw)
     echo "#!/bin/sh" > config_mingw.sh
     echo "" >> config_mingw.sh
     echo "# import setings from config-default" >> config_mingw.sh
@@ -424,7 +405,7 @@ load_config()
     fi
 
     $ECHO_NOLB "  checking compiler ($CC) ... "
-    check_command "$CC -v"
+    check_command "$CC --version"
 
     $ECHO_NOLB "  checking includes (-I) ... "
     check_command "ls $(echo '$CFLAGS' | grep -o '\-I\S*' | sed -e 's|-I||g')"
@@ -438,7 +419,7 @@ load_config()
     check_command "ls $(echo '$RCFLAGS' | grep -o '\-I\S*' | sed -e 's|-I||g')"
 
     $ECHO_NOLB "  checking linker ($LD) ... "
-    check_command "$LD -v"
+    check_command "$LD --version"
 
     $ECHO_NOLB "  checking libraries (-L, -l, /*) ... "
     check_command "ld -L/lib -lc $(echo '$LDLIBS' | grep -o '\s\/\S*\|[\-][Ll]\S*') -o null.bin"
@@ -448,7 +429,7 @@ load_config()
 write_makefile_header()
 {
     $ECHO_ESC "# Makefile generated by makebreed" >> $MAKEFILE
-    $ECHO_ESC "# http://makebreed.googlecode.com" >> $MAKEFILE
+    $ECHO_ESC "# http://makebreed.sourceforge.net" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "# Creation Time: '$(date -R -u)'" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
@@ -532,7 +513,7 @@ write_makefile_rule_build()
 write_makefile_rule_clean()
 {
     $ECHO_ESC "clean:" >> $MAKEFILE
-    $ECHO_ESC "\t@rm -f \$(DEPFILES) \$(OBJFILES) \$(BINFILE) *.tar.gz *.changes *.dsc *.deb" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f \$(DEPFILES) \$(OBJFILES) \$(BINFILE) *.tar.gz *.changes *.dsc *.deb *.rpm" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
 }
 
@@ -591,10 +572,8 @@ write_makefile_rule_dist_deb()
     $ECHO_ESC "\t@if [ -f \$(DISTROOT)/share/menu/\$(PKGNAME) ]; then echo 'if [ -x /usr/bin/update-menus ] ; then update-menus ; fi' >> deb/DEBIAN/postrm; fi;" >> $MAKEFILE
     $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-mime ] ; then update-mime ; fi' >> deb/DEBIAN/postrm" >> $MAKEFILE
     $ECHO_ESC "\t@chmod 0755 deb/DEBIAN/postrm" >> $MAKEFILE
-    # TODO: check for COPYRIGHT file in project root and copy to DISTROOT
-    $ECHO_ESC "\t@if [ ! -f \$(DISTROOT)/share/doc/\$(PKGNAME)/copyright ]; then mkdir -p deb\$(PREFIX)/share/doc/\$(PKGNAME); echo 'Copyright \$(shell date +%Y)' > deb\$(PREFIX)/share/doc/\$(PKGNAME)/copyright; fi;" >> $MAKEFILE
-    # TODO: check for CHANGELOG file in project root and copy to DISTROOT
     $ECHO_ESC "\t@if [ ! -f \$(DISTROOT)/share/doc/\$(PKGNAME)/changelog ]; then mkdir -p deb\$(PREFIX)/share/doc/\$(PKGNAME); echo '' > deb\$(PREFIX)/share/doc/\$(PKGNAME)/changelog; gzip -f -9 deb\$(PREFIX)/share/doc/\$(PKGNAME)/changelog; fi;" >> $MAKEFILE
+    $ECHO_ESC "\t@if [ ! -f \$(DISTROOT)/share/doc/\$(PKGNAME)/copyright ]; then mkdir -p deb\$(PREFIX)/share/doc/\$(PKGNAME); echo 'Copyright \$(shell date +%Y)' > deb\$(PREFIX)/share/doc/\$(PKGNAME)/copyright; fi;" >> $MAKEFILE
     $ECHO_ESC "\t@if [ ! -f \$(DISTROOT)/share/man/man1/\$(PKGNAME).1.gz ]; then mkdir -p deb\$(PREFIX)/share/man/man1; echo '.TH \$(PKGNAME) 1 LOCAL\\\n.SH NAME\\\n\$(PKGNAME) - ...' > deb\$(PREFIX)/share/man/man1/\$(PKGNAME).1; gzip -f -9 deb\$(PREFIX)/share/man/man1/\$(PKGNAME).1; fi;" >> $MAKEFILE
     $ECHO_ESC "\t@find deb -type f -not -path 'deb/DEBIAN/*' -print0 | xargs -0 md5sum | sed 's|deb/||g' > deb/DEBIAN/md5sums" >> $MAKEFILE
     $ECHO_ESC "\t@rm -f \$(DEBPKG)" >> $MAKEFILE
@@ -604,7 +583,7 @@ write_makefile_rule_dist_deb()
     $ECHO_ESC "" >> $MAKEFILE
 }
 
-write_makefile_dependency_resolver()
+write_makefile_dependency_resolver_deb()
 {
     $ECHO_ESC "# BEGIN: deb package dependency resolving block" >> $MAKEFILE
     $ECHO_ESC "# {" >> $MAKEFILE
@@ -637,6 +616,38 @@ write_makefile_dependency_resolver()
     $ECHO_ESC "" >> $MAKEFILE
 }
 
+write_makefile_rule_dist_rpm()
+{
+	if [[ $(grep '^DISTRIB_' /etc/*release | wc -l) > 1 ]]
+    then
+        $ECHO_ESC "RPMPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell grep '^DISTRIB_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^DISTRIB_RELEASE=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).rpm" >> $MAKEFILE
+    else
+        $ECHO_ESC "RPMPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell rpm --eval %_target_cpu)_\$(shell grep '^ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^VERSION_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).rpm" >> $MAKEFILE
+    fi
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "rpm: all" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p rpm/BUILDROOT/\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX)) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p rpm/SPECS 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@cp -r \$(DISTROOT)/* rpm/BUILDROOT/\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX))" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: \$(PKGNAME)' > rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Version: \$(PKGVERSION)' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Release: 0' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'License: public domain' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'URL: \$(PKGHOMEPAGE)' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+#    $ECHO_ESC "\t@echo 'Requires: libc' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Summary: Summary not available...' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '%description' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Description not available...' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '%files' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+	$ECHO_ESC "\t@find rpm/BUILDROOT -type f | sed 's|rpm/BUILDROOT||g' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+	$ECHO_ESC "\t@rpmbuild -bb --noclean --define '_topdir \$(shell pwd)/rpm' --define 'buildroot %{_topdir}/BUILDROOT' 'rpm/SPECS/specfile.spec'" >> $MAKEFILE
+	$ECHO_ESC "\t@mv -f rpm/RPMS/*/*.rpm \$(RPMPKG)" >> $MAKEFILE
+	$ECHO_ESC "\t@rm -r -f rpm" >> $MAKEFILE
+	$ECHO_ESC "" >> $MAKEFILE
+}
+
 # TODO: add iss section for creating inno setup script
 
 ######################################
@@ -660,9 +671,9 @@ do
                         ;;
         --help)         show_help
                         ;;
-        -i)             initialize
+        -i)             initialize $2
                         ;;
-        --init)         initialize
+        --init)         initialize $2
                         ;;
         --config-*)     CONFIGSCRIPT=$(pwd)/$(echo $ARG | sed 's|--config-|config_|g').sh
                         ;;
@@ -690,13 +701,20 @@ then
         write_makefile_rule_clean
         write_makefile_rule_dist_installer
         write_makefile_rule_dist_tgz
-        #check_command "dpkg --version"
-        dpkg --version >/dev/null 2>&1
+
+        dpkg --version > /dev/null 2>&1
         if [ $? = 0 ]
         then
             write_makefile_rule_dist_deb
-            write_makefile_dependency_resolver
+            write_makefile_dependency_resolver_deb
         fi
+
+        yum --version > /dev/null 2>&1
+        if [ $? = 0 ]
+        then
+			write_makefile_rule_dist_rpm
+			# rpmbuild resolves dependencies automatically
+		fi
     fi
 fi
 
