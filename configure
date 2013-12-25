@@ -618,7 +618,7 @@ write_makefile_dependency_resolver_deb()
 
 write_makefile_rule_dist_rpm()
 {
-	if [[ $(grep '^DISTRIB_' /etc/*release | wc -l) > 1 ]]
+    if [[ $(grep '^DISTRIB_' /etc/*release | wc -l) > 1 ]]
     then
         $ECHO_ESC "RPMPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell grep '^DISTRIB_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^DISTRIB_RELEASE=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).rpm" >> $MAKEFILE
     else
@@ -641,11 +641,11 @@ write_makefile_rule_dist_rpm()
     $ECHO_ESC "\t@echo 'Description not available...' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
     $ECHO_ESC "\t@echo '' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
     $ECHO_ESC "\t@echo '%files' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
-	$ECHO_ESC "\t@find rpm/BUILDROOT -type f | sed 's|rpm/BUILDROOT||g' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
-	$ECHO_ESC "\t@rpmbuild -bb --noclean --define '_topdir \$(shell pwd)/rpm' --define 'buildroot %{_topdir}/BUILDROOT' 'rpm/SPECS/specfile.spec'" >> $MAKEFILE
-	$ECHO_ESC "\t@mv -f rpm/RPMS/*/*.rpm \$(RPMPKG)" >> $MAKEFILE
-	$ECHO_ESC "\t@rm -r -f rpm" >> $MAKEFILE
-	$ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "\t@find rpm/BUILDROOT -type f | sed 's|rpm/BUILDROOT||g' >> rpm/SPECS/specfile.spec" >> $MAKEFILE
+    $ECHO_ESC "\t@rpmbuild -bb --noclean --define '_topdir \$(shell pwd)/rpm' --define 'buildroot %{_topdir}/BUILDROOT' 'rpm/SPECS/specfile.spec'" >> $MAKEFILE
+    $ECHO_ESC "\t@mv -f rpm/RPMS/*/*.rpm \$(RPMPKG)" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -r -f rpm" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
 }
 
 # TODO: add iss section for creating inno setup script
@@ -709,12 +709,12 @@ then
             write_makefile_dependency_resolver_deb
         fi
 
-        yum --version > /dev/null 2>&1
+        rpmbuild --version > /dev/null 2>&1
         if [ $? = 0 ]
         then
-			write_makefile_rule_dist_rpm
-			# rpmbuild resolves dependencies automatically
-		fi
+            write_makefile_rule_dist_rpm
+            # rpmbuild resolves dependencies automatically
+        fi
     fi
 fi
 
