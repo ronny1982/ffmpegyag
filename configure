@@ -648,7 +648,64 @@ write_makefile_rule_dist_rpm()
     $ECHO_ESC "" >> $MAKEFILE
 }
 
-# TODO: add iss section for creating inno setup script
+write_makefile_rule_dist_iss()
+{
+    $ECHO_ESC "ISSPKG := \$(PKGNAME)_\$(PKGVERSION)_windows-setup_\$(shell uname -m)" >> $MAKEFILE
+    $ECHO_ESC "ISSAPP := \$(subst /,\\,\$(patsubst \$(DISTROOT)/%,{app}/%,\$(BINFILE)))" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "iss: all" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p iss/\$(PKGNAME) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@cp -r \$(DISTROOT)/* iss/\$(PKGNAME)" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '[Setup]' > iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'AppName=\$(PKGNAME)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'AppVerName=\$(PKGNAME)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'AppVersion=\$(PKGVERSION)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'VersionInfoVersion=\$(PKGVERSION)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'AppPublisher=\$(PKGAUTHOR)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'AppPublisherURL=\$(PKGHOMEPAGE)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo ';SetupIconFile=res/app.ico' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'UninstallDisplayIcon=\$(ISSAPP)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'DisableWelcomePage=yes' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'DefaultDirName={pf}\\\$(PKGNAME)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'DisableProgramGroupPage=yes' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'DisableReadyPage=yes' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'OutputDir=..' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'OutputBaseFilename=\$(ISSPKG)' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '[Tasks]' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: shortcuts; Description: \"All\"; GroupDescription: \"Create Shortcuts:\";' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: shortcuts\\desktop; Description: \"Desktop\"; GroupDescription: \"Create Shortcuts:\";' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: shortcuts\\startmenu; Description: \"Startmenu Programs\"; GroupDescription: \"Create Shortcuts:\"; Flags: unchecked' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: shortcuts\\quicklaunch; Description: \"Quick Launch\"; GroupDescription: \"Create Shortcuts:\"; Flags: unchecked' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '[Files]' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Source: \"\$(PKGNAME)\\*\"; DestDir: \"{app}\"; Flags: recursesubdirs' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '[UninstallDelete]' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: {app}; Type: filesandordirs' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: {userappdata}\\\$(PKGNAME); Type: filesandordirs' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: {commonappdata}\\\$(PKGNAME); Type: filesandordirs' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '[Icons]' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: \"{commondesktop}\\\$(PKGNAME)\"; Filename: \"\$(ISSAPP)\"; Tasks: shortcuts\\desktop' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: \"{commonstartmenu}\\\$(PKGNAME)\"; Filename: \"\$(ISSAPP)\"; Tasks: shortcuts\\startmenu' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Name: \"{userappdata}\\Microsoft\\Internet Explorer\\Quick Launch\\\$(PKGNAME)\"; Filename: \"\$(ISSAPP)\"; Tasks: shortcuts\\quicklaunch' >> iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@ISCC.exe iss/setup.iss" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -r -f iss" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+write_makefile_rule_dist_zip()
+{
+    $ECHO_ESC "ZIPPKG := \$(PKGNAME)_\$(PKGVERSION)_windows-portable_\$(shell uname -m).zip" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "zip: all" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p \$(PKGNAME) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@cp -r \$(DISTROOT)/* \$(PKGNAME)" >> $MAKEFILE
+    $ECHO_ESC "\t@zip -r \$(ZIPPKG) \$(PKGNAME)" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f -r \$(PKGNAME)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
 
 ######################################
 ### main entry point of the script ###
@@ -713,7 +770,12 @@ then
         if [ $? = 0 ]
         then
             write_makefile_rule_dist_rpm
-            # rpmbuild resolves dependencies automatically
+        fi
+
+        if [ "$(uname -o)" = "Msys" ]
+        then
+            write_makefile_rule_dist_iss
+            write_makefile_rule_dist_zip
         fi
     fi
 fi
