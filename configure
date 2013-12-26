@@ -513,7 +513,7 @@ write_makefile_rule_build()
 write_makefile_rule_clean()
 {
     $ECHO_ESC "clean:" >> $MAKEFILE
-    $ECHO_ESC "\t@rm -f \$(DEPFILES) \$(OBJFILES) \$(BINFILE) *.tar.gz *.changes *.dsc *.deb *.rpm" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f \$(DEPFILES) \$(OBJFILES) \$(BINFILE) *.tar.gz *.changes *.dsc *.deb *.rpm *.exe *.zip" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
 }
 
