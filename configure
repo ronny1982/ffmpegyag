@@ -543,9 +543,9 @@ write_makefile_rule_dist_deb()
 {
     if [[ $(grep '^DISTRIB_' /etc/*release | wc -l) > 1 ]]
     then
-        $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell grep '^DISTRIB_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^DISTRIB_RELEASE=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).deb" >> $MAKEFILE
+        $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell grep '^DISTRIB_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^DISTRIB_RELEASE=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2)_\$(shell dpkg --print-architecture).deb" >> $MAKEFILE
     else
-        $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell grep '^ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^VERSION_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).deb" >> $MAKEFILE
+        $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell grep '^ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^VERSION_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2)_\$(shell dpkg --print-architecture).deb" >> $MAKEFILE
     fi
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "deb: all" >> $MAKEFILE
@@ -620,9 +620,9 @@ write_makefile_rule_dist_rpm()
 {
     if [[ $(grep '^DISTRIB_' /etc/*release | wc -l) > 1 ]]
     then
-        $ECHO_ESC "RPMPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell grep '^DISTRIB_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^DISTRIB_RELEASE=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).rpm" >> $MAKEFILE
+        $ECHO_ESC "RPMPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell grep '^DISTRIB_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^DISTRIB_RELEASE=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2)_\$(shell rpm --eval %_target_cpu).rpm" >> $MAKEFILE
     else
-        $ECHO_ESC "RPMPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell rpm --eval %_target_cpu)_\$(shell grep '^ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^VERSION_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).rpm" >> $MAKEFILE
+        $ECHO_ESC "RPMPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell grep '^ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^VERSION_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2)_\$(shell rpm --eval %_target_cpu).rpm" >> $MAKEFILE
     fi
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "rpm: all" >> $MAKEFILE
