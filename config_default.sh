@@ -30,6 +30,7 @@ CFLAGS="
     -Wall
     -O2
     $(wx-config --static=no --debug=no --cflags)
+    -I/usr/include/ffmpeg
     "
 
 RC=""
