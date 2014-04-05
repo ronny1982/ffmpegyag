@@ -16,27 +16,30 @@ EncodingFileLoader::EncodingFileLoader(wxFileName InputFile)
     VideoStreams.Clear();
     AudioStreams.Clear();
     SubtitleStreams.Clear();
-
+wxPrintf(wxT("/home/ronny/Videos/Agnis Philosophy.mp4")/*File.GetFullPath() + wxT("\n")*/);
     if(File.FileExists())
     {
         FileSize = (int64_t)(wxFile(File.GetFullPath()).Length());
-
+wxPrintf(wxT("FileSize: %i\n"), FileSize);
         av_register_all();
         //avcodec_register_all();
-
-        if(avformat_open_input(&pFormatCtx, File.GetFullPath().ToUTF8().data(), NULL, NULL) == 0)
+// FIXME: since the latest libav update, the FormatContext has no valid stream information...
+// libavformat and libavformat-dev version seems different...
+wxPrintf(wxT("LibaAV Version: %i vs. %i\n\n"), LIBAVFORMAT_VERSION_INT, avformat_version());
+        if(avformat_open_input(&pFormatCtx, "/home/ronny/Videos/Agnis Philosophy.mp4"/*File.GetFullPath().ToUTF8().data()*/, NULL, NULL) == 0)
         {
             //pFormatCtx->flags |= 0x0040; //AVFMT_FLAG_NOBUFFER;
-            if(avformat_find_stream_info(pFormatCtx, NULL) > -1)
+            if(avformat_find_stream_info(pFormatCtx, NULL) >= 0)
             {
                 FileDuration = (int64_t)1000 * (int64_t)pFormatCtx->duration / (int64_t)AV_TIME_BASE;
-
+av_dump_format(pFormatCtx, 0, "/home/ronny/Videos/Agnis Philosophy.mp4", 0);
                 // set progressbar maximum to duration in seconds (at least 1 so maximum is > 0 to prevent instant closing of dialog)
                 int progress_max = wxMax(1, (int)((int64_t)pFormatCtx->duration/(int64_t)AV_TIME_BASE));
                 wxProgressDialog* ProgressDialog = new wxProgressDialog(wxT("Building Index..."), File.GetFullName()/*File.GetFullPath()*/, progress_max, NULL, wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_SMOOTH/* | wxPD_CAN_ABORT*/);
-
+wxPrintf(wxT("\n\nDuration: %i\n"), FileDuration);
                 AVStream* stream;
 // FIXME: mutual exclusive for linux/windows
+/*
 #ifdef __LINUX__
 // works on linux, but won't compile on windows
 int64_t StreamSize[pFormatCtx->nb_streams];
@@ -45,17 +48,20 @@ int64_t StreamSize[pFormatCtx->nb_streams];
 // works on windows but crash on linux
 int64_t* StreamSize = new int64_t(pFormatCtx->nb_streams); //new int64_t[pFormatCtx->nb_streams];
 #endif
+*/
+// NOTE: this is the correct way, should work on both
+int64_t* StreamSize = new int64_t[pFormatCtx->nb_streams];
                 // +++++++++++++++++++++++++++++
                 // +++ INIT STREAMS & CODECS +++
                 // +++++++++++++++++++++++++++++
                 //{
                     AVCodecContext* pCodecCtx;
-
+wxPrintf(wxT("Streams: %i\n"), (int)pFormatCtx->nb_streams);
                     for(unsigned int i=0; i<pFormatCtx->nb_streams; i++)
                     {
                         stream = pFormatCtx->streams[i];
                         StreamSize[i] = 0;
-
+wxPrintf(wxT("Stream[%i]\n"), i);
                         // initialize codec context for each stream (if not done, decoding packets will crash!)
                         pCodecCtx = stream->codec;
                         if(pCodecCtx->codec_type == AVMEDIA_TYPE_VIDEO)
