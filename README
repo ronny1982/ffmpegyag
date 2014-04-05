@@ -22,14 +22,13 @@
     + build-essentials (gcc, g++, make, lib*,...)
     + libwxgtk2.8-dev
     + libwxbase2.8-dev
+    + libglu1-mesa-dev
+    + libasound2-dev
     # FFMPEGYAG RECOMMENDS FFMPEG.ORG LIBRARIES FOR COMPILATION, NOT LIBAV.ORG LIBRARIES !!!
-    + libavutil-dev
-    + libavcodec-dev
     + libavformat-dev
-    + libavdevice-dev
-    + libavfilter-dev
+    + libavcodec-dev
+    + libavutil-dev
     + libswscale-dev
-    + libpostproc-dev
 
     -----------------------------
     - build & install ffmpegyag -

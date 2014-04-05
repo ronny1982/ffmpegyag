@@ -1973,6 +1973,7 @@ void AVConvGUIFrame::CloseAudio()
     }
 }
 
+//FIXME: crash on playback in Steins;Gate EP 24 Keyframe 00:03:11.983
 void AVConvGUIFrame::PlaybackMedia()
 {
     if(SelectedTaskIndices.GetCount() == 1)
