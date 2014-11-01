@@ -212,7 +212,7 @@ initialize()
 
 check_command()
 {
-    $@ >/dev/null 2>&1
+    $@ > /dev/null 2>&1
     if [ $? = 0 ]
     then
         $ECHO_ESC "$AF_GREEN ok $AF_RESET"
@@ -241,7 +241,7 @@ check_env()
         $ECHO_ESC "\033[33munknown\033[0m"
     fi
 
-    tput -V >/dev/null 2>&1
+    tput -V > /dev/null 2>&1
     if [ $? = 0 ]
     then
         AF_RED=$(tput setaf 1)
@@ -488,7 +488,12 @@ write_makefile_rule_build()
     $ECHO_ESC "\t@echo " >> $MAKEFILE
     $ECHO_ESC "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
     # TODO: update for use with ar to create static library files...
-    $ECHO_ESC "\t\$(LD) \$(LDFLAGS) -o \$@ \$^ \$(LDLIBS)" >> $MAKEFILE
+    if [ $(echo $LD | grep -c 'ar') -gt 0 ]
+    then
+        $ECHO_ESC "\t\$(LD) \$(LDFLAGS) \$@ \$^" >> $MAKEFILE
+    else
+        $ECHO_ESC "\t\$(LD) \$(LDFLAGS) -o \$@ \$^ \$(LDLIBS)" >> $MAKEFILE
+    fi
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "\$(CURDIR)/\$(OBJDIR)/%.x \$(CURDIR)/\$(RCDIR)/%.x \$(RCDIR)/%.x: \$(OBJDIR)/%.x" >> $MAKEFILE
     $ECHO_ESC "\$(OBJDIR)/%.x: \$(RCDIR)/%" >> $MAKEFILE
@@ -650,7 +655,7 @@ write_makefile_rule_dist_rpm()
 
 write_makefile_rule_dist_iss()
 {
-    $ECHO_ESC "ISSPKG := \$(PKGNAME)_\$(PKGVERSION)_windows-setup_\$(shell uname -m)" >> $MAKEFILE
+    $ECHO_ESC "ISSPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell wmic os get caption | grep 'Win' | cut -d ' ' -f 2,3 | tr ' ' '-' | tr '[:upper:]' '[:lower:]')-setup_\$(shell uname -m)" >> $MAKEFILE
     $ECHO_ESC "ISSAPP := \$(subst /,\\,\$(patsubst \$(DISTROOT)/%,{app}/%,\$(BINFILE)))" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "iss: all" >> $MAKEFILE
@@ -697,7 +702,7 @@ write_makefile_rule_dist_iss()
 
 write_makefile_rule_dist_zip()
 {
-    $ECHO_ESC "ZIPPKG := \$(PKGNAME)_\$(PKGVERSION)_windows-portable_\$(shell uname -m).zip" >> $MAKEFILE
+    $ECHO_ESC "ZIPPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell wmic os get caption | grep 'Win' | cut -d ' ' -f 2,3 | tr ' ' '-' | tr '[:upper:]' '[:lower:]')-portable_\$(shell uname -m).zip" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "zip: all" >> $MAKEFILE
     $ECHO_ESC "\t@mkdir -p \$(PKGNAME) 2> /dev/null" >> $MAKEFILE
