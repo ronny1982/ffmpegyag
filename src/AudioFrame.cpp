@@ -22,37 +22,37 @@ AudioFrame::~AudioFrame()
     Data = NULL;
 }
 
-void AudioFrame::FillFrame(unsigned char* FrameData)
+void AudioFrame::FillFrame(unsigned char** FrameData)
 {
     if(av_sample_fmt_is_planar(PCMFormat) > 0)
     {
-        // FIXME: Quick and Dirty re-arrangement from planar to interleaved data
-        // Ordering of channels is assumed to be incorrect...
-        // [ A A A A B B B B C C C C ] -> [ A B C A B C A B C A B C ]
-        for(unsigned int s=0, b=0; s<SampleCount; s++)
+        // Convert non-interleaved data to interleaved data
+        // TODO: Is ordering of channels correct?
+        // [ L L L L R R R R C C C C ] -> [ L R C L R C L R C L R C ]
+        for(size_t s=0, b=0, so=0; s<SampleCount; s++)
         {
-            int so = s*SampleFormatSize;
+            so = s*SampleFormatSize;
             for(int c=0; c<ChannelCount; c++)
             {
-                int co = c*ChannelSize+so;
                 for(int f=0; f<SampleFormatSize; f++)
                 {
-                    Data[b] = FrameData[co+f];
+                    // FrameData only holds a maximum of AV_NUM_DATA_POINTERS planes(channels)
+                    if(c < AV_NUM_DATA_POINTERS)
+                    {
+                        Data[b] = FrameData[c][so+f];
+                    }
+                    else
+                    {
+                        Data[b] = 0;
+                    }
                     b++;
                 }
             }
         }
-        // FIXME: change PCMFormat to corresponding interleaved format, but this would break when filled again...
-        // better: add support for non-interleaved Formats to Fade and MixDown (simply add corresponding format to if clause...)
-        if(PCMFormat == AV_SAMPLE_FMT_U8P)  { PCMFormat = AV_SAMPLE_FMT_U8P; }
-        if(PCMFormat == AV_SAMPLE_FMT_S16P) { PCMFormat = AV_SAMPLE_FMT_S16; }
-        if(PCMFormat == AV_SAMPLE_FMT_S32P) { PCMFormat = AV_SAMPLE_FMT_S32; }
-        if(PCMFormat == AV_SAMPLE_FMT_FLTP) { PCMFormat = AV_SAMPLE_FMT_FLT; }
-        if(PCMFormat == AV_SAMPLE_FMT_DBLP) { PCMFormat = AV_SAMPLE_FMT_DBL; }
     }
     else
     {
-        memcpy(Data, FrameData, DataSize);
+        memcpy(Data, FrameData[0], DataSize);
     }
 }
 
@@ -182,9 +182,11 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
 
             for(size_t c=0; c<(size_t)ChannelCount; c++) // loop all channels
             {
+                // NOTE: non-interleaved (planar) formats can be treated as interleaved data,
+                // because it was converted during the assignment (FillFrame(*data))
                 index = sample_index * ChannelCount + c;
 
-                if(PCMFormat == AV_SAMPLE_FMT_U8)
+                if(PCMFormat == AV_SAMPLE_FMT_U8 || PCMFormat == AV_SAMPLE_FMT_U8P)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -195,7 +197,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
                         Data[index] = (unsigned char)(Data[index] * ratio_num / ratio_den);
                     }
                 }
-                if(PCMFormat == AV_SAMPLE_FMT_S16)
+                if(PCMFormat == AV_SAMPLE_FMT_S16 || PCMFormat == AV_SAMPLE_FMT_S16P)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -206,7 +208,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
                         data_16[index] = (short)(data_16[index] * ratio_num / ratio_den);
                     }
                 }
-                if(PCMFormat == AV_SAMPLE_FMT_S32)
+                if(PCMFormat == AV_SAMPLE_FMT_S32 || PCMFormat == AV_SAMPLE_FMT_S32P)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -217,7 +219,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
                         data_32[index] = (int)(data_32[index] * ratio_num / ratio_den);
                     }
                 }
-                if(PCMFormat == AV_SAMPLE_FMT_FLT)
+                if(PCMFormat == AV_SAMPLE_FMT_FLT || PCMFormat == AV_SAMPLE_FMT_FLTP)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -228,7 +230,7 @@ void AudioFrame::Fade(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, FadingType
                         data_f[index] = (float)(data_f[index] * ((float)ratio_num / (float)ratio_den));
                     }
                 }
-                if(PCMFormat == AV_SAMPLE_FMT_DBL)
+                if(PCMFormat == AV_SAMPLE_FMT_DBL || PCMFormat == AV_SAMPLE_FMT_DBLP)
                 {
                     if(FadeCurve == FadeLinear)
                     {
@@ -267,31 +269,34 @@ void AudioFrame::MixDown()
         size_t index_center_channel;
         for(size_t sample_index=0; sample_index<SampleCount; sample_index++) // loop all samples
         {
+            // NOTE: non-interleaved (planar) formats can be treated as interleaved data,
+            // because it was converted during the assignment (FillFrame(*data))
+
             index = sample_index*ChannelCount;
-            // Front_L, Front_R, Center, LowFreq, Side_L, Side_R, Back_L, Back_R
+            // NOTE: Order of interleaved channels -> Front_L, Front_R, Center, LowFreq, Side_L, Side_R, Back_L, Back_R
             index_center_channel = 2;
 
-            if(PCMFormat == AV_SAMPLE_FMT_U8)
+            if(PCMFormat == AV_SAMPLE_FMT_U8 || PCMFormat == AV_SAMPLE_FMT_U8P)
             {
                 Data[index+0] = (unsigned char)((Data[index+0] + Data[index+index_center_channel]) / 2); // center ++> left
                 Data[index+1] = (unsigned char)((Data[index+1] + Data[index+index_center_channel]) / 2); // center ++> right
             }
-            if(PCMFormat == AV_SAMPLE_FMT_S16)
+            if(PCMFormat == AV_SAMPLE_FMT_S16 || PCMFormat == AV_SAMPLE_FMT_S16P)
             {
                 data_16[index+0] = (short)((data_16[index+0] + data_16[index+index_center_channel]) / 2); // center ++> left
                 data_16[index+1] = (short)((data_16[index+1] + data_16[index+index_center_channel]) / 2); // center ++> right
             }
-            if(PCMFormat == AV_SAMPLE_FMT_S32)
+            if(PCMFormat == AV_SAMPLE_FMT_S32 || PCMFormat == AV_SAMPLE_FMT_S32P)
             {
                 data_32[index+0] = (int)((data_32[index+0] + data_32[index+index_center_channel]) / 2); // center ++> left
                 data_32[index+1] = (int)((data_32[index+1] + data_32[index+index_center_channel]) / 2); // center ++> right
             }
-            if(PCMFormat == AV_SAMPLE_FMT_FLT)
+            if(PCMFormat == AV_SAMPLE_FMT_FLT || PCMFormat == AV_SAMPLE_FMT_FLTP)
             {
                 data_f[index+0] = (float)((data_f[index+0] + data_f[index+index_center_channel]) / 2); // center ++> left
                 data_f[index+1] = (float)((data_f[index+1] + data_f[index+index_center_channel]) / 2); // center ++> right
             }
-            if(PCMFormat == AV_SAMPLE_FMT_DBL)
+            if(PCMFormat == AV_SAMPLE_FMT_DBL || PCMFormat == AV_SAMPLE_FMT_DBLP)
             {
                 data_d[index+0] = (double)((data_d[index+0] + data_d[index+index_center_channel]) / 2); // center ++> left
                 data_d[index+1] = (double)((data_d[index+1] + data_d[index+index_center_channel]) / 2); // center ++> right

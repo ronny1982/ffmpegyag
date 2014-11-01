@@ -41,10 +41,11 @@ class AudioFrame
     public: int SampleSize;
     // Size of a single sample (e.g. 2 byte)
     public: int SampleFormatSize;
+    // Contains INTERLEAVED audio data for all channels
     public: unsigned char* Data;
 
     // copy all data from FrameData
-    public: void FillFrame(unsigned char* FrameData);
+    public: void FillFrame(unsigned char** FrameData);
     // calculate p1, p2 indices of the mutual overlap of FilterTime and this AudioFrame (presented in SampleCount/SampleSize units)
     /*
      *                          |----------FilterTime----------|

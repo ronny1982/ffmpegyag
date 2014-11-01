@@ -1137,7 +1137,7 @@ printf("VideoBuffer inreased to %lu\n", (long)VideoFrameBuffer->GetSize());
 
                             // NOTE: frame duration guessed by samplerate
                             AudioFrame* snd = new AudioFrame(FrameTimestamp, GetTimeFromTimestampA(AudioStreamIndex, FrameTimestamp), (int64_t)(1000 * pAudioFrameSource->nb_samples / pAudioCodecCtx->sample_rate), pAudioCodecCtx->sample_rate, pAudioCodecCtx->channels, pAudioCodecCtx->sample_fmt, (size_t)pAudioFrameSource->nb_samples);
-                            snd->FillFrame(pAudioFrameSource->data[0]);
+                            snd->FillFrame(pAudioFrameSource->data);
 // print 32 debug samples
 /*
 short* data16 = (short*)pAudioFrameSource->data[0];
