@@ -1,25 +1,5 @@
 #include "AudioFrame.h"
 
-AudioFrame::AudioFrame()
-{
-    Timestamp = int64_t(0);
-    Timecode = int64_t(0);
-    Duration = int64_t(0);
-    SampleRate = 0;
-    ChannelCount = 0;
-    PCMFormat = AV_SAMPLE_FMT_S16;
-    SampleCount = 0;
-    DataSize = av_samples_get_buffer_size(NULL, ChannelCount, SampleCount, PCMFormat, 1);
-    Data = (unsigned char*)av_malloc(DataSize);
-    SampleSize = DataSize / SampleCount;
-    SampleFormatSize = SampleSize / ChannelCount;
-    // silence
-    for(size_t i=0; i<DataSize; i++)
-    {
-        Data[i] = (unsigned char)0;
-    }
-}
-
 AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, AVSampleFormat FrameSampleFormat, size_t FrameSampleCount)
 {
     Timestamp = FrameTimestamp;
@@ -30,35 +10,10 @@ AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t Fr
     PCMFormat = FrameSampleFormat;
     SampleCount = FrameSampleCount;
     DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, PCMFormat, 1);
+    ChannelSize = DataSize / ChannelCount;
     SampleSize = DataSize / SampleCount;
     SampleFormatSize = SampleSize / ChannelCount;
     Data = (unsigned char*)av_malloc(DataSize);
-}
-
-AudioFrame::AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, size_t FrameSampleCount, int Frequency)
-{
-    Timestamp = FrameTimestamp;
-    Timecode = FrameTimecode;
-    Duration = FrameDuration;
-    SampleRate = FrameSampleRate;
-    ChannelCount = FrameChannels;
-    PCMFormat = AV_SAMPLE_FMT_S16;
-    SampleCount = FrameSampleCount;
-    DataSize = av_samples_get_buffer_size(NULL, FrameChannels, FrameSampleCount, PCMFormat, 1);
-    SampleSize = DataSize / SampleCount;
-    SampleFormatSize = SampleSize / ChannelCount;
-    Data = (unsigned char*)av_malloc(DataSize);
-
-    int amp = 6000/SampleCount;
-    short* tmp = (short*)Data;
-    for(size_t i=0; i<SampleCount; i+=ChannelCount)
-    {
-        for(int c=0; c<ChannelCount; ++c)
-        {
-            tmp[i+c] = amp*(i%SampleCount);
-        }
-    }
-    tmp = NULL;
 }
 
 AudioFrame::~AudioFrame()
@@ -69,7 +24,36 @@ AudioFrame::~AudioFrame()
 
 void AudioFrame::FillFrame(unsigned char* FrameData)
 {
-    memcpy(Data, FrameData, DataSize);
+    if(av_sample_fmt_is_planar(PCMFormat) > 0)
+    {
+        // FIXME: Quick and Dirty re-arrangement from planar to interleaved data
+        // Ordering of channels is assumed to be incorrect...
+        // [ A A A A B B B B C C C C ] -> [ A B C A B C A B C A B C ]
+        for(unsigned int s=0, b=0; s<SampleCount; s++)
+        {
+            int so = s*SampleFormatSize;
+            for(int c=0; c<ChannelCount; c++)
+            {
+                int co = c*ChannelSize+so;
+                for(int f=0; f<SampleFormatSize; f++)
+                {
+                    Data[b] = FrameData[co+f];
+                    b++;
+                }
+            }
+        }
+        // FIXME: change PCMFormat to corresponding interleaved format, but this would break when filled again...
+        // better: add support for non-interleaved Formats to Fade and MixDown (simply add corresponding format to if clause...)
+        if(PCMFormat == AV_SAMPLE_FMT_U8P)  { PCMFormat = AV_SAMPLE_FMT_U8P; }
+        if(PCMFormat == AV_SAMPLE_FMT_S16P) { PCMFormat = AV_SAMPLE_FMT_S16; }
+        if(PCMFormat == AV_SAMPLE_FMT_S32P) { PCMFormat = AV_SAMPLE_FMT_S32; }
+        if(PCMFormat == AV_SAMPLE_FMT_FLTP) { PCMFormat = AV_SAMPLE_FMT_FLT; }
+        if(PCMFormat == AV_SAMPLE_FMT_DBLP) { PCMFormat = AV_SAMPLE_FMT_DBL; }
+    }
+    else
+    {
+        memcpy(Data, FrameData, DataSize);
+    }
 }
 
 void AudioFrame::FilterFrameIntersection(int64_t* FilterTimeFrom, int64_t* FilterTimeTo, size_t* p1, size_t* p2)

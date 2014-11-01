@@ -19,22 +19,28 @@ enum FadingCurve
 
 class AudioFrame
 {
-    public: AudioFrame();
     // the pointer FrameData will be freed by this destructor, make sure not freeing it's content externally!
     public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, AVSampleFormat FrameSampleFormat, size_t FrameSampleCount);
-    public: AudioFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameSampleRate, int FrameChannels, size_t FrameSampleCount, int Frequency);
     public: virtual ~AudioFrame();
 
     public: int64_t Timestamp;
     public: int64_t Timecode; // in milliseconds
     public: int64_t Duration; // in milliseconds
     public: int SampleRate;
+    // Number of channels (e.g. 3)
     public: int ChannelCount;
+    // Number format of a single sample (e.g. 16bit -> 2 byte)
     AVSampleFormat PCMFormat;
+    // Number of samples per channel (e.g. 8)
     public: size_t SampleCount;
-    public: size_t DataSize; // in byte
-    public: int SampleSize; // in byte
-    public: int SampleFormatSize; // in byte
+    // Overall size of all channels (e.g. 48 byte)
+    public: size_t DataSize;
+    // Overall size of a single channel (e.g. 16 byte)
+    public: int ChannelSize;
+    // Size of a single sample (including all channels) [in byte]
+    public: int SampleSize;
+    // Size of a single sample (e.g. 2 byte)
+    public: int SampleFormatSize;
     public: unsigned char* Data;
 
     // copy all data from FrameData

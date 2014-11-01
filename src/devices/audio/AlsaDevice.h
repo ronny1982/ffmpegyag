@@ -18,6 +18,8 @@ class AlsaDevice : public AudioDevice
     private: snd_pcm_format_t GetAlsaFormat(AVSampleFormat Format);
 
     private: snd_pcm_t* Device;
+    // State if the device was initialized for interleaved or planar audio format
+    private: bool isPlanar;
 };
 
 #endif // LINUX
