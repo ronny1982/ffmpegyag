@@ -164,17 +164,17 @@ wxArrayString EncodingTask::GetCommands()
 
     if(OutputSegmentsConcat && OutputSegments.GetCount() > 1 && !OutputFormat.StartsWith(wxT("image2")))
     {
-        wxString LineBreak = wxT("\n");
-        // TODO: check if this is required for windows or if ffmpeg can deal with unix linebreaks in windows
-        /*
-        #ifdef __WINDOWS__
-        LineBreak = wxT("\r\n"));
-        #endif
-        */
         wxFileName ConcatScript = OutputFile;
         ConcatScript.SetExt(wxT("concat"));
-        // FIXME: this command will only work in linux, not windows!
-        wxString ConcatCommand = wxT("sh -c \"echo \\\"# ffmpeg concat script");
+        #ifdef __LINUX__
+            wxString LineBreak = wxT("\n");
+            wxString ConcatCommand = wxT("sh -c \"echo \\\"# ffmpeg concat script");
+        #endif
+        #ifdef __WINDOWS__
+            wxString LineBreak = wxT("^\n\n");
+            // FIXME: Find a workaround to create concat file under windows with a single command
+            wxString ConcatCommand = wxT("cmd /c \"echo # ffmpeg concat script");
+        #endif
         // find the duration of the longest video stream (used as master stream for clipping segments)
         //int64_t EndTime = GetMultiplexDuration(true, false, false, true);
         FileSegment* Segment;
@@ -196,7 +196,13 @@ wxArrayString EncodingTask::GetCommands()
             */
         }
         Segment = NULL;
-        Commands.Add(ConcatCommand + wxT("\\\" > \\\"") + ConcatScript.GetFullPath() + wxT("\\\"\""));
+        #ifdef __LINUX__
+            Commands.Add(ConcatCommand + wxT("\\\" > \\\"") + ConcatScript.GetFullPath() + wxT("\\\"\""));
+        #endif
+        #ifdef __WINDOWS__
+            // FIXME: Find a workaround to create concat file under windows with a single command
+            Commands.Add(ConcatCommand + wxT("> ^\"") + ConcatScript.GetFullPath() + wxT("^\"\""));
+        #endif
         Commands.Add(wxT("\"") + Libav::ConverterApplication.GetFullPath() + wxT("\" -f concat -i \"") + ConcatScript.GetFullPath() + wxT("\" -c copy -y \"") + OutputFile.GetFullPath() + wxT("\""));
 
         // FIXME: ffmpeg got segmentation fault when concatenating parts with subtitles

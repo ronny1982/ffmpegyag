@@ -2,6 +2,7 @@ ffmpegyag 0.7.5
 
  * fixed processing of non-interleaved audio
  * fixed audio format for windows playback
+ * concat still not working under windows
 
 ffmpegyag 0.7.4
 
