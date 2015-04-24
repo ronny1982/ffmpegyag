@@ -1,3 +1,7 @@
+ffmpegyag 0.7.6
+
+ * fixed presets for windows
+
 ffmpegyag 0.7.5
 
  * fixed processing of non-interleaved audio

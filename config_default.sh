@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PKGNAME="ffmpegyag"
-PKGVERSION="0.7.5"
+PKGVERSION="0.7.6"
 PKGSECTION="video"
 PKGAUTHOR="Ronny Wegener <wegener.ronny@gmail.com>"
 PKGHOMEPAGE="http://ffmpegyag.googlecode.com"

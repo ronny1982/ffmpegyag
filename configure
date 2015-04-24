@@ -178,7 +178,7 @@ initialize()
     echo "DISTROOT=\"build/msw\"" >> config_mingw.sh
     echo "BINFILE=\"\$DISTROOT/bin/$PROJECT.exe\"" >> config_mingw.sh
     echo "" >> config_mingw.sh
-    echo "CC=\"mingw32-g++.exe\"" >> config_mingw.sh
+    echo "CC=\"g++.exe\"" >> config_mingw.sh
     echo "CFLAGS=\"" >> config_mingw.sh
     echo "    -c" >> config_mingw.sh
     echo "    -Wall" >> config_mingw.sh
@@ -193,7 +193,7 @@ initialize()
     echo "    -F pe-i386" >> config_mingw.sh
     echo "    \"" >> config_mingw.sh
     echo "" >> config_mingw.sh
-    echo "LD=\"mingw32-g++.exe\"" >> config_mingw.sh
+    echo "LD=\"g++.exe\"" >> config_mingw.sh
     echo "LDFLAGS=\"" >> config_mingw.sh
     echo "    -s" >> config_mingw.sh
     echo "    -static-libgcc" >> config_mingw.sh
@@ -537,10 +537,10 @@ write_makefile_rule_dist_installer()
 
 write_makefile_rule_dist_tgz()
 {
-    $ECHO_ESC "TGZPKG := \$(PKGNAME)-\$(PKGVERSION).tar.gz" >> $MAKEFILE
+    $ECHO_ESC "TGZPKG := \$(PKGNAME)_\$(PKGVERSION)_src.tar.gz" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "tgz:" >> $MAKEFILE
-    $ECHO_ESC "\t@tar -czvf \$(TGZPKG) --transform 's,^,\$(PKGNAME)-\$(PKGVERSION)/,' --exclude='make*' --exclude='Make*' --exclude='*.tar.gz' --exclude='*.dsc' --exclude='*.deb' --exclude='\$(BINFILE)' --exclude='\$(OBJDIR)/*' *" >> $MAKEFILE
+    $ECHO_ESC "\t@tar -czvf \$(TGZPKG) --transform 's,^,\$(PKGNAME)_\$(PKGVERSION)_src/,' --exclude='make*' --exclude='Make*' --exclude='*.tar.gz' --exclude='*.dsc' --exclude='*.deb' --exclude='\$(BINFILE)' --exclude='\$(OBJDIR)/*' *" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
 }
 

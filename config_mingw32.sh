@@ -31,6 +31,7 @@ RCFLAGS="
 
 LDFLAGS="
     -s
+    -static
     -static-libgcc
     -static-libstdc++
     -mwindows
