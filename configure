@@ -8,11 +8,11 @@ show_help()
     echo "Options:"
     echo ""
     echo "  -h, --help                Display this help and exit."
-    echo "  -i, --init [NAME]         Initialize a new project structure with"
+    echo "  -i, --init NAME           Initialize a new project structure with"
     echo "                            default configuration and source files."
     echo "                            The project's optional title will be NAME"
     echo "                            and can only contain: A-Z, a-z, 0-9, -, _"
-    echo "                            Default Name: 'hello-world'"
+    echo "                            [hello-world]"
     echo "                            All project settings can be changed in the"
     echo "                            generated 'config_default.sh' script."
     echo "      --config-NAME         Use the configuration script config_NAME.sh"
@@ -73,8 +73,7 @@ initialize()
     echo "{" >> src/main.cpp
     echo "    printf(\"Hello World\\n\");" >> src/main.cpp
     echo "    // argv[0] is the execution command of this application" >> src/main.cpp
-    echo "    for(int i=1; i<argc; i++)" >> src/main.cpp
-    echo "    {" >> src/main.cpp
+    echo "    for(int i=1; i<argc; i++) {" >> src/main.cpp
     echo "        printf(\"Arg[%i]: %s\n\", i, argv[i]);" >> src/main.cpp
     echo "    }" >> src/main.cpp
     echo "    return 0;" >> src/main.cpp
@@ -295,6 +294,40 @@ check_env()
     check_command "ld --version"
 }
 
+get_lsb_release()
+{
+    RELEASE_FILE=/dev/null
+    if [ -f /etc/os-release ]
+    then
+        RELEASE_FILE=/etc/os-release
+    fi
+    if [ -f /etc/lsb-release ]
+    then
+        RELEASE_FILE=/etc/lsb-release
+    fi
+    if [ -f /etc/upstream-release/os-release ]
+    then
+        RELEASE_FILE=/etc/upstream-release/os-release
+    fi
+    if [ -f /etc/upstream-release/lsb-release ]
+    then
+        RELEASE_FILE=/etc/upstream-release/lsb-release
+    fi
+    DIST=unknown
+    VER=0.0
+    if [[ $(grep '^ID=' $RELEASE_FILE | wc -l) > 1 ]]
+    then
+        DIST=$(grep '^ID=' $RELEASE_FILE | sed 's|\"||g;s|\s|-|g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')
+        DIST=$(grep '^VERSION_ID=' $RELEASE_FILE | sed 's|\"||g' | cut -d '=' -f 2)
+    fi
+    if [[ $(grep '^DISTRIB_' $RELEASE_FILE | wc -l) > 1 ]]
+    then
+        DIST=$(grep '^DISTRIB_ID=' $RELEASE_FILE | sed 's|\"||g;s|\s|-|g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')
+        VER=$(grep '^DISTRIB_RELEASE=' $RELEASE_FILE | sed 's|\"||g' | cut -d '=' -f 2)
+    fi
+    echo "${DIST}-${VER}_$(dpkg --print-architecture)"
+}
+
 default_config()
 {
     PKGNAME="no-name"
@@ -475,6 +508,7 @@ write_makefile_configuration()
     $ECHO_ESC "DISTFILES := \$(patsubst \$(DISTROOT)/%, %, \$(shell find \$(DISTROOT) -type f))" >> $MAKEFILE
     $ECHO_ESC "DISTDIRECTORIES := \$(patsubst \$(DISTROOT)/%, %, \$(shell find \$(DISTROOT) -type d -empty))" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "DISTRO = $(get_lsb_release)" >> $MAKEFILE
     $ECHO_ESC "DESTDIR = " >> $MAKEFILE
     $ECHO_ESC "PREFIX = $INSTALLDIR" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
@@ -546,12 +580,7 @@ write_makefile_rule_dist_tgz()
 
 write_makefile_rule_dist_deb()
 {
-    if [[ $(grep '^DISTRIB_' /etc/*release | wc -l) > 1 ]]
-    then
-        $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell grep '^DISTRIB_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^DISTRIB_RELEASE=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2)_\$(shell dpkg --print-architecture).deb" >> $MAKEFILE
-    else
-        $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell grep '^ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^VERSION_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2)_\$(shell dpkg --print-architecture).deb" >> $MAKEFILE
-    fi
+    $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(DISTRO).deb" >> $MAKEFILE
     $ECHO_ESC "" >> $MAKEFILE
     $ECHO_ESC "deb: all" >> $MAKEFILE
     $ECHO_ESC "\t@mkdir -p deb/\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX)) 2> /dev/null" >> $MAKEFILE
