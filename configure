@@ -296,6 +296,8 @@ check_env()
 
 get_lsb_release()
 {
+    # FIXME: Fedora/OpenSuse/CentOS/Redhat do not use lsb-release, they use e.g. fedora-release
+
     RELEASE_FILE=/dev/null
     if [ -f /etc/os-release ]
     then
@@ -313,8 +315,8 @@ get_lsb_release()
     then
         RELEASE_FILE=/etc/upstream-release/lsb-release
     fi
-    DIST=unknown
-    VER=0.0
+    DIST=linux
+    VER=$(date +%y.%m)
     if [[ $(grep '^ID=' $RELEASE_FILE | wc -l) > 1 ]]
     then
         DIST=$(grep '^ID=' $RELEASE_FILE | sed 's|\"||g;s|\s|-|g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')
@@ -325,7 +327,18 @@ get_lsb_release()
         DIST=$(grep '^DISTRIB_ID=' $RELEASE_FILE | sed 's|\"||g;s|\s|-|g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')
         VER=$(grep '^DISTRIB_RELEASE=' $RELEASE_FILE | sed 's|\"||g' | cut -d '=' -f 2)
     fi
-    echo "${DIST}-${VER}_$(dpkg --print-architecture)"
+    ARCH=x86
+    rpm --version > /dev/null 2>&1
+    if [ $? == 0 ]
+    then
+        ARCH=$(rpm --eval %_target_cpu)
+    fi
+    apt-get --version > /dev/null 2>&1
+    if [ $? == 0 ]
+    then
+        ARCH=$(dpkg --print-architecture)
+    fi
+    echo "${DIST}-${VER}_${ARCH}"
 }
 
 default_config()
