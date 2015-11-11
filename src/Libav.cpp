@@ -444,6 +444,7 @@ wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
 
     if(ContainerFormat.IsSameAs(wxT("matroska")))
     {
+        codecs.Add(wxT("libx265"));
         codecs.Add(wxT("libx264"));
         codecs.Add(wxT("libxvid"));
         codecs.Add(wxT("libvpx"));
@@ -454,6 +455,7 @@ wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
 
     if(ContainerFormat.IsSameAs(wxT("mp4")))
     {
+        codecs.Add(wxT("libx265"));
         codecs.Add(wxT("libx264"));
         codecs.Add(wxT("libxvid"));
         codecs.Add(wxT("libvpx"));
@@ -464,6 +466,7 @@ wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
 
     if(ContainerFormat.IsSameAs(wxT("mov")))
     {
+        codecs.Add(wxT("libx265"));
         codecs.Add(wxT("libx264"));
         codecs.Add(wxT("libxvid"));
         codecs.Add(wxT("libvpx"));
