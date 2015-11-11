@@ -488,6 +488,11 @@ wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
         codecs.Add(wxT("mpeg2video"));
     }
 
+    if(ContainerFormat.IsSameAs(wxT("avi")))
+    {
+        codecs.Add(wxT("libxvid"));
+    }
+
     return codecs;
 }
 
