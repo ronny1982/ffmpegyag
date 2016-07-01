@@ -3683,7 +3683,12 @@ bool AVConvGUIFrame::VerifySettings()
 
                     if(vSettings->Bitrate.StartsWith(wxT("-crf")))
                     {
-                        if(!vSettings->Codec.BeforeFirst(' ').IsSameAs(wxT("libx264")))
+                        if(
+                            !vSettings->Codec.StartsWith(wxT("libx26")) &&
+                            !vSettings->Codec.StartsWith(wxT("libx265")) &&
+                            !vSettings->Codec.StartsWith(wxT("libvpx")) &&
+                            !vSettings->Codec.StartsWith(wxT("libvpx-vp9"))
+                        )
                         {
                             warning.Append(warning_prefix + wxT("\nConstant quality (-crf) not supported by the selected video codec!"));
                         }

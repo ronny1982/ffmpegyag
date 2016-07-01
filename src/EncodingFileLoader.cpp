@@ -90,7 +90,9 @@ int64_t* StreamSize = new int64_t[pFormatCtx->nb_streams];
                     {
                         stream = pFormatCtx->streams[packet.stream_index];
                         StreamSize[packet.stream_index] += packet.size;
-
+// FIXME: packet.stream_index > nb_streams, maybe libav error
+wxPrintf(wxString::Format(wxT("Stream Index: %d/%d\n"), packet.stream_index, pFormatCtx->nb_streams));
+//return;
                         if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO || (stream->codec->codec_type & AVMEDIA_TYPE_AUDIO) || (stream->codec->codec_type & AVMEDIA_TYPE_SUBTITLE))
                         {
                             if(packet.pts == (int64_t)AV_NOPTS_VALUE)

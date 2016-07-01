@@ -448,6 +448,7 @@ wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
         codecs.Add(wxT("libx264"));
         codecs.Add(wxT("libxvid"));
         codecs.Add(wxT("libvpx"));
+        codecs.Add(wxT("libvpx-vp9"));
         codecs.Add(wxT("mpeg4"));
         codecs.Add(wxT("mpeg1video"));
         codecs.Add(wxT("mpeg2video"));
@@ -459,6 +460,7 @@ wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
         codecs.Add(wxT("libx264"));
         codecs.Add(wxT("libxvid"));
         codecs.Add(wxT("libvpx"));
+        codecs.Add(wxT("libvpx-vp9"));
         codecs.Add(wxT("mpeg4"));
         codecs.Add(wxT("mpeg1video"));
         codecs.Add(wxT("mpeg2video"));
@@ -470,6 +472,7 @@ wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
         codecs.Add(wxT("libx264"));
         codecs.Add(wxT("libxvid"));
         codecs.Add(wxT("libvpx"));
+        codecs.Add(wxT("libvpx-vp9"));
         codecs.Add(wxT("mpeg4"));
         codecs.Add(wxT("mpeg1video"));
         codecs.Add(wxT("mpeg2video"));
@@ -483,6 +486,7 @@ wxArrayString Libav::FormatVideoCodecs(wxString ContainerFormat)
     if(ContainerFormat.IsSameAs(wxT("webm")))
     {
         codecs.Add(wxT("libvpx"));
+        codecs.Add(wxT("libvpx-vp9"));
     }
 
     if(ContainerFormat.IsSameAs(wxT("mpeg")))
