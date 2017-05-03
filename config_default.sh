@@ -29,7 +29,7 @@ CFLAGS="
     -c
     -Wall
     -O2
-    $(wx-config --version=2.8 --static=no --debug=no --cflags)
+    $(wx-config --version=3.0 --static=no --debug=no --cflags)
     "
 
 RC=""
@@ -38,7 +38,7 @@ RCFLAGS=""
 LD="g++"
 LDFLAGS="-s"
 LDLIBS="
-    $(wx-config --version=2.8 --static=no --debug=no --libs --gl-libs)
+    $(wx-config --version=3.0 --static=no --debug=no --libs --gl-libs)
     -lavformat
     -lavcodec
     -lswscale

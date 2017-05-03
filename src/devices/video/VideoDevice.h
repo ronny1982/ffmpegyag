@@ -45,7 +45,7 @@ class VideoDevice
     public: virtual void SetViewport(int x, int y, int w, int h) = 0;
     public: virtual void SetClearColour(float red, float green, float blue, float alpha) = 0;
     public: virtual void Clear() = 0;
-    public: virtual void RenderTexture(TexturePanelMap* Mapper, int TextureWidth, int TextureHeight, PixelFormat TextureFormat, unsigned char* TextureData) = 0;
+    public: virtual void RenderTexture(TexturePanelMap* Mapper, int TextureWidth, int TextureHeight, AVPixelFormat TextureFormat, unsigned char* TextureData) = 0;
     public: virtual void RenderTextureCross(TexturePanelMap* Mapper, float red, float green, float blue, float alpha) = 0;
     public: virtual void RenderTextureBlend(TexturePanelMap* Mapper, float red, float green, float blue, float alpha) = 0;
     public: virtual void SwapBuffers() = 0;

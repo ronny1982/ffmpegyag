@@ -60,14 +60,14 @@ class EncodingFileLoader
     public: IndexEntry* GetIndexEntryFromTimestampA(long AudioStreamIndex, int64_t Timestamp);
     // returns the raw image data of the selected stream and frame number
     // do not delete VideoFrame*, this pointer is freed by GOPBuffer
-    public: VideoFrame* GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat = PIX_FMT_RGB24);
+    public: VideoFrame* GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, AVPixelFormat TargetPixelFormat = AV_PIX_FMT_RGB24);
     //public: AudioFrame* GetAudioFrameData(long AudioStreamIndex, long FrameIndex, int TargetChannels, int TargetSamplerate, SampleFormat TargetSampleFormat = AV_SAMPLE_FMT_S16);
     // stream decoded audio/video frames into the fifo buffer
     public: void StreamMedia(bool* DoStream, int64_t* ReferenceClock,
                             long FrameIndex, long VideoStreamIndex, long AudioStreamIndex,
                             StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer,
                             int VideoTargetWidth, int VideoTargetHeight,
-                            PixelFormat VideoTargetPixelFormat = PIX_FMT_RGB24);
+                            AVPixelFormat VideoTargetPixelFormat = AV_PIX_FMT_RGB24);
 };
 
 WX_DEFINE_ARRAY(EncodingFileLoader*, EncodingFileLoaderArray);

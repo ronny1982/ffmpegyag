@@ -17,11 +17,11 @@ class GLDevice : VideoDevice
     public: void SetViewport(int x, int y, int w, int h);
     public: void SetClearColour(float red, float green, float blue, float alpha);
     public: void Clear();
-    public: void RenderTexture(TexturePanelMap* Mapper, int TextureWidth, int TextureHeight, PixelFormat TextureFormat, unsigned char* TextureData);
+    public: void RenderTexture(TexturePanelMap* Mapper, int TextureWidth, int TextureHeight, AVPixelFormat TextureFormat, unsigned char* TextureData);
     public: void RenderTextureCross(TexturePanelMap* Mapper, float red, float green, float blue, float alpha);
     public: void RenderTextureBlend(TexturePanelMap* Mapper, float red, float green, float blue, float alpha);
     public: void SwapBuffers();
-    private: GLint GetGLFormat(PixelFormat Format);
+    private: GLint GetGLFormat(AVPixelFormat Format);
 };
 
 #endif // GLDEVICE_H

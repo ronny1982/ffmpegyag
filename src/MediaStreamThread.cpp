@@ -1,6 +1,6 @@
 #include "MediaStreamThread.h"
 
-MediaStreamThread::MediaStreamThread(EncodingFileLoader* SourceMedia, bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, PixelFormat VideoTargetPixelFormat) : wxThread(wxTHREAD_JOINABLE)
+MediaStreamThread::MediaStreamThread(EncodingFileLoader* SourceMedia, bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, AVPixelFormat VideoTargetPixelFormat) : wxThread(wxTHREAD_JOINABLE)
 {
     efl = SourceMedia;
     run = DoStream;

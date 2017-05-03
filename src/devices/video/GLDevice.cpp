@@ -26,7 +26,7 @@ void GLDevice::Clear()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GLDevice::RenderTexture(TexturePanelMap* Mapper, int TextureWidth, int TextureHeight, PixelFormat TextureFormat, unsigned char* TextureData)
+void GLDevice::RenderTexture(TexturePanelMap* Mapper, int TextureWidth, int TextureHeight, AVPixelFormat TextureFormat, unsigned char* TextureData)
 {
     GLuint TexturePointer;
     glGenTextures(1, &TexturePointer);
@@ -94,7 +94,7 @@ void GLDevice::SwapBuffers()
     glFinish();
 }
 
-GLint GLDevice::GetGLFormat(PixelFormat Format)
+GLint GLDevice::GetGLFormat(AVPixelFormat Format)
 {
     return GL_RGB;
 }

@@ -9,7 +9,7 @@ class VideoFrame
 {
     public: VideoFrame();
     // the pointer FrameData will be freed by this destructor, make sure not freeing it's content externally!
-    public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, PixelFormat FrameFormat, AVPictureType FrameType);
+    public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, AVPixelFormat FrameFormat, AVPictureType FrameType);
     public: VideoFrame(int64_t FrameTimestamp, int64_t FrameTimecode, int64_t FrameDuration, int FrameWidth, int FrameHeight, AVPictureType FrameType, unsigned char Red, unsigned char Green, unsigned char Blue);
     public: virtual ~VideoFrame();
 
@@ -18,7 +18,7 @@ class VideoFrame
     public: int64_t Duration; // in milliseconds
     public: int Width;
     public: int Height;
-    public: PixelFormat PicFormat;
+    public: AVPixelFormat PicFormat;
     public: wxString PicType;
     public: size_t DataSize;
     public: unsigned char* Data;

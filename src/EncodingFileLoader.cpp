@@ -824,7 +824,7 @@ IndexEntry* EncodingFileLoader::GetIndexEntryFromTimestampA(long AudioStreamInde
     return AudioStreams[AudioStreamIndex]->IndexEntries[GetFrameFromTimestampA(AudioStreamIndex, Timestamp)];
 }
 
-VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, PixelFormat TargetPixelFormat)
+VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStreamIndex, int TargetWidth, int TargetHeight, AVPixelFormat TargetPixelFormat)
 {
     if(!Locked)
     {
@@ -880,8 +880,8 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
         // add frames to gop until timestamp is processed
         if(GOPBuffer.GetLastTimestamp() < Timestamp)
         {
-            AVFrame *pFrameSource = avcodec_alloc_frame();
-            AVFrame *pFrameTarget = avcodec_alloc_frame();
+            AVFrame *pFrameSource = av_frame_alloc();
+            AVFrame *pFrameTarget = av_frame_alloc();
 
             if(pFrameTarget != NULL)
             {
@@ -972,7 +972,7 @@ VideoFrame* EncodingFileLoader::GetVideoFrameData(long FrameIndex, long VideoStr
     }
 }
 
-void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, PixelFormat VideoTargetPixelFormat)
+void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, AVPixelFormat VideoTargetPixelFormat)
 {
     if(!Locked)
     {
@@ -1020,9 +1020,9 @@ void EncodingFileLoader::StreamMedia(bool* DoStream, int64_t* ReferenceClock, lo
             return;
         }
 
-        AVFrame *pVideoFrameSource = avcodec_alloc_frame();
-        AVFrame *pVideoFrameTarget = avcodec_alloc_frame();
-        AVFrame *pAudioFrameSource = avcodec_alloc_frame();
+        AVFrame *pVideoFrameSource = av_frame_alloc();
+        AVFrame *pVideoFrameTarget = av_frame_alloc();
+        AVFrame *pAudioFrameSource = av_frame_alloc();
         if(pVideoFrameTarget != NULL)
         {
             int PictureSize = avpicture_get_size(VideoTargetPixelFormat, VideoTargetWidth, VideoTargetHeight);

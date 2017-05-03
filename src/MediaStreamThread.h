@@ -7,7 +7,7 @@
 
 class MediaStreamThread : public wxThread
 {
-    public: MediaStreamThread(EncodingFileLoader* SourceMedia, bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, PixelFormat VideoTargetPixelFormat = PIX_FMT_RGB24);
+    public: MediaStreamThread(EncodingFileLoader* SourceMedia, bool* DoStream, int64_t* ReferenceClock, long FrameIndex, long VideoStreamIndex, long AudioStreamIndex, StreamBuffer* VideoFrameBuffer, StreamBuffer* AudioFrameBuffer, int VideoTargetWidth, int VideoTargetHeight, AVPixelFormat VideoTargetPixelFormat = AV_PIX_FMT_RGB24);
     public: virtual ~MediaStreamThread();
 
     protected: virtual ExitCode Entry();
@@ -22,7 +22,7 @@ class MediaStreamThread : public wxThread
     private: StreamBuffer* aFrameBuffer;
     private: int vWidth;
     private: int vHeight;
-    private: PixelFormat vPixelFormat;
+    private: AVPixelFormat vPixelFormat;
 };
 
 #endif // MEDIASTREAMTHREAD_H

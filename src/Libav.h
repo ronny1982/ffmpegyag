@@ -51,10 +51,7 @@ enum AVMediaFlags
 };
 
 WX_DECLARE_STRING_HASH_MAP(wxString, StringHashMap);
-WX_DECLARE_HASH_MAP(PixelFormat, wxString, wxIntegerHash, wxIntegerEqual, PixelFormatHashMap);
-#ifndef FF_API_CODEC_ID
-#define AVCodecID CodecID // backward compatibility
-#endif
+WX_DECLARE_HASH_MAP(AVPixelFormat, wxString, wxIntegerHash, wxIntegerEqual, PixelFormatHashMap);
 WX_DECLARE_HASH_MAP(AVCodecID, AVMediaFlags, wxIntegerHash, wxIntegerEqual, CodecIDHashMap);
 WX_DECLARE_STRING_HASH_MAP(AVMediaFlags, MediaFlagHashMap);
 
@@ -99,7 +96,7 @@ class Libav
     public: static wxString GetPicType(AVPictureType PicType);
     // TODO: remove when VideoDevice implementation is done
     // convert AVPixelFormat to GL Format
-    public: static GLint GetGLFormat(PixelFormat PixFormat);
+    public: static GLint GetGLFormat(AVPixelFormat PixFormat);
 };
 
 #endif // LIBAV_H
